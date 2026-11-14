@@ -6,11 +6,17 @@ import type { ResultProduct } from "@/lib/results";
 
 const pln = new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" });
 
-type ProductCardProps = { product: ResultProduct; position: number; resultId: string };
+type ProductCardProps = {
+  product: ResultProduct;
+  position: number;
+  resultId: string;
+  /** The page was opened from a shared link (?ref=): clicks are recorded as source "share". */
+  shared?: boolean;
+};
 
 /** Partner product card. The button goes through /go/[id] to record the click. */
-export function ProductCard({ product, position, resultId }: ProductCardProps) {
-  const href = `/go/${product.id}?r=${resultId}`;
+export function ProductCard({ product, position, resultId, shared = false }: ProductCardProps) {
+  const href = `/go/${product.id}?r=${resultId}${shared ? "&src=share" : ""}`;
 
   return (
     <li className="overflow-hidden rounded-xl border bg-card">

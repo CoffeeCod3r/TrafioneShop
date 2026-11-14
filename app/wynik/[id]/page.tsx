@@ -9,13 +9,8 @@ import { ProductCard } from "@/components/results/product-card";
 import { ShareButton } from "@/components/results/share-button";
 import { Button } from "@/components/ui/button";
 import { CHILD_PHOTO_NOTICE } from "@/lib/analyze/schema";
+import { CARD_HEIGHT, CARD_WIDTH, cardUrl } from "@/lib/og/card";
 import { getResultView } from "@/lib/results";
-
-export const metadata: Metadata = {
-  title: "Twoje prezenty – Prezentownik AI",
-  // Results are personal: keep them out of search engines.
-  robots: { index: false, follow: false },
-};
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -23,6 +18,34 @@ type PageProps = {
   params: Promise<{ id: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+/** Open Graph / Twitter preview uses the share card. No personal data in the text fields. */
+export async function generateMetadata({ params }: Pick<PageProps, "params">): Promise<Metadata> {
+  const { id } = await params;
+  const base: Metadata = {
+    title: "Twoje prezenty – Prezentownik AI",
+    // Results are personal: keep them out of search engines.
+    robots: { index: false, follow: false },
+  };
+  if (!UUID.test(id)) return base;
+
+  const image = { url: cardUrl(id), width: CARD_WIDTH, height: CARD_HEIGHT, alt: "Prezenty dobrane przez AI" };
+  const description = "Zobacz 5 prezentów dobranych przez AI i znajdź swój w 60 sekund.";
+  return {
+    ...base,
+    description,
+    openGraph: {
+      type: "website",
+      title: "AI dobrało prezenty – Prezentownik AI",
+      description,
+      url: `/wynik/${id}`,
+      images: [image],
+      locale: "pl_PL",
+      siteName: "Prezentownik AI",
+    },
+    twitter: { card: "summary_large_image", title: "AI dobrało prezenty – Prezentownik AI", description, images: [image] },
+  };
+}
 
 /** Server-rendered result page. Data loads inside Suspense (required with cacheComponents). */
 export default function ResultPage(props: PageProps) {
@@ -42,6 +65,7 @@ async function ResultContent({ params, searchParams }: PageProps) {
   const { result, products } = view;
   const photoSkipped = query.zdjecie === "pominiete";
   const justPaid = query.platnosc === "ok";
+  const shared = typeof query.ref === "string" && result.ref_code !== null && query.ref === result.ref_code;
 
   return (
     <div className="flex flex-col gap-8 py-6">
@@ -75,7 +99,13 @@ async function ResultContent({ params, searchParams }: PageProps) {
         ) : (
           <ol className="flex flex-col gap-4">
             {products.map((product, index) => (
-              <ProductCard key={product.id} product={product} position={index + 1} resultId={result.id} />
+              <ProductCard
+                key={product.id}
+                product={product}
+                position={index + 1}
+                resultId={result.id}
+                shared={shared}
+              />
             ))}
           </ol>
         )}

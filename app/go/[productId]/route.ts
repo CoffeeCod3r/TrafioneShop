@@ -4,8 +4,9 @@ import { getRepos } from "@/lib/services/db";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * GET /go/[productId]?r=[resultId]
- * Records the click (source "free") and redirects (302) to the product's affiliate_url.
+ * GET /go/[productId]?r=[resultId][&src=share]
+ * Records the click and redirects (302) to the product's affiliate_url.
+ * source = "share" when the result page was opened from a shared link (?ref=), otherwise "free".
  * Only redirects to URLs stored in our catalog, so it cannot be used as an open redirect.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ productId: string }> }) {
@@ -17,7 +18,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ prod
   const product = await repos.products.getById(productId).catch(() => null);
   if (!product) return Response.redirect(home, 302);
 
-  const resultId = new URL(request.url).searchParams.get("r");
+  const query = new URL(request.url).searchParams;
+  const resultId = query.get("r");
+  const source = query.get("src") === "share" ? "share" : "free";
   const target = new URL(product.affiliate_url, request.url);
 
   try {
@@ -25,7 +28,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ prod
       result_id: resultId && UUID.test(resultId) ? resultId : null,
       product_id: product.id,
       url: target.toString(),
-      source: "free",
+      source,
     });
   } catch (error) {
     // Never block the redirect because of analytics (e.g. unknown result_id).

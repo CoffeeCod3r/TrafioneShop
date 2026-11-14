@@ -70,7 +70,15 @@ export type ResultProduct = Pick<
 export type ResultView = {
   result: Pick<
     ResultRow,
-    "id" | "created_at" | "style_profile" | "tags" | "ref_code" | "budget_pln" | "paid_status" | "price_variant"
+    | "id"
+    | "created_at"
+    | "recipient"
+    | "style_profile"
+    | "tags"
+    | "ref_code"
+    | "budget_pln"
+    | "paid_status"
+    | "price_variant"
   > & { webPicks: WebPick[] | null; dedications: Dedications | null };
   products: ResultProduct[];
 };
@@ -154,6 +162,7 @@ export async function getResultView(id: string): Promise<ResultView | null> {
     result: {
       id: result.id,
       created_at: result.created_at,
+      recipient: result.recipient,
       style_profile: result.style_profile,
       tags: result.tags,
       ref_code: result.ref_code,
