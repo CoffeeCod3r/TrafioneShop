@@ -113,7 +113,7 @@ async function ResultContent({ params, searchParams }: PageProps) {
 
       {justPaid && result.paid_status !== "ready" && result.paid_status !== "refunded" && (
         <p className="rounded-xl bg-secondary p-4 text-sm" role="status">
-          Dziękujemy za płatność! Wyniki z całego internetu pojawią się poniżej za chwilę.
+          Dziękujemy za płatność! Właśnie szukamy prezentów w całym internecie, wyniki pojawią się poniżej.
         </p>
       )}
 

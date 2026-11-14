@@ -5,7 +5,7 @@
 import type { ProfileResult, StyleProfile } from "@/lib/analyze/schema";
 import type { AiUsageStep, AllowedShopRow } from "@/lib/db";
 import { isMockMode } from "@/lib/mode";
-import type { Dedications, WebPick } from "@/lib/paid/schema";
+import type { Dedications, FetchedPage, RawWebPick } from "@/lib/paid/schema";
 import type { Candidate } from "@/lib/picks/candidates";
 import type { QuizAnswers } from "@/lib/quiz/schema";
 import { createDemoAi } from "@/lib/services/impl/ai-demo";
@@ -28,8 +28,20 @@ export type PicksResult = { picks: GiftPick[]; source: "ai" | "fallback" | "too_
 export type WebSearchInput = {
   answers: QuizAnswers;
   profile: StyleProfile;
-  /** Only these domains may appear in the results. */
+  /** Only these domains may be searched and fetched. */
   allowedShops: AllowedShopRow[];
+  /** Names of the free picks, so the paid search does not repeat them. */
+  freeProductNames: string[];
+  /** Today's date (YYYY-MM-DD, Europe/Warsaw). */
+  today: string;
+};
+
+export type WebSearchOutput = {
+  /** Unverified picks from save_web_picks; lib/web-search.ts verifies them. */
+  picks: RawWebPick[];
+  /** Pages actually opened with web_fetch in this run. */
+  fetchedPages: FetchedPage[];
+  usage: UsageEntry[];
 };
 
 export type AiService = {
@@ -41,8 +53,8 @@ export type AiService = {
     profile: StyleProfile,
     candidates: Candidate[],
   ): Promise<{ result: PicksResult; usage: UsageEntry[] }>;
-  /** Paid: products from trusted shops outside the catalog, price and availability checked. */
-  webSearch(input: WebSearchInput): Promise<{ picks: WebPick[]; usage: UsageEntry[] }>;
+  /** Paid: products from trusted shops outside the catalog, price and availability checked on the page. */
+  webSearch(input: WebSearchInput): Promise<WebSearchOutput>;
   /** Paid: 3 short gift-card dedications. */
   writeDedications(answers: QuizAnswers, profile: StyleProfile): Promise<{ dedications: Dedications; usage: UsageEntry[] }>;
 };

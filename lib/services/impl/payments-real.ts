@@ -22,8 +22,8 @@ function toEvent(event: Stripe.Event): PaymentEvent {
   const session = event.data.object;
   if (session.payment_status !== "paid") return { type: "ignored", reason: `payment_status=${session.payment_status}` };
 
-  const resultId = session.metadata?.resultId ?? session.client_reference_id;
-  const priceVariant = parseVariant(session.metadata?.priceVariant);
+  const resultId = session.metadata?.result_id ?? session.client_reference_id;
+  const priceVariant = parseVariant(session.metadata?.price_variant);
   if (!resultId || !priceVariant) return { type: "ignored", reason: "missing metadata" };
 
   return {
@@ -44,12 +44,15 @@ export function createRealPayments(): PaymentsService {
       const session = await getStripe().checkout.sessions.create({
         mode: "payment",
         line_items: [{ price: priceVariant === 499 ? env.STRIPE_PRICE_ID_A : env.STRIPE_PRICE_ID_B, quantity: 1 }],
-        // Payment methods (BLIK + card) are enabled in the Stripe Dashboard (dynamic payment methods);
-        // this API version no longer accepts payment_method_types. Prices must be in PLN for BLIK.
+        // BLIK first, card second. This API version uses dynamic payment methods: the list filters
+        // what is enabled in the Dashboard, and Stripe decides the final order (BLIK is shown
+        // first for Polish customers). Both must be enabled in Dashboard → Payment methods.
+        allowed_payment_method_types: ["blik", "card"],
+        currency: "pln",
         locale: "pl",
         client_reference_id: resultId,
-        metadata: { resultId, priceVariant: String(priceVariant) },
-        payment_intent_data: { metadata: { resultId } },
+        metadata: { result_id: resultId, price_variant: String(priceVariant) },
+        payment_intent_data: { metadata: { result_id: resultId, price_variant: String(priceVariant) } },
         success_url: successUrl,
         cancel_url: cancelUrl,
       });

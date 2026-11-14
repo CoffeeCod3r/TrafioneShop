@@ -1,19 +1,19 @@
 import { logEvent } from "@/lib/log";
-import { runPaidSearch } from "@/lib/paid/run-paid-search";
 import { getRepos } from "@/lib/services/db";
 import type { PaymentEvent } from "@/lib/services/payments";
+import { refundPurchase, runWebSearch } from "@/lib/web-search";
 
 /**
  * Single handler for payment events: used by the Stripe webhook and by the demo
  * "Zapłać (demo)" button, so both paths run exactly the same logic.
- * Idempotent: a repeated event for the same session does nothing.
+ * Idempotent by stripe_session_id. A second payment for an already paid result is refunded.
  *
- * @param schedule runs the slow search after the response (pass Next.js `after`).
+ * @param schedule runs the slow search after the response (Next.js `after`, i.e. waitUntil).
  */
 export async function handlePaymentEvent(
   event: PaymentEvent,
   schedule: (task: () => Promise<void>) => void,
-): Promise<{ status: "ignored" | "duplicate" | "accepted" }> {
+): Promise<{ status: "ignored" | "duplicate" | "already_paid" | "accepted" }> {
   if (event.type !== "checkout_completed") {
     logEvent("payment.ignored", { reason: event.reason });
     return { status: "ignored" };
@@ -36,8 +36,15 @@ export async function handlePaymentEvent(
   });
   if (!created) return { status: "duplicate" };
 
-  await repos.results.update(event.resultId, { paid_status: "searching" });
+  if (result.paid_status !== "none") {
+    // One result can be paid only once (e.g. two checkout tabs): refund the extra payment.
+    // result_id: null so the refund does not touch the already paid result.
+    schedule(() => refundPurchase({ ...purchase, result_id: null }, "already_paid"));
+    return { status: "already_paid" };
+  }
+
+  await repos.results.update(event.resultId, { paid_status: "pending" });
   logEvent("payment.accepted", { priceVariant: event.priceVariant });
-  schedule(() => runPaidSearch(purchase));
+  schedule(() => runWebSearch(purchase));
   return { status: "accepted" };
 }

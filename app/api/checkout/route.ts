@@ -22,12 +22,17 @@ export async function POST(request: Request) {
     const repos = getRepos();
     const result = await repos.results.getById(resultId);
     if (!result) return Response.json({ error: "Nie znaleziono wyniku." }, { status: 404 });
-    if (result.paid_status !== "none" && result.paid_status !== "pending") {
+    // One result can be paid only once. paid_status changes only in the webhook.
+    if (result.paid_status !== "none") {
       return Response.json({ error: "To wyszukiwanie zostało już opłacone." }, { status: 409 });
     }
 
-    const priceVariant = result.price_variant ?? pickPriceVariant();
-    await repos.results.update(resultId, { price_variant: priceVariant, paid_status: "pending" });
+    // The price shown on the result page; assigned at creation, kept forever.
+    let priceVariant = result.price_variant;
+    if (!priceVariant) {
+      priceVariant = pickPriceVariant();
+      await repos.results.update(resultId, { price_variant: priceVariant });
+    }
 
     const siteUrl = getEnv().NEXT_PUBLIC_SITE_URL;
     const { url } = await getPayments().createCheckout({

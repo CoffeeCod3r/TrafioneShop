@@ -4,8 +4,9 @@ import { describeError, logEvent } from "@/lib/log";
 import { handlePaymentEvent } from "@/lib/paid/handle-payment";
 import { getPayments } from "@/lib/services/payments";
 
-// The web search can take a while; it runs after the response via `after`.
-export const maxDuration = 120;
+// Vercel Hobby (Fluid compute): 300 s is both default and maximum. The web search runs
+// in the background via `after` (waitUntil) and is capped well below this.
+export const maxDuration = 300;
 
 /** POST /api/stripe/webhook – verified payment events (Stripe signature; demo: see payments-demo). */
 export async function POST(request: Request) {

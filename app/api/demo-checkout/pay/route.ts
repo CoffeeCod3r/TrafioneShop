@@ -6,7 +6,9 @@ import { isMockMode } from "@/lib/mode";
 import { handlePaymentEvent } from "@/lib/paid/handle-payment";
 import type { PaymentEvent } from "@/lib/services/payments";
 
-export const maxDuration = 120;
+// Vercel Hobby (Fluid compute): 300 s is both default and maximum. The web search runs
+// in the background via `after` (waitUntil) and is capped well below this.
+export const maxDuration = 300;
 
 const bodySchema = z.object({
   session: z.string().startsWith("demo_cs_").max(100),

@@ -3,7 +3,18 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { BadgeCheck, Check, Copy, ExternalLink, Gift, Globe, Loader2, PenLine, RotateCcw } from "lucide-react";
+import {
+  BadgeCheck,
+  Check,
+  Copy,
+  ExternalLink,
+  Gift,
+  Globe,
+  Loader2,
+  PenLine,
+  RotateCcw,
+  SearchCheck,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { PaidStatus, PriceVariant } from "@/lib/db";
@@ -18,66 +29,68 @@ type PaidSearchSectionProps = {
 };
 
 const pln = new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" });
-const time = new Intl.DateTimeFormat("pl-PL", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" });
+const checkedFormat = new Intl.DateTimeFormat("pl-PL", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Europe/Warsaw",
+});
+
+const POLL_MS = 3000;
+const IN_PROGRESS: PaidStatus[] = ["pending", "searching"];
+
+export const CONSENT_TEXT =
+  "Zgadzam się na wykonanie usługi i dostarczenie treści cyfrowej przed upływem 14 dni i przyjmuję do wiadomości utratę prawa odstąpienia od umowy";
 
 export function PaidSearchSection({ resultId, status, priceVariant, webPicks, dedications }: PaidSearchSectionProps) {
-  const router = useRouter();
+  if (IN_PROGRESS.includes(status)) return <SearchProgress resultId={resultId} status={status} />;
 
-  // While the search runs, refresh the server component every 3 s.
-  useEffect(() => {
-    if (status !== "searching") return;
-    const timer = setInterval(() => router.refresh(), 3000);
-    return () => clearInterval(timer);
-  }, [status, router]);
-
-  if (status === "searching") {
+  if (status === "refunded") {
     return (
       <Section>
-        <div className="flex flex-col items-center gap-3 py-6 text-center" role="status">
-          <Loader2 className="size-8 animate-spin" aria-hidden />
-          <p className="font-semibold">Szukamy w całym internecie…</p>
-          <p className="text-sm text-muted-foreground">Sprawdzamy ceny i dostępność w każdym sklepie. To potrwa chwilę.</p>
+        <div className="flex items-start gap-3 rounded-xl bg-secondary p-4 text-sm">
+          <RotateCcw className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <p>
+            Przepraszamy! Tym razem nie udało się znaleźć co najmniej 5 sprawdzonych prezentów w innych sklepach, więc
+            automatycznie zwróciliśmy pieniądze. Zwrot pojawi się na koncie w ciągu kilku dni roboczych. Twoje darmowe
+            propozycje powyżej zostają.
+          </p>
         </div>
       </Section>
     );
   }
 
-  if (status === "refunded") {
-    return (
-      <Section>
-        <p className="flex items-start gap-2 rounded-xl bg-secondary p-4 text-sm">
-          <RotateCcw className="mt-0.5 size-4 shrink-0" aria-hidden />
-          Nie znaleźliśmy co najmniej 5 sprawdzonych produktów, więc zwróciliśmy pieniądze. Zwrot pojawi się na koncie
-          w ciągu kilku dni.
-        </p>
-      </Section>
-    );
-  }
-
-  if (status === "ready" && webPicks) {
+  if (status === "ready" && webPicks && webPicks.length > 0) {
     return (
       <Section>
         <ol className="flex flex-col gap-4">
-          {webPicks.map((pick) => (
+          {webPicks.map((pick, index) => (
             <li key={pick.url} className="overflow-hidden rounded-xl border bg-card">
               <div className="flex gap-4 p-4">
-                <div className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-muted">
-                  {pick.imageUrl && (
+                {pick.imageUrl && (
+                  <div className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-muted">
                     <Image src={pick.imageUrl} alt={pick.title} fill sizes="80px" unoptimized className="object-cover" />
-                  )}
-                </div>
+                  </div>
+                )}
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <h3 className="line-clamp-2 font-semibold leading-snug">{pick.title}</h3>
                   <p className="text-lg font-bold">{pln.format(pick.pricePln)}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {pick.shopName ?? pick.shopDomain} · cena sprawdzona {time.format(new Date(pick.checkedAt))}
+                  <p className="text-sm text-muted-foreground">{pick.shopName ?? pick.shopDomain}</p>
+                  <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <BadgeCheck className="size-3.5" aria-hidden />
+                    cena sprawdzona {checkedFormat.format(new Date(pick.checkedAt))}
                   </p>
                 </div>
               </div>
-              <p className="px-4 pb-3 text-sm">{pick.reason}</p>
+              <p className="px-4 pb-3 text-sm">
+                <span className="font-medium">Dlaczego to: </span>
+                {pick.reason}
+              </p>
               <div className="px-4 pb-4">
-                <Button asChild size="lg" variant="outline" className="w-full">
-                  <a href={pick.url} target="_blank" rel="noopener noreferrer">
+                <Button asChild size="xl" className="w-full">
+                  <a href={`/go/w/${resultId}/${index}`} target="_blank" rel="sponsored nofollow noopener">
                     Zobacz w sklepie
                     <ExternalLink aria-hidden />
                   </a>
@@ -103,6 +116,64 @@ function Section({ children }: { children: React.ReactNode }) {
       </h2>
       {children}
     </section>
+  );
+}
+
+/** Polls the status every 3 s and re-renders the page when the search finishes. */
+function SearchProgress({ resultId, status }: { resultId: string; status: PaidStatus }) {
+  const router = useRouter();
+  const [seconds, setSeconds] = useState(0);
+
+  useEffect(() => {
+    let stopped = false;
+    const timer = setInterval(async () => {
+      setSeconds((current) => current + POLL_MS / 1000);
+      try {
+        const response = await fetch(`/api/results/${resultId}/status`, { cache: "no-store" });
+        const data = (await response.json()) as { paidStatus?: PaidStatus };
+        if (!stopped && data.paidStatus && data.paidStatus !== status) router.refresh();
+      } catch {
+        // Network hiccup: try again on the next tick.
+      }
+    }, POLL_MS);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
+  }, [resultId, status, router]);
+
+  const steps = [
+    { label: "Szukam w sklepach…", done: status === "searching" && seconds >= 20 },
+    { label: "Sprawdzam ceny i dostępność…", done: false },
+  ];
+  const current = status === "pending" || seconds < 20 ? 0 : 1;
+
+  return (
+    <Section>
+      <div className="flex flex-col gap-4 rounded-xl border p-5" role="status" aria-live="polite">
+        <div className="flex items-center gap-3">
+          <Loader2 className="size-6 animate-spin" aria-hidden />
+          <p className="font-semibold">{steps[current].label}</p>
+        </div>
+        <ol className="flex flex-col gap-2 text-sm">
+          {steps.map((step, index) => (
+            <li key={step.label} className="flex items-center gap-2">
+              {index < current || step.done ? (
+                <Check className="size-4 text-primary" aria-hidden />
+              ) : index === current ? (
+                <SearchCheck className="size-4" aria-hidden />
+              ) : (
+                <span className="size-4 rounded-full border" aria-hidden />
+              )}
+              <span className={index > current ? "text-muted-foreground" : undefined}>{step.label}</span>
+            </li>
+          ))}
+        </ol>
+        <p className="text-xs text-muted-foreground">
+          To zwykle trwa 1–3 minuty. Możesz zostawić tę stronę otwartą, wyniki pojawią się same.
+        </p>
+      </div>
+    </Section>
   );
 }
 
@@ -162,16 +233,13 @@ function BuyBox({ resultId, priceVariant }: { resultId: string; priceVariant: Pr
             onChange={(event) => setConsent(event.target.checked)}
             className="mt-0.5 size-5 shrink-0 accent-primary"
           />
-          <span>
-            Żądam rozpoczęcia usługi przed upływem terminu na odstąpienie od umowy i przyjmuję do wiadomości, że po jej
-            wykonaniu utracę prawo odstąpienia.
-          </span>
+          <span>{CONSENT_TEXT}.</span>
         </label>
         <Button type="button" size="xl" onClick={buy} disabled={!consent || busy || !price}>
           {busy ? <Loader2 className="animate-spin" aria-hidden /> : <Globe aria-hidden />}
           {price ? `Szukaj za ${price}` : "Niedostępne"}
         </Button>
-        <p className="text-center text-xs text-muted-foreground">Płatność BLIK lub kartą przez Stripe.</p>
+        <p className="text-center text-xs text-muted-foreground">Płatność jednorazowa: BLIK lub karta (Stripe).</p>
         {error && (
           <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive" role="alert">
             {error}
@@ -199,16 +267,11 @@ function DedicationList({ dedications }: { dedications: Dedications }) {
     <div className="flex flex-col gap-3">
       <h3 className="font-semibold">Dedykacje na bilecik</h3>
       {dedications.map((text, index) => (
-        <div key={text} className="flex items-start gap-3 rounded-xl bg-secondary p-4">
-          <p className="flex-1 text-sm italic">„{text}”</p>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => copy(text, index)}
-            aria-label="Kopiuj dedykację"
-          >
+        <div key={text} className="flex flex-col gap-3 rounded-xl bg-secondary p-4">
+          <p className="text-sm italic">„{text}”</p>
+          <Button type="button" variant="outline" size="sm" className="self-end" onClick={() => copy(text, index)}>
             {copied === index ? <Check aria-hidden /> : <Copy aria-hidden />}
+            {copied === index ? "Skopiowano" : "Kopiuj"}
           </Button>
         </div>
       ))}

@@ -69,18 +69,16 @@ export function createDemoAi(): AiService {
 
     async webSearch() {
       await demoDelay();
-      const checkedAt = new Date().toISOString();
+      const retrievedAt = new Date().toISOString();
       return {
         picks: demoWebPicks.map((pick) => ({
-          title: pick.title,
+          name: pick.title,
+          price_pln: pick.price_pln,
+          shop: pick.shop_name,
           url: pick.url,
-          shopDomain: pick.shop_domain,
-          shopName: pick.shop_name,
-          pricePln: pick.price_pln,
-          imageUrl: pick.image_url,
           reason: pick.reason,
-          checkedAt,
         })),
+        fetchedPages: demoWebPicks.map((pick) => ({ url: pick.url, retrievedAt })),
         usage: [fakeUsage("web_search", { webSearches: 3, webFetches: 6, inputTokens: randomInt(8000, 15000) })],
       };
     },
