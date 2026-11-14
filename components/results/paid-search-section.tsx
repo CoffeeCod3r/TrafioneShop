@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Check, Copy, ExternalLink, Globe, Loader2, RotateCcw } from "lucide-react";
+import { BadgeCheck, Check, Copy, ExternalLink, Gift, Globe, Loader2, PenLine, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { PaidStatus, PriceVariant } from "@/lib/db";
@@ -106,6 +106,13 @@ function Section({ children }: { children: React.ReactNode }) {
   );
 }
 
+const BENEFITS = [
+  { icon: Gift, text: "5–10 prezentów z innych zaufanych polskich sklepów" },
+  { icon: BadgeCheck, text: "Sprawdzona cena i dostępność każdego produktu" },
+  { icon: PenLine, text: "3 dedykacje na bilecik do wyboru" },
+  { icon: RotateCcw, text: "Zwrot pieniędzy, jeśli znajdziemy mniej niż 5 prezentów" },
+];
+
 function BuyBox({ resultId, priceVariant }: { resultId: string; priceVariant: PriceVariant | null }) {
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -133,14 +140,21 @@ function BuyBox({ resultId, priceVariant }: { resultId: string; priceVariant: Pr
   return (
     <Section>
       <div className="flex flex-col gap-4 rounded-xl border-2 border-primary/30 p-4">
-        <div>
+        <div className="flex items-baseline justify-between gap-3">
           <p className="text-lg font-semibold">Szukaj w całym internecie</p>
-          <p className="text-sm text-muted-foreground">
-            AI przejrzy zaufane polskie sklepy spoza naszego katalogu, sprawdzi cenę i dostępność każdego produktu i
-            pokaże 5–10 propozycji oraz 3 dedykacje na bilecik. Jeśli znajdzie mniej niż 5 sprawdzonych produktów,
-            pieniądze wrócą automatycznie.
-          </p>
+          {price && <p className="shrink-0 text-xl font-bold">{price}</p>}
         </div>
+        <p className="text-sm text-muted-foreground">
+          AI przeszuka zaufane polskie sklepy spoza naszego katalogu, dopasowując prezenty do tego samego profilu.
+        </p>
+        <ul className="flex flex-col gap-2 text-sm">
+          {BENEFITS.map(({ icon: Icon, text }) => (
+            <li key={text} className="flex items-start gap-2">
+              <Icon className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+              {text}
+            </li>
+          ))}
+        </ul>
         <label className="flex min-h-11 cursor-pointer items-start gap-3 text-sm">
           <input
             type="checkbox"

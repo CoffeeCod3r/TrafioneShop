@@ -60,8 +60,12 @@ export async function createResult(input: {
 
 export type ResultProduct = Pick<
   ProductRow,
-  "id" | "name" | "price_pln" | "merchant" | "image_url" | "affiliate_url" | "in_stock"
-> & { reason: string };
+  "id" | "name" | "price_pln" | "merchant" | "image_url" | "affiliate_url" | "in_stock" | "category"
+> & {
+  reason: string;
+  /** Set when this card replaces an out-of-stock pick: the original product's name. */
+  replaces: string | null;
+};
 
 export type ResultView = {
   result: Pick<
@@ -71,7 +75,47 @@ export type ResultView = {
   products: ResultProduct[];
 };
 
-/** Result with its products in pick order. Returns null when not found. */
+function toCard(product: ProductRow, reason: string, replaces: string | null = null): ResultProduct {
+  return {
+    id: product.id,
+    name: product.name,
+    price_pln: product.price_pln,
+    merchant: product.merchant,
+    image_url: product.image_url,
+    affiliate_url: product.affiliate_url,
+    in_stock: product.in_stock,
+    category: product.category,
+    reason,
+    replaces,
+  };
+}
+
+/**
+ * Same-category, in-stock replacement within the result's budget, not already on the list.
+ * Prefers products sharing more tags with the result, then higher commission.
+ */
+async function findReplacement(
+  original: ProductRow,
+  context: { budget: number | null; tags: string[]; avoid: string[]; excludeIds: string[] },
+): Promise<ProductRow | null> {
+  if (!original.category) return null;
+  const candidates = await getRepos().products.findCandidates({
+    minPrice: 0,
+    maxPrice: context.budget ?? Math.max(original.price_pln * 1.5, original.price_pln + 50),
+    category: original.category,
+    noneOfTags: context.avoid,
+    excludeIds: context.excludeIds,
+    limit: 50,
+  });
+  const score = (product: ProductRow) => product.tags.filter((tag) => context.tags.includes(tag)).length;
+  return (
+    candidates.sort(
+      (a, b) => score(b) - score(a) || (b.commission_rate ?? -1) - (a.commission_rate ?? -1),
+    )[0] ?? null
+  );
+}
+
+/** Result with its products in pick order; out-of-stock picks get a replacement when possible. */
 export async function getResultView(id: string): Promise<ResultView | null> {
   const repos = getRepos();
   const result = await repos.results.getById(id);
@@ -80,19 +124,31 @@ export async function getResultView(id: string): Promise<ResultView | null> {
   const reasons = (result.reasons ?? {}) as Record<string, string>;
   const rows = await repos.products.getByIds(result.product_ids);
   const byId = new Map(rows.map((product) => [product.id, product]));
-  const products = result.product_ids
+  const picked = result.product_ids
     .map((productId) => byId.get(productId))
-    .filter((product): product is ProductRow => Boolean(product))
-    .map((product) => ({
-      id: product.id,
-      name: product.name,
-      price_pln: product.price_pln,
-      merchant: product.merchant,
-      image_url: product.image_url,
-      affiliate_url: product.affiliate_url,
-      in_stock: product.in_stock,
-      reason: reasons[product.id] ?? "",
-    }));
+    .filter((product): product is ProductRow => Boolean(product));
+
+  const usedIds = new Set(picked.map((product) => product.id));
+  const products: ResultProduct[] = [];
+  for (const product of picked) {
+    const reason = reasons[product.id] ?? "";
+    if (product.in_stock) {
+      products.push(toCard(product, reason));
+      continue;
+    }
+    const replacement = await findReplacement(product, {
+      budget: result.budget_pln,
+      tags: result.tags,
+      avoid: result.avoid,
+      excludeIds: [...usedIds],
+    });
+    if (replacement) {
+      usedIds.add(replacement.id);
+      products.push(toCard(replacement, reason, product.name));
+    } else {
+      products.push(toCard(product, reason));
+    }
+  }
 
   return {
     result: {

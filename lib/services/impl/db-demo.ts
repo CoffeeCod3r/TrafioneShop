@@ -141,7 +141,7 @@ export function createDemoRepos(): Repos {
             }
           }
         }),
-      findCandidates: ({ minPrice, maxPrice, anyOfTags, noneOfTags, limit }) =>
+      findCandidates: ({ minPrice, maxPrice, anyOfTags, noneOfTags, category, excludeIds, limit }) =>
         read((data) =>
           data.products
             .filter(
@@ -150,7 +150,9 @@ export function createDemoRepos(): Repos {
                 p.price_pln >= minPrice &&
                 p.price_pln <= maxPrice &&
                 (!anyOfTags?.length || p.tags.some((tag) => anyOfTags.includes(tag))) &&
-                !(noneOfTags?.length && p.tags.some((tag) => noneOfTags.includes(tag))),
+                !(noneOfTags?.length && p.tags.some((tag) => noneOfTags.includes(tag))) &&
+                (!category || p.category === category) &&
+                !excludeIds?.includes(p.id),
             )
             .sort(byCommissionDesc)
             .slice(0, limit),

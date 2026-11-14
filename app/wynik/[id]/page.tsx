@@ -1,11 +1,12 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ExternalLink, Info, RotateCcw, Sparkles } from "lucide-react";
+import { Info, RotateCcw, Sparkles } from "lucide-react";
 
 import { PaidSearchSection } from "@/components/results/paid-search-section";
+import { ProductCard } from "@/components/results/product-card";
+import { ShareButton } from "@/components/results/share-button";
 import { Button } from "@/components/ui/button";
 import { CHILD_PHOTO_NOTICE } from "@/lib/analyze/schema";
 import { getResultView } from "@/lib/results";
@@ -18,13 +19,12 @@ export const metadata: Metadata = {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const price = new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" });
-
 type PageProps = {
   params: Promise<{ id: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
+/** Server-rendered result page. Data loads inside Suspense (required with cacheComponents). */
 export default function ResultPage(props: PageProps) {
   return (
     <Suspense fallback={<ResultSkeleton />}>
@@ -39,106 +39,72 @@ async function ResultContent({ params, searchParams }: PageProps) {
 
   const [view, query] = await Promise.all([getResultView(id), searchParams]);
   if (!view) notFound();
+  const { result, products } = view;
   const photoSkipped = query.zdjecie === "pominiete";
   const justPaid = query.platnosc === "ok";
 
   return (
-    <div className="flex flex-col gap-6 py-6">
+    <div className="flex flex-col gap-8 py-6">
       <header className="flex flex-col gap-3">
         <p className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
           <Sparkles className="size-4" aria-hidden />
-          Profil prezentowy
+          Profil stylu
         </p>
         <h1 className="text-2xl font-bold leading-tight">Twoje 5 trafionych prezentów</h1>
-        {view.result.style_profile && <p className="text-lg">{view.result.style_profile}</p>}
+        {result.style_profile && <p className="text-lg">{result.style_profile}</p>}
+        {photoSkipped && (
+          <p className="flex items-start gap-2 rounded-xl bg-secondary p-4 text-sm">
+            <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
+            {CHILD_PHOTO_NOTICE}.
+          </p>
+        )}
       </header>
 
-      {photoSkipped && (
-        <p className="flex items-start gap-2 rounded-xl bg-secondary p-4 text-sm">
-          <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
-          {CHILD_PHOTO_NOTICE}.
-        </p>
-      )}
-
-      <section aria-labelledby="partner-picks" className="flex flex-col gap-4">
+      <section aria-labelledby="partner-picks" className="flex flex-col gap-3">
         <h2 id="partner-picks" className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
           Z naszych sklepów partnerskich
         </h2>
+        <p className="text-xs text-muted-foreground">
+          Linki partnerskie: przy zakupie dostajemy prowizję, cena się dla Ciebie nie zmienia.
+        </p>
 
-        {view.products.length === 0 ? (
+        {products.length === 0 ? (
           <p className="rounded-xl border p-4">
             Nie znaleźliśmy pasujących produktów w tym budżecie. Spróbuj z innym budżetem lub zainteresowaniami.
           </p>
         ) : (
           <ol className="flex flex-col gap-4">
-            {view.products.map((product, index) => (
-              <li key={product.id} className="overflow-hidden rounded-xl border bg-card">
-                <div className="flex gap-4 p-4">
-                  <div className="relative size-24 shrink-0 overflow-hidden rounded-lg bg-muted">
-                    {product.image_url && (
-                      <Image
-                        src={product.image_url}
-                        alt={product.name}
-                        fill
-                        sizes="96px"
-                        unoptimized
-                        className="object-cover"
-                      />
-                    )}
-                    <span className="absolute left-1 top-1 rounded-full bg-background/90 px-2 text-xs font-bold">
-                      {index + 1}
-                    </span>
-                  </div>
-                  <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <h3 className="line-clamp-2 font-semibold leading-snug">{product.name}</h3>
-                    <p className="text-lg font-bold">{price.format(product.price_pln)}</p>
-                    <p className="text-sm text-muted-foreground">{product.merchant}</p>
-                  </div>
-                </div>
-                {product.reason && <p className="px-4 pb-3 text-sm">{product.reason}</p>}
-                <div className="px-4 pb-4">
-                  {product.in_stock ? (
-                    <Button asChild size="xl" className="w-full">
-                      <a href={product.affiliate_url} target="_blank" rel="sponsored noopener noreferrer">
-                        Zobacz w sklepie
-                        <ExternalLink aria-hidden />
-                      </a>
-                    </Button>
-                  ) : (
-                    <p className="text-center text-sm text-muted-foreground">Produkt jest chwilowo niedostępny.</p>
-                  )}
-                </div>
-              </li>
+            {products.map((product, index) => (
+              <ProductCard key={product.id} product={product} position={index + 1} resultId={result.id} />
             ))}
           </ol>
         )}
       </section>
 
-      {justPaid && view.result.paid_status !== "ready" && view.result.paid_status !== "refunded" && (
+      {justPaid && result.paid_status !== "ready" && result.paid_status !== "refunded" && (
         <p className="rounded-xl bg-secondary p-4 text-sm" role="status">
           Dziękujemy za płatność! Wyniki z całego internetu pojawią się poniżej za chwilę.
         </p>
       )}
 
       <PaidSearchSection
-        resultId={view.result.id}
-        status={view.result.paid_status}
-        priceVariant={view.result.price_variant}
-        webPicks={view.result.webPicks}
-        dedications={view.result.dedications}
+        resultId={result.id}
+        status={result.paid_status}
+        priceVariant={result.price_variant}
+        webPicks={result.webPicks}
+        dedications={result.dedications}
       />
 
-      <p className="text-xs text-muted-foreground">
-        Linki do sklepów są linkami partnerskimi: jeśli coś kupisz, możemy dostać prowizję. Cena dla Ciebie się nie
-        zmienia.
-      </p>
-
-      <Button asChild variant="outline" size="xl">
-        <Link href="/quiz">
-          <RotateCcw aria-hidden />
-          Szukaj od nowa
-        </Link>
-      </Button>
+      <div className="flex flex-col gap-3">
+        <ShareButton resultId={result.id} refCode={result.ref_code} />
+        {/* TODO(step 11): newsletter / occasion reminder signup (subscribers). */}
+        <Button asChild variant="ghost" size="lg">
+          <Link href="/quiz">
+            <RotateCcw aria-hidden />
+            Szukaj od nowa
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 }

@@ -54,7 +54,7 @@ export function createRealRepos(): Repos {
           if (error) fail("Marking out of stock", error);
         }
       },
-      async findCandidates({ minPrice, maxPrice, anyOfTags, noneOfTags, limit }) {
+      async findCandidates({ minPrice, maxPrice, anyOfTags, noneOfTags, category, excludeIds, limit }) {
         let query = db()
           .from("products")
           .select("*")
@@ -63,6 +63,8 @@ export function createRealRepos(): Repos {
           .lte("price_pln", maxPrice);
         if (anyOfTags && anyOfTags.length > 0) query = query.overlaps("tags", [...anyOfTags]);
         if (noneOfTags && noneOfTags.length > 0) query = query.not("tags", "ov", pgArray(noneOfTags));
+        if (category) query = query.eq("category", category);
+        if (excludeIds && excludeIds.length > 0) query = query.not("id", "in", `(${excludeIds.join(",")})`);
         const { data, error } = await query.order("commission_rate", { ascending: false, nullsFirst: false }).limit(limit);
         if (error) fail("Candidate query", error);
         return data;

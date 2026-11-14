@@ -27,6 +27,10 @@ export type ProductCandidateQuery = {
   anyOfTags?: readonly string[];
   /** Products with any of these tags are excluded. */
   noneOfTags?: readonly string[];
+  /** Exact category match (used for out-of-stock replacements). */
+  category?: string;
+  /** Product IDs to leave out. */
+  excludeIds?: readonly string[];
   limit: number;
 };
 
