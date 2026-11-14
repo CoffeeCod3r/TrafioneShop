@@ -1,0 +1,10 @@
+aw_product_id,merchant_product_id,merchant_name,product_name,description,search_price,currency,merchant_category,aw_image_url,merchant_image_url,aw_deep_link,in_stock
+1001,SKU-1,Sklep Testowy,"Ekspres do kawy kolbowy","Ekspres <b>15 bar</b>, idealny na prezent",599.00,PLN,"Dom i ogród > Kuchnia > Ekspresy do kawy",https://img.example.com/1001.jpg,,https://www.awin1.com/pclick.php?p=1001&a=1&m=1,1
+1002,SKU-2,Sklep Testowy,"Gra planszowa ""Wyprawa""",Gra dla rodziny,"149,99",PLN,Gry > Gry planszowe,,https://img.example.com/1002.jpg,https://www.awin1.com/pclick.php?p=1002&a=1&m=1,1
+1003,SKU-3,Sklep Testowy,Telewizor OLED 65 cali,Za drogi,4999.00,PLN,Elektronika > Telewizory,https://img.example.com/1003.jpg,,https://www.awin1.com/pclick.php?p=1003&a=1&m=1,1
+1004,SKU-4,Sklep Testowy,Kubek bez zdjęcia,,39.00,PLN,Dom > Kubki,,,https://www.awin1.com/pclick.php?p=1004&a=1&m=1,1
+1005,SKU-5,Sklep Testowy,Plecak bez linku,,199.00,PLN,Turystyka > Plecaki,https://img.example.com/1005.jpg,,,1
+1006,SKU-6,Sklep Testowy,Kurtka w euro,,89.00,EUR,Moda > Kurtki,https://img.example.com/1006.jpg,,https://www.awin1.com/pclick.php?p=1006&a=1&m=1,1
+1007,SKU-7,Sklep Testowy,Świeca zapachowa,,,PLN,Dom > Świece,https://img.example.com/1007.jpg,,https://www.awin1.com/pclick.php?p=1007&a=1&m=1,1
+1008,SKU-8,Sklep Testowy,Mata do jogi (wyprzedana),,99.00,PLN,Sport > Joga,https://img.example.com/1008.jpg,,https://www.awin1.com/pclick.php?p=1008&a=1&m=1,0
+1002,SKU-2,Sklep Testowy,"Gra planszowa ""Wyprawa"" (duplikat)",,"139,99",PLN,Gry > Gry planszowe,,https://img.example.com/1002.jpg,https://www.awin1.com/pclick.php?p=1002&a=1&m=1,1

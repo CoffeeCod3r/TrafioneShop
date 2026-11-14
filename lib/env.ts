@@ -1,20 +1,21 @@
 import { z } from "zod";
 
+import { parseFeedSources } from "@/lib/feeds/config";
+
 /**
  * Server-side environment validation.
  * Import only from server code (route handlers, server actions, server components).
  * Validation is lazy so `next build` and lint do not fail when env vars are absent.
  */
 
-const commaSeparatedUrls = z
-  .string()
-  .transform((value) =>
-    value
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean),
-  )
-  .pipe(z.array(z.url()).min(1, "FEED_URLS needs at least one URL"));
+const feedSources = z.string().transform((value, ctx) => {
+  try {
+    return parseFeedSources(value);
+  } catch (error) {
+    ctx.addIssue({ code: "custom", message: error instanceof Error ? error.message : "Invalid FEED_URLS" });
+    return z.NEVER;
+  }
+});
 
 const serverEnvSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -47,7 +48,7 @@ const serverEnvSchema = z.object({
 
   CRON_SECRET: z.string().min(32),
   ADMIN_PASSWORD: z.string().min(12),
-  FEED_URLS: commaSeparatedUrls,
+  FEED_URLS: feedSources,
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
