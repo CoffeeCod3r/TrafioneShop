@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Gift, Sparkles } from "lucide-react";
+import { GiftStack } from "@/components/illustrations/gift-stack";
 
 const MESSAGES = [
   "AI analizuje styl…",
@@ -21,18 +21,12 @@ export function AnalyzingOverlay() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-8 bg-background/95 px-6 text-center backdrop-blur"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-8 bg-paper/95 px-6 text-center backdrop-blur"
       role="status"
       aria-live="polite"
     >
-      <div className="relative">
-        <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" aria-hidden />
-        <div className="relative flex size-24 items-center justify-center rounded-full bg-primary text-primary-foreground">
-          <Gift className="size-12 animate-bounce" aria-hidden />
-        </div>
-        <Sparkles className="absolute -right-3 -top-3 size-8 animate-pulse text-primary" aria-hidden />
-      </div>
-      <p key={index} className="animate-in fade-in slide-in-from-bottom-2 text-xl font-semibold duration-500">
+      <GiftStack className="w-64 animate-[gift-bob_1.6s_ease-in-out_infinite]" />
+      <p key={index} className="animate-in fade-in slide-in-from-bottom-2 font-display text-2xl font-bold duration-500">
         {MESSAGES[index]}
       </p>
       <p className="text-sm text-muted-foreground">To zwykle trwa kilka sekund.</p>

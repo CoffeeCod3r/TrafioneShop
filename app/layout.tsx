@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist } from "next/font/google";
+import { Bricolage_Grotesque, Geist } from "next/font/google";
 
 import { Analytics } from "@/components/consent/analytics";
 import { CookieBanner } from "@/components/consent/cookie-banner";
@@ -10,6 +10,12 @@ import "./globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
+  subsets: ["latin", "latin-ext"],
+});
+
+/** Display face for headlines: chunky, a bit playful, like hand-written gift tags. */
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-bricolage",
   subsets: ["latin", "latin-ext"],
 });
 
@@ -30,7 +36,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pl" className={`${geistSans.variable} h-full antialiased`}>
+    <html lang="pl" className={`${geistSans.variable} ${bricolage.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">
         <a
           href="#tresc"

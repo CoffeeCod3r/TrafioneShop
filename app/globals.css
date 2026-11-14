@@ -7,6 +7,13 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
+  --font-display: var(--font-bricolage);
+  --color-ink: var(--ink);
+  --color-ribbon: var(--ribbon);
+  --color-paper: var(--paper);
+  --color-mint: var(--mint);
+  --color-sun: var(--sun);
+  --color-lilac: var(--lilac);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -30,27 +37,35 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  /* 0.5 (not 0.556) keeps ≥ 4.5:1 contrast also on muted/secondary backgrounds */
-  --muted-foreground: oklch(0.5 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  /* Prezentownik palette: wrapping paper and gift tags */
+  --ink: #1c1b3a; /* text, primary buttons */
+  --ribbon: #e8336d; /* ribbons, selection, highlights (decorative / large text only) */
+  --paper: #fff6f9; /* page background, blush wrapping paper */
+  --mint: #bdefd9; /* gift tags */
+  --sun: #ffd24d; /* sparkles */
+  --lilac: #ddd6ff; /* secondary tags */
+
+  --radius: 0.75rem;
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: #ffffff;
+  --card-foreground: var(--ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
+  --primary-foreground: #ffffff;
+  --secondary: #fbe7ee;
+  --secondary-foreground: var(--ink);
+  --muted: #f6eaf0;
+  /* ≥ 4.5:1 on paper, white and muted backgrounds */
+  --muted-foreground: #5c5a73;
+  --accent: var(--mint);
+  --accent-foreground: var(--ink);
   /* darker red: ≥ 4.5:1 for error text on the light destructive/10 background */
   --destructive: oklch(0.505 0.213 27.518);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: #efd9e2;
+  --input: #efd9e2;
+  --ring: var(--ribbon);
 }
 
 .dark {
@@ -80,6 +95,21 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+}
+
+@keyframes gift-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1deg);
   }
 }
 

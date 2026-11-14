@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Info, RotateCcw, Sparkles } from "lucide-react";
 
 import { ResultTracker } from "@/components/analytics/result-tracker";
+import { GiftStack } from "@/components/illustrations/gift-stack";
 import { PaidSearchSection } from "@/components/results/paid-search-section";
 import { ProductCard } from "@/components/results/product-card";
 import { ShareButton } from "@/components/results/share-button";
@@ -80,12 +81,14 @@ async function ResultContent({ params, searchParams }: PageProps) {
         justPaid={justPaid}
       />
       <header className="flex flex-col gap-3">
-        <p className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-          <Sparkles className="size-4" aria-hidden />
-          Profil stylu
-        </p>
-        <h1 className="text-2xl font-bold leading-tight">Twoje 5 trafionych prezentów</h1>
-        {result.style_profile && <p className="text-lg">{result.style_profile}</p>}
+        <GiftStack className="mx-auto w-48" />
+        <h1 className="text-3xl font-extrabold leading-tight">Twoje 5 trafionych prezentów</h1>
+        {result.style_profile && (
+          <p className="flex gap-3 rounded-2xl border-[3px] border-ink bg-mint p-4 text-lg">
+            <Sparkles className="mt-1 size-5 shrink-0 text-ink" aria-label="Profil stylu" />
+            <span>{result.style_profile}</span>
+          </p>
+        )}
         {photoSkipped && (
           <p className="flex items-start gap-2 rounded-xl bg-secondary p-4 text-sm">
             <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
@@ -95,7 +98,7 @@ async function ResultContent({ params, searchParams }: PageProps) {
       </header>
 
       <section aria-labelledby="partner-picks" className="flex flex-col gap-3">
-        <h2 id="partner-picks" className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+        <h2 id="partner-picks" className="text-2xl font-bold">
           Z naszych sklepów partnerskich
         </h2>
         <p className="text-xs text-muted-foreground">

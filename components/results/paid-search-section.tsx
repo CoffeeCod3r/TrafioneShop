@@ -116,8 +116,8 @@ export function PaidSearchSection({ resultId, status, priceVariant, webPicks, de
 function Section({ children }: { children: React.ReactNode }) {
   return (
     <section aria-labelledby="web-picks" className="flex flex-col gap-4">
-      <h2 id="web-picks" className="flex items-center gap-2 text-sm font-medium uppercase tracking-wide text-muted-foreground">
-        <Globe className="size-4" aria-hidden />
+      <h2 id="web-picks" className="flex items-center gap-2 text-2xl font-bold">
+        <Globe className="size-6 text-ribbon" aria-hidden />
         Z całego internetu
       </h2>
       {children}
@@ -220,7 +220,7 @@ function BuyBox({ resultId, priceVariant }: { resultId: string; priceVariant: Pr
 
   return (
     <Section>
-      <div className="flex flex-col gap-4 rounded-xl border-2 border-primary/30 p-4">
+      <div className="flex flex-col gap-4 rounded-2xl border-[3px] border-ink bg-lilac/60 p-5 shadow-[5px_5px_0_var(--ink)]">
         <div className="flex items-baseline justify-between gap-3">
           <p className="text-lg font-semibold">Szukaj w całym internecie</p>
           {price && <p className="shrink-0 text-xl font-bold">{price}</p>}
@@ -231,7 +231,7 @@ function BuyBox({ resultId, priceVariant }: { resultId: string; priceVariant: Pr
         <ul className="flex flex-col gap-2 text-sm">
           {BENEFITS.map(({ icon: Icon, text }) => (
             <li key={text} className="flex items-start gap-2">
-              <Icon className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+              <Icon className="mt-0.5 size-4 shrink-0 text-ink" aria-hidden />
               {text}
             </li>
           ))}

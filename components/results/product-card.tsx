@@ -20,7 +20,7 @@ export function ProductCard({ product, position, resultId, shared = false }: Pro
   const href = `/go/${product.id}?r=${resultId}${shared ? "&src=share" : ""}`;
 
   return (
-    <li className="overflow-hidden rounded-xl border bg-card">
+    <li className="overflow-hidden rounded-2xl border-2 border-border bg-card">
       {product.replaces && (
         <p className="flex items-center gap-2 bg-secondary px-4 py-2 text-xs">
           <Repeat className="size-3.5 shrink-0" aria-hidden />
@@ -32,7 +32,9 @@ export function ProductCard({ product, position, resultId, shared = false }: Pro
           {product.image_url && (
             <Image src={product.image_url} alt={product.name} fill sizes="96px" unoptimized className="object-cover" />
           )}
-          <span className="absolute left-1 top-1 rounded-full bg-background/90 px-2 text-xs font-bold">{position}</span>
+          <span className="absolute left-1 top-1 flex size-6 items-center justify-center rounded-full bg-ink font-display text-xs font-bold text-white">
+            {position}
+          </span>
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <h3 className="line-clamp-2 font-semibold leading-snug">{product.name}</h3>

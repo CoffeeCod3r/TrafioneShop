@@ -47,8 +47,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             display: "flex",
             flexDirection: "column",
             padding: "96px 80px 80px",
-            background: "linear-gradient(160deg, #FFF7ED 0%, #FDE68A 55%, #FCA5A5 100%)",
-            color: "#1F2937",
+            background: "linear-gradient(165deg, #FFF6F9 0%, #FBE7EE 45%, #DDD6FF 100%)",
+            color: "#1C1B3A",
             fontFamily: "Geist",
           }}
         >
@@ -59,8 +59,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
                 width: 64,
                 height: 64,
                 borderRadius: 18,
-                background: "#1F2937",
-                color: "#FDE68A",
+                background: "#BDEFD9",
+                color: "#1C1B3A",
+                border: "4px solid #1C1B3A",
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: 40,
@@ -82,7 +83,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
                 marginTop: 48,
                 padding: "36px 40px",
                 borderRadius: 32,
-                background: "rgba(255,255,255,0.75)",
+                background: "#BDEFD9",
+                border: "4px solid #1C1B3A",
                 fontSize: 38,
                 lineHeight: 1.35,
               }}
@@ -102,7 +104,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
                   padding: 28,
                   borderRadius: 32,
                   background: "#FFFFFF",
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+                  border: "4px solid #1C1B3A",
+                  boxShadow: "8px 8px 0 #1C1B3A",
                 }}
               >
                 {product.image ? (
@@ -144,7 +147,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
                   display: "flex",
                   padding: "14px 28px",
                   borderRadius: 999,
-                  background: "#1F2937",
+                  background: "#E8336D",
                   color: "#FFFFFF",
                   fontSize: 32,
                   letterSpacing: 4,

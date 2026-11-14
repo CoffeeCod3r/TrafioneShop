@@ -18,7 +18,11 @@ export function StartQuizLink() {
   }, []);
 
   return (
-    <Button asChild size="xl" className="w-full sm:w-auto">
+    <Button
+      asChild
+      size="xl"
+      className="w-full shadow-[4px_4px_0_var(--ribbon)] transition-transform active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_var(--ribbon)] sm:w-auto"
+    >
       <Link href={href}>
         Znajdź prezent
         <ArrowRight aria-hidden />

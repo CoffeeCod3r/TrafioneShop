@@ -183,11 +183,11 @@ export function QuizWizard({ demo = false }: QuizWizardProps) {
           aria-valuenow={step + 1}
           aria-label="Postęp quizu"
         >
-          <div className="h-full rounded-full bg-primary transition-all duration-300" style={{ width: `${progress}%` }} />
+          <div className="h-full rounded-full bg-ribbon transition-all duration-300" style={{ width: `${progress}%` }} />
         </div>
       </div>
 
-      <h1 ref={headingRef} tabIndex={-1} className="mb-6 text-2xl font-bold leading-tight outline-none">
+      <h1 ref={headingRef} tabIndex={-1} className="mb-6 text-3xl font-bold leading-tight outline-none">
         {TITLES[step]}
       </h1>
 
