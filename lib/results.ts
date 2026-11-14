@@ -29,8 +29,9 @@ export async function createResult(input: {
   answers: QuizAnswers;
   profile: StyleProfile;
   picks: GiftPick[];
+  source?: string | null;
 }): Promise<{ id: string; refCode: string }> {
-  const { answers, profile, picks } = input;
+  const { answers, profile, picks, source = null } = input;
   const results = getRepos().results;
 
   for (let attempt = 1; attempt <= 3; attempt++) {
@@ -48,6 +49,7 @@ export async function createResult(input: {
         reasons: Object.fromEntries(picks.map((pick) => [pick.productId, pick.reason])),
         ref_code: refCode,
         price_variant: pickPriceVariant(),
+        source,
       });
       return { id: row.id, refCode: row.ref_code ?? refCode };
     } catch (error) {

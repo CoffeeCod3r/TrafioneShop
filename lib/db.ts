@@ -63,6 +63,14 @@ export type ResultRow = {
   paid_status: PaidStatus;
   web_picks: Json | null;
   dedications: Json | null;
+  /** utm_source or "ref:<ref_code>" (see lib/attribution.ts). */
+  source: string | null;
+};
+
+export type QuizStartRow = {
+  id: string;
+  created_at: string;
+  source: string | null;
 };
 
 export type AllowedShopRow = {
@@ -149,6 +157,7 @@ export type Database = {
         ResultRow,
         "id" | "created_at" | "answers" | "tags" | "avoid" | "product_ids" | "reasons" | "paid_status"
       >;
+      quiz_starts: TableDef<QuizStartRow, "id" | "created_at">;
       allowed_shops: TableDef<AllowedShopRow, "id" | "active" | "has_affiliate">;
       clicks: TableDef<ClickRow, "id" | "created_at">;
       purchases: TableDef<PurchaseRow, "id" | "created_at" | "status">;

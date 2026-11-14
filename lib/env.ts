@@ -28,6 +28,8 @@ const baseSchema = z.object({
   PAID_SEARCH_MAX_SEARCHES: z.coerce.number().int().positive().max(20).default(5),
   PAID_SEARCH_MAX_FETCHES: z.coerce.number().int().positive().max(30).default(15),
   NEXT_PUBLIC_POSTHOG_HOST: z.url().default("https://eu.i.posthog.com"),
+  /** PLN per 1 USD, for AI costs in /admin. */
+  USD_PLN_RATE: z.coerce.number().positive().max(100).default(4),
 });
 
 const serviceSchema = z.object({

@@ -1,7 +1,4 @@
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
+import { StartQuizLink } from "@/components/analytics/start-quiz-link";
 
 export default function HomePage() {
   return (
@@ -12,12 +9,7 @@ export default function HomePage() {
       <p className="text-lg text-muted-foreground">
         Zajmie Ci to około minuty. Zdjęcie jest opcjonalne i nigdzie go nie zapisujemy.
       </p>
-      <Button asChild size="xl" className="w-full sm:w-auto">
-        <Link href="/quiz">
-          Znajdź prezent
-          <ArrowRight aria-hidden />
-        </Link>
-      </Button>
+      <StartQuizLink />
     </section>
   );
 }

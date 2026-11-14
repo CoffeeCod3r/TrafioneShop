@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 
+import { setAnalyticsInstance } from "@/lib/analytics/client";
 import { CONSENT_EVENT, readConsent, type AnalyticsConsent } from "@/lib/consent/storage";
 
 type AnalyticsProps = { posthogKey: string | null; posthogHost: string };
@@ -23,6 +24,7 @@ function stripUrl(value: unknown): unknown {
 async function start(key: string, host: string) {
   if (client) {
     client.opt_in_capturing();
+    setAnalyticsInstance(client);
     return;
   }
   // Loaded only after consent: before that, no PostHog code runs and nothing is stored.
@@ -45,9 +47,11 @@ async function start(key: string, host: string) {
     },
   });
   client = posthog;
+  setAnalyticsInstance(posthog);
 }
 
 function stop() {
+  setAnalyticsInstance(null);
   if (!client) return;
   client.opt_out_capturing();
   client.reset();

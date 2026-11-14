@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { PHOTO_MAX_BASE64_LENGTH } from "../photo/constants.ts";
 import { quizAnswersSchema } from "../quiz/schema.ts";
+import { SOURCE_PATTERN } from "../attribution.ts";
 import type { AllowedTag } from "../tags.ts";
 
 export const analyzePhotoSchema = z.object({
@@ -18,6 +19,8 @@ export const analyzeRequestSchema = z.object({
   turnstileToken: z.string().min(1).max(2048),
   answers: quizAnswersSchema,
   photo: analyzePhotoSchema.nullish(),
+  /** Traffic source (utm_source or ref:<code>), see lib/attribution.ts. */
+  source: z.string().regex(SOURCE_PATTERN).nullish(),
 });
 
 export type AnalyzeRequest = z.infer<typeof analyzeRequestSchema>;

@@ -28,6 +28,8 @@ import {
 } from "@/lib/quiz/schema";
 import type { ProcessedPhoto } from "@/lib/photo/resize";
 import { submitQuiz, SubmitError } from "@/lib/quiz/submit";
+import { track } from "@/lib/analytics/client";
+import { sourceFromParams } from "@/lib/attribution";
 import { ALLOWED_TAGS, type AllowedTag } from "@/lib/tags";
 
 const QUESTION_COUNT = QUIZ_QUESTION_FIELDS.length;
@@ -72,9 +74,25 @@ export function QuizWizard({ demo = false }: QuizWizardProps) {
   const handleTurnstileError = useCallback(() => setTurnstileFailed(true), []);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
+  // Traffic source from the URL (?utm_source= or ?ref=), read once in the browser.
+  const sourceRef = useRef<string | null>(null);
+  useEffect(() => {
+    const source = sourceFromParams(new URLSearchParams(window.location.search));
+    sourceRef.current = source;
+    // Anonymous server-side counter (no cookies) + PostHog event (only with consent).
+    void fetch("/api/quiz/start", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ source }),
+      keepalive: true,
+    }).catch(() => undefined);
+    track("quiz_started", { source });
+  }, []);
+
   useEffect(() => {
     headingRef.current?.focus();
     window.scrollTo({ top: 0 });
+    track(`quiz_step_${step + 1}`, { step: step + 1 });
   }, [step]);
 
   function update<K extends QuizField>(field: K, value: QuizDraft[K]) {
@@ -133,7 +151,8 @@ export function QuizWizard({ demo = false }: QuizWizardProps) {
     setSubmitError(null);
     setSubmitting(true);
     try {
-      const response = await submitQuiz({ answers: result.data, photo, turnstileToken });
+      const response = await submitQuiz({ answers: result.data, photo, turnstileToken, source: sourceRef.current });
+      track("quiz_completed", { has_photo: photo !== null, budget: result.data.budget, source: sourceRef.current });
       router.push(`/wynik/${response.resultId}${response.notice ? "?zdjecie=pominiete" : ""}`);
       // Keep the overlay until the results page replaces this one.
     } catch (caught) {

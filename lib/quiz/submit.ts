@@ -16,6 +16,7 @@ export async function submitQuiz(input: {
   answers: QuizAnswers;
   photo: ProcessedPhoto | null;
   turnstileToken: string;
+  source: string | null;
 }): Promise<AnalyzeResponse> {
   let response: Response;
   try {
@@ -26,6 +27,7 @@ export async function submitQuiz(input: {
         turnstileToken: input.turnstileToken,
         answers: input.answers,
         photo: input.photo ? { mediaType: input.photo.mediaType, base64: input.photo.base64 } : null,
+        source: input.source,
       }),
     });
   } catch {

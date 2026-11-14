@@ -73,7 +73,7 @@ export async function POST(request: Request) {
     }
 
     // 4. Style profile (the photo is used only here and then dropped)
-    const { answers, photo } = parsed.data;
+    const { answers, photo, source } = parsed.data;
     const ai = getAi();
     const profileStep = await ai.analyzeProfile(answers, photo ?? null);
     const { profile } = profileStep.response;
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
     const picksStep = await ai.pickProducts(answers, profile, candidates);
 
     // 6. Save the result (no photo) and the token usage
-    const { id, refCode } = await createResult({ answers, profile, picks: picksStep.result.picks });
+    const { id, refCode } = await createResult({ answers, profile, picks: picksStep.result.picks, source });
     await recordAiUsage([...profileStep.usage, ...picksStep.usage], id);
 
     logEvent("analyze.done", {

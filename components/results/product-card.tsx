@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { ExternalLink, Repeat } from "lucide-react";
 
+import { TrackedLink } from "@/components/analytics/tracked-link";
 import { Button } from "@/components/ui/button";
 import type { ResultProduct } from "@/lib/results";
 
@@ -48,10 +49,16 @@ export function ProductCard({ product, position, resultId, shared = false }: Pro
       <div className="px-4 pb-4">
         {product.in_stock ? (
           <Button asChild size="xl" className="w-full">
-            <a href={href} target="_blank" rel="sponsored nofollow noopener">
+            <TrackedLink
+              href={href}
+              target="_blank"
+              rel="sponsored nofollow noopener"
+              source={shared ? "share" : "free"}
+              position={position}
+            >
               Zobacz w sklepie
               <ExternalLink aria-hidden />
-            </a>
+            </TrackedLink>
           </Button>
         ) : (
           <p className="rounded-lg bg-muted p-3 text-center text-sm text-muted-foreground">

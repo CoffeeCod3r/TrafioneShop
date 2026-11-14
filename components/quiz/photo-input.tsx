@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Camera, Loader2, ShieldCheck, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { track } from "@/lib/analytics/client";
 import { PHOTO_ACCEPTED_TYPES } from "@/lib/photo/constants";
 import { PhotoError, processPhoto, type ProcessedPhoto } from "@/lib/photo/resize";
 
@@ -50,6 +51,8 @@ export function PhotoInput({ value, onChange }: PhotoInputProps) {
     setBusy(true);
     try {
       onChange(await processPhoto(file));
+      // Only the fact that a photo was added; never the image or its metadata.
+      track("photo_added");
     } catch (caught) {
       onChange(null);
       setError(caught instanceof PhotoError ? caught.message : "Nie udało się przetworzyć zdjęcia.");

@@ -10,6 +10,7 @@ import type {
   ClickRow,
   ProductRow,
   PurchaseRow,
+  QuizStartRow,
   RateLimitRow,
   ResultRow,
   SubscriberRow,
@@ -31,6 +32,7 @@ type DemoData = {
   allowed_shops: AllowedShopRow[];
   ai_usage: AiUsageRow[];
   rate_limits: RateLimitRow[];
+  quiz_starts: QuizStartRow[];
 };
 
 export function demoDbPath(): string {
@@ -49,6 +51,7 @@ function emptyData(): DemoData {
     allowed_shops: [],
     ai_usage: [],
     rate_limits: [],
+    quiz_starts: [],
   };
 }
 
@@ -184,6 +187,7 @@ export function createDemoRepos(): Repos {
             paid_status: "none",
             web_picks: null,
             dedications: null,
+            source: null,
             ...row,
           };
           data.results.push(result);
@@ -196,6 +200,18 @@ export function createDemoRepos(): Repos {
           if (!result) throw new Error("Updating result failed (not found)");
           Object.assign(result, patch);
         }),
+      listForStats: (since) =>
+        read((data) =>
+          data.results
+            .filter((result) => result.created_at >= since)
+            .map(({ id, created_at, price_variant, paid_status, source }) => ({
+              id,
+              created_at,
+              price_variant,
+              paid_status,
+              source: source ?? null,
+            })),
+        ),
     },
 
     clicks: {
@@ -205,6 +221,7 @@ export function createDemoRepos(): Repos {
           data.clicks.push(click);
           return click;
         }),
+      listSince: (since) => read((data) => data.clicks.filter((click) => click.created_at >= since)),
     },
 
     purchases: {
@@ -231,6 +248,7 @@ export function createDemoRepos(): Repos {
           if (!purchase) throw new Error("Updating purchase failed (not found)");
           Object.assign(purchase, patch);
         }),
+      listSince: (since) => read((data) => data.purchases.filter((purchase) => purchase.created_at >= since)),
     },
 
     subscribers: {
@@ -295,6 +313,14 @@ export function createDemoRepos(): Repos {
         }),
       listSince: (since) =>
         read((data) => data.ai_usage.filter((row) => row.created_at >= since).sort((a, b) => b.created_at.localeCompare(a.created_at))),
+    },
+
+    quizStarts: {
+      create: (row) =>
+        write((data) => {
+          data.quiz_starts.push({ id: randomUUID(), created_at: now(), source: null, ...row });
+        }),
+      listSince: (since) => read((data) => data.quiz_starts.filter((start) => start.created_at >= since)),
     },
 
     rateLimits: {

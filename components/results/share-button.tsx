@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Check, Download, Link2, Loader2, Share2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { track } from "@/lib/analytics/client";
 import { cardUrl } from "@/lib/og/card";
 
 type ShareButtonProps = { resultId: string; refCode: string | null };
@@ -52,6 +53,7 @@ export function ShareButton({ resultId, refCode }: ShareButtonProps) {
   }
 
   async function share() {
+    track("share_clicked", { method: "card" });
     setStatus("working");
     let file: File;
     try {
@@ -84,6 +86,7 @@ export function ShareButton({ resultId, refCode }: ShareButtonProps) {
   }
 
   async function copyLink() {
+    track("share_clicked", { method: "link" });
     try {
       await navigator.clipboard.writeText(shareUrl());
       setStatus("copied");

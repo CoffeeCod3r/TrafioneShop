@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { track } from "@/lib/analytics/client";
 import type { PaidStatus, PriceVariant } from "@/lib/db";
 import type { Dedications, WebPick } from "@/lib/paid/schema";
 
@@ -90,7 +91,12 @@ export function PaidSearchSection({ resultId, status, priceVariant, webPicks, de
               </p>
               <div className="px-4 pb-4">
                 <Button asChild size="xl" className="w-full">
-                  <a href={`/go/w/${resultId}/${index}`} target="_blank" rel="sponsored nofollow noopener">
+                  <a
+                    href={`/go/w/${resultId}/${index}`}
+                    target="_blank"
+                    rel="sponsored nofollow noopener"
+                    onClick={() => track("product_clicked", { source: "web", position: index + 1 })}
+                  >
                     Zobacz w sklepie
                     <ExternalLink aria-hidden />
                   </a>
@@ -189,6 +195,10 @@ function BuyBox({ resultId, priceVariant }: { resultId: string; priceVariant: Pr
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const price = priceVariant ? pln.format(priceVariant / 100) : null;
+
+  useEffect(() => {
+    track("web_search_viewed", { price_variant: priceVariant });
+  }, [priceVariant]);
 
   async function buy() {
     setBusy(true);

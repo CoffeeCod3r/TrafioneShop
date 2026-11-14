@@ -15,6 +15,17 @@ function pgArray(values: readonly string[]): string {
   return `{${values.map((value) => `"${value.replace(/["\\]/g, "")}"`).join(",")}}`;
 }
 
+/** Fetches every row of a paginated query (PostgREST returns max 1000 rows per request). */
+async function fetchAll<T>(page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { code?: string } | null }>, action: string): Promise<T[]> {
+  const rows: T[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await page(from, from + PAGE_SIZE - 1);
+    if (error) fail(action, error);
+    rows.push(...(data ?? []));
+    if (!data || data.length < PAGE_SIZE) return rows;
+  }
+}
+
 /** Supabase implementation of the repositories (tables from supabase/migrations). */
 export function createRealRepos(): Repos {
   const db = () => getSupabase();
@@ -101,6 +112,18 @@ export function createRealRepos(): Repos {
         const { error } = await db().from("results").update(patch).eq("id", id);
         if (error) fail("Updating result", error);
       },
+      listForStats(since) {
+        return fetchAll(
+          (from, to) =>
+            db()
+              .from("results")
+              .select("id, created_at, price_variant, paid_status, source")
+              .gte("created_at", since)
+              .order("created_at")
+              .range(from, to),
+          "Loading results stats",
+        );
+      },
     },
 
     clicks: {
@@ -108,6 +131,12 @@ export function createRealRepos(): Repos {
         const { data, error } = await db().from("clicks").insert(row).select("*").single();
         if (error) fail("Saving click", error);
         return data;
+      },
+      listSince(since) {
+        return fetchAll(
+          (from, to) => db().from("clicks").select("*").gte("created_at", since).order("created_at").range(from, to),
+          "Loading clicks",
+        );
       },
     },
 
@@ -135,6 +164,12 @@ export function createRealRepos(): Repos {
       async update(id, patch) {
         const { error } = await db().from("purchases").update(patch).eq("id", id);
         if (error) fail("Updating purchase", error);
+      },
+      listSince(since) {
+        return fetchAll(
+          (from, to) => db().from("purchases").select("*").gte("created_at", since).order("created_at").range(from, to),
+          "Loading purchases",
+        );
       },
     },
 
@@ -188,15 +223,24 @@ export function createRealRepos(): Repos {
         const { error } = await db().from("ai_usage").insert(rows);
         if (error) fail("Saving AI usage", error);
       },
-      async listSince(since) {
-        const { data, error } = await db()
-          .from("ai_usage")
-          .select("*")
-          .gte("created_at", since)
-          .order("created_at", { ascending: false })
-          .limit(5000);
-        if (error) fail("Loading AI usage", error);
-        return data;
+      listSince(since) {
+        return fetchAll(
+          (from, to) => db().from("ai_usage").select("*").gte("created_at", since).order("created_at").range(from, to),
+          "Loading AI usage",
+        );
+      },
+    },
+
+    quizStarts: {
+      async create(row) {
+        const { error } = await db().from("quiz_starts").insert(row);
+        if (error) fail("Saving quiz start", error);
+      },
+      listSince(since) {
+        return fetchAll(
+          (from, to) => db().from("quiz_starts").select("*").gte("created_at", since).order("created_at").range(from, to),
+          "Loading quiz starts",
+        );
       },
     },
 

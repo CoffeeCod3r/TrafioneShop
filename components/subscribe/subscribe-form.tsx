@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 import { BellRing, Loader2, MailCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { track } from "@/lib/analytics/client";
 import { MARKETING_CONSENT_TEXT, SUBSCRIBE_OCCASIONS, type SubscribeOccasion } from "@/lib/subscribe/schema";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +40,7 @@ export function SubscribeForm() {
       const data = (await response.json().catch(() => null)) as { message?: string; error?: string } | null;
       if (!response.ok) throw new Error(data?.error ?? "Nie udało się zapisać.");
       setDone(data?.message ?? "Sprawdź skrzynkę i potwierdź zapis.");
+      track("subscribed", { occasions: occasions.length });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Nie udało się zapisać.");
     } finally {

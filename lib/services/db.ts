@@ -11,6 +11,7 @@ import type {
   Insert,
   ProductRow,
   PurchaseRow,
+  QuizStartRow,
   ResultRow,
   SubscriberRow,
   Update,
@@ -44,14 +45,26 @@ export type ProductsRepo = {
   getById(id: string): Promise<ProductRow | null>;
 };
 
+export type ResultStatsRow = Pick<ResultRow, "id" | "created_at" | "price_variant" | "paid_status" | "source">;
+
 export type ResultsRepo = {
   create(row: Insert<"results">): Promise<ResultRow>;
   getById(id: string): Promise<ResultRow | null>;
   update(id: string, patch: Update<"results">): Promise<void>;
+  /** Admin stats: results created at or after `since`. */
+  listForStats(since: string): Promise<ResultStatsRow[]>;
 };
 
 export type ClicksRepo = {
   create(row: Insert<"clicks">): Promise<ClickRow>;
+  /** Admin stats. */
+  listSince(since: string): Promise<ClickRow[]>;
+};
+
+export type QuizStartsRepo = {
+  create(row: Insert<"quiz_starts">): Promise<void>;
+  /** Admin stats. */
+  listSince(since: string): Promise<QuizStartRow[]>;
 };
 
 export type PurchasesRepo = {
@@ -59,6 +72,8 @@ export type PurchasesRepo = {
   createIfNew(row: Insert<"purchases">): Promise<{ purchase: PurchaseRow; created: boolean }>;
   getBySessionId(stripeSessionId: string): Promise<PurchaseRow | null>;
   update(id: string, patch: Update<"purchases">): Promise<void>;
+  /** Admin stats. */
+  listSince(since: string): Promise<PurchaseRow[]>;
 };
 
 export type SubscribersRepo = {
@@ -97,6 +112,7 @@ export type Repos = {
   allowedShops: AllowedShopsRepo;
   aiUsage: AiUsageRepo;
   rateLimits: RateLimitsRepo;
+  quizStarts: QuizStartsRepo;
 };
 
 let repos: Repos | undefined;

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Info, RotateCcw, Sparkles } from "lucide-react";
 
+import { ResultTracker } from "@/components/analytics/result-tracker";
 import { PaidSearchSection } from "@/components/results/paid-search-section";
 import { ProductCard } from "@/components/results/product-card";
 import { ShareButton } from "@/components/results/share-button";
@@ -70,6 +71,13 @@ async function ResultContent({ params, searchParams }: PageProps) {
 
   return (
     <div className="flex flex-col gap-8 py-6">
+      <ResultTracker
+        resultId={result.id}
+        shared={shared}
+        paidStatus={result.paid_status}
+        priceVariant={result.price_variant}
+        justPaid={justPaid}
+      />
       <header className="flex flex-col gap-3">
         <p className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
           <Sparkles className="size-4" aria-hidden />
@@ -130,7 +138,7 @@ async function ResultContent({ params, searchParams }: PageProps) {
         <ShareButton resultId={result.id} refCode={result.ref_code} />
         <SubscribeForm />
         <Button asChild variant="ghost" size="lg">
-          <Link href="/quiz">
+          <Link href={shared && result.ref_code ? `/quiz?ref=${result.ref_code}` : "/quiz"}>
             <RotateCcw aria-hidden />
             Szukaj od nowa
           </Link>
