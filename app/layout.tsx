@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 
+import { Analytics } from "@/components/consent/analytics";
+import { CookieBanner } from "@/components/consent/cookie-banner";
 import { DemoBanner } from "@/components/demo-banner";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -36,6 +38,11 @@ export default function RootLayout({
           {children}
         </main>
         <SiteFooter />
+        <CookieBanner />
+        <Analytics
+          posthogKey={process.env.NEXT_PUBLIC_POSTHOG_KEY || null}
+          posthogHost={process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com"}
+        />
       </body>
     </html>
   );
