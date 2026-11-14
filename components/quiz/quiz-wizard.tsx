@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Camera, Gift, Pencil } from "lucide-react";
+import { ArrowLeft, ArrowRight, Gift, Pencil } from "lucide-react";
 
 import { OptionTile } from "@/components/quiz/option-tile";
+import { PhotoInput } from "@/components/quiz/photo-input";
 import { TagChip } from "@/components/quiz/tag-chip";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +24,7 @@ import {
   type QuizDraft,
   type QuizField,
 } from "@/lib/quiz/schema";
+import type { ProcessedPhoto } from "@/lib/photo/resize";
 import { ALLOWED_TAGS, type AllowedTag } from "@/lib/tags";
 
 const QUESTION_COUNT = QUIZ_QUESTION_FIELDS.length;
@@ -42,14 +44,19 @@ const TITLES = [
 type Errors = Partial<Record<QuizField, string>>;
 
 type QuizWizardProps = {
-  /** Called with validated answers. Wired to the results API in a later step. */
-  onComplete?: (answers: QuizAnswers) => void | Promise<void>;
+  /**
+   * Called with validated answers and the optional in-memory photo.
+   * Wired to the results API in a later step.
+   */
+  onComplete?: (answers: QuizAnswers, photo: ProcessedPhoto | null) => void | Promise<void>;
 };
 
 export function QuizWizard({ onComplete }: QuizWizardProps) {
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<QuizDraft>({ interests: [] });
   const [errors, setErrors] = useState<Errors>({});
+  // Kept separately from the answers: never persisted, never logged.
+  const [photo, setPhoto] = useState<ProcessedPhoto | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -105,7 +112,7 @@ export function QuizWizard({ onComplete }: QuizWizardProps) {
     }
     setSubmitting(true);
     try {
-      await onComplete?.(result.data);
+      await onComplete?.(result.data, photo);
       setDone(true);
     } finally {
       setSubmitting(false);
@@ -249,14 +256,7 @@ export function QuizWizard({ onComplete }: QuizWizardProps) {
 
       {step === 6 && (
         <div className="flex flex-col gap-6">
-          {/* TODO(step 5): photo upload, processed in memory only, never stored. */}
-          <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed p-8 text-center text-muted-foreground">
-            <Camera className="size-8" aria-hidden />
-            <p>Zdjęcie pomoże dobrać prezent do stylu obdarowanego. Nie zapisujemy go nigdzie.</p>
-            <Button type="button" variant="outline" size="lg" disabled>
-              Dodaj zdjęcie (wkrótce)
-            </Button>
-          </div>
+          <PhotoInput value={photo} onChange={setPhoto} />
           <Summary draft={draft} onEdit={goTo} />
           {done && (
             <p className="rounded-xl bg-secondary p-4 text-center" role="status">
