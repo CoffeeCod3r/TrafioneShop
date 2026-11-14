@@ -2,6 +2,8 @@ import { z } from "zod";
 
 import { getEnv } from "@/lib/env";
 import { describeError, logEvent } from "@/lib/log";
+import { consumeRateLimit } from "@/lib/rate-limit";
+import { getClientIp, hashIp } from "@/lib/request";
 import { pickPriceVariant } from "@/lib/results";
 import { getRepos } from "@/lib/services/db";
 import { getPayments } from "@/lib/services/payments";
@@ -17,6 +19,9 @@ export async function POST(request: Request) {
   try {
     const parsed = bodySchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) return Response.json({ error: "Zaznacz zgodę, aby przejść do płatności." }, { status: 400 });
+
+    const allowed = await consumeRateLimit("checkout", hashIp(getClientIp(request), getEnv().IP_HASH_SALT));
+    if (!allowed) return Response.json({ error: "Zbyt wiele prób płatności. Spróbuj jutro." }, { status: 429 });
 
     const { resultId } = parsed.data;
     const repos = getRepos();

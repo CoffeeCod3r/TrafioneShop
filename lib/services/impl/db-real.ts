@@ -112,6 +112,16 @@ export function createRealRepos(): Repos {
         const { error } = await db().from("results").update(patch).eq("id", id);
         if (error) fail("Updating result", error);
       },
+      async claimPayment(id) {
+        const { data, error } = await db()
+          .from("results")
+          .update({ paid_status: "pending" })
+          .eq("id", id)
+          .eq("paid_status", "none")
+          .select("id");
+        if (error) fail("Claiming payment", error);
+        return data.length === 1;
+      },
       listForStats(since) {
         return fetchAll(
           (from, to) =>
@@ -164,6 +174,11 @@ export function createRealRepos(): Repos {
       async update(id, patch) {
         const { error } = await db().from("purchases").update(patch).eq("id", id);
         if (error) fail("Updating purchase", error);
+      },
+      async listByResult(resultId) {
+        const { data, error } = await db().from("purchases").select("*").eq("result_id", resultId);
+        if (error) fail("Loading purchases", error);
+        return data;
       },
       listSince(since) {
         return fetchAll(

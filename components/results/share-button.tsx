@@ -35,8 +35,22 @@ export function ShareButton({ resultId, refCode }: ShareButtonProps) {
     return fileRef.current;
   }
 
+  // Prefetch the PNG (~250 KB) only when the button gets close to the screen, not on every view.
+  const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    loadFile().catch(() => undefined);
+    const element = containerRef.current;
+    if (!element || !("IntersectionObserver" in window)) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          loadFile().catch(() => undefined);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- prefetch once per result
   }, [resultId]);
 
@@ -96,7 +110,7 @@ export function ShareButton({ resultId, refCode }: ShareButtonProps) {
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div ref={containerRef} className="flex flex-col gap-2">
       <Button type="button" variant="outline" size="xl" onClick={share} disabled={status === "working"}>
         {status === "working" ? <Loader2 className="animate-spin" aria-hidden /> : <Share2 aria-hidden />}
         Udostępnij wynik

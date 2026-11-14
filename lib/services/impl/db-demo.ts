@@ -200,6 +200,13 @@ export function createDemoRepos(): Repos {
           if (!result) throw new Error("Updating result failed (not found)");
           Object.assign(result, patch);
         }),
+      claimPayment: (id) =>
+        write((data) => {
+          const result = data.results.find((item) => item.id === id);
+          if (!result || result.paid_status !== "none") return false;
+          result.paid_status = "pending";
+          return true;
+        }),
       listForStats: (since) =>
         read((data) =>
           data.results
@@ -248,6 +255,7 @@ export function createDemoRepos(): Repos {
           if (!purchase) throw new Error("Updating purchase failed (not found)");
           Object.assign(purchase, patch);
         }),
+      listByResult: (resultId) => read((data) => data.purchases.filter((purchase) => purchase.result_id === resultId)),
       listSince: (since) => read((data) => data.purchases.filter((purchase) => purchase.created_at >= since)),
     },
 

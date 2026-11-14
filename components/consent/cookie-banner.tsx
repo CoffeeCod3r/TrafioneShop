@@ -68,7 +68,7 @@ export function CookieSettingsButton() {
     <button
       type="button"
       onClick={() => window.dispatchEvent(new Event(OPEN_SETTINGS_EVENT))}
-      className="py-2 text-left underline-offset-4 hover:underline"
+      className="inline-flex min-h-11 items-center text-left underline-offset-4 hover:underline"
     >
       Ustawienia cookies
     </button>

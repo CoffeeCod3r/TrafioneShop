@@ -33,6 +33,8 @@ export const subscribeRequestSchema = z.object({
     .pipe(z.email({ error: () => "Podaj poprawny adres e-mail." })),
   occasions: occasionsSchema,
   consent: z.literal(true, { error: () => "Zaznacz zgodę, aby się zapisać." }),
+  /** Cloudflare Turnstile token (demo mode: any value). */
+  turnstileToken: z.string().max(2048).optional(),
   /** Honeypot: real users never fill it. */
   website: z.string().max(500).optional(),
 });

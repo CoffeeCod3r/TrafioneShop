@@ -1,3 +1,4 @@
+import { fallbackPicks } from "@/lib/ai/picks";
 import { recordAiUsage } from "@/lib/ai/usage";
 import { analyzeRequestSchema, type AnalyzeResponse } from "@/lib/analyze/schema";
 import { getEnv } from "@/lib/env";
@@ -84,7 +85,11 @@ export async function POST(request: Request) {
       tags: profile.tags,
       avoid: profile.avoid,
     });
-    const picksStep = await ai.pickProducts(answers, profile, candidates);
+    // If the profile step already fell back (AI down or failing), do not wait on AI again.
+    const picksStep =
+      profileStep.response.source === "fallback"
+        ? { result: { picks: fallbackPicks(candidates, profile), source: "fallback" as const }, usage: [] }
+        : await ai.pickProducts(answers, profile, candidates);
 
     // 6. Save the result (no photo) and the token usage
     const { id, refCode } = await createResult({ answers, profile, picks: picksStep.result.picks, source });

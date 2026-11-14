@@ -32,9 +32,15 @@ export default function RootLayout({
   return (
     <html lang="pl" className={`${geistSans.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">
+        <a
+          href="#tresc"
+          className="sr-only z-50 rounded-md bg-background px-4 py-2 font-medium focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:ring-[3px] focus:ring-ring"
+        >
+          Przejdź do treści
+        </a>
         <DemoBanner />
         <SiteHeader />
-        <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4">
+        <main id="tresc" tabIndex={-1} className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 outline-none">
           {children}
         </main>
         <SiteFooter />

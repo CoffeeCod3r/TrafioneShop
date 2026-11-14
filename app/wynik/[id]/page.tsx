@@ -12,6 +12,7 @@ import { SubscribeForm } from "@/components/subscribe/subscribe-form";
 import { Button } from "@/components/ui/button";
 import { CHILD_PHOTO_NOTICE } from "@/lib/analyze/schema";
 import { CARD_HEIGHT, CARD_WIDTH, cardUrl } from "@/lib/og/card";
+import { isMockMode } from "@/lib/mode";
 import { getResultView } from "@/lib/results";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -136,7 +137,7 @@ async function ResultContent({ params, searchParams }: PageProps) {
 
       <div className="flex flex-col gap-3">
         <ShareButton resultId={result.id} refCode={result.ref_code} />
-        <SubscribeForm />
+        <SubscribeForm demo={isMockMode()} />
         <Button asChild variant="ghost" size="lg">
           <Link href={shared && result.ref_code ? `/quiz?ref=${result.ref_code}` : "/quiz"}>
             <RotateCcw aria-hidden />

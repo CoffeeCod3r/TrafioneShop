@@ -51,6 +51,11 @@ export type ResultsRepo = {
   create(row: Insert<"results">): Promise<ResultRow>;
   getById(id: string): Promise<ResultRow | null>;
   update(id: string, patch: Update<"results">): Promise<void>;
+  /**
+   * Atomically moves paid_status from "none" to "pending". Returns false when the result
+   * was already paid (or is being paid), so one result can never be paid twice.
+   */
+  claimPayment(id: string): Promise<boolean>;
   /** Admin stats: results created at or after `since`. */
   listForStats(since: string): Promise<ResultStatsRow[]>;
 };
@@ -72,6 +77,7 @@ export type PurchasesRepo = {
   createIfNew(row: Insert<"purchases">): Promise<{ purchase: PurchaseRow; created: boolean }>;
   getBySessionId(stripeSessionId: string): Promise<PurchaseRow | null>;
   update(id: string, patch: Update<"purchases">): Promise<void>;
+  listByResult(resultId: string): Promise<PurchaseRow[]>;
   /** Admin stats. */
   listSince(since: string): Promise<PurchaseRow[]>;
 };

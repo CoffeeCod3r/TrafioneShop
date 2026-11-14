@@ -1,13 +1,13 @@
 import { getEnv } from "@/lib/env";
 import { describeError, logEvent } from "@/lib/log";
-import { dayWindowStart } from "@/lib/rate-limit";
+import { consumeRateLimit } from "@/lib/rate-limit";
 import { getClientIp, hashIp } from "@/lib/request";
+import { getCaptcha } from "@/lib/services/captcha";
 import { getRepos } from "@/lib/services/db";
 import { getEmail } from "@/lib/services/email";
 import { confirmationEmail } from "@/lib/subscribe/emails";
 import { subscribeRequestSchema } from "@/lib/subscribe/schema";
 
-const DAILY_LIMIT_PER_IP = 5;
 /** Same answer whether the address is new, pending or already confirmed (no email enumeration). */
 const OK_MESSAGE = "Sprawdź skrzynkę i kliknij link potwierdzający. Bez tego nie wyślemy żadnych wiadomości.";
 
@@ -22,18 +22,23 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return Response.json({ error: parsed.error.issues[0]?.message ?? "Nieprawidłowe dane." }, { status: 400 });
     }
-    const { email, occasions, website } = parsed.data;
+    const { email, occasions, website, turnstileToken } = parsed.data;
     // Honeypot filled in: pretend success, do nothing.
     if (website) return Response.json({ message: OK_MESSAGE });
 
     const env = getEnv();
     const repos = getRepos();
-    const allowed = await repos.rateLimits.consume(
-      `subscribe:${hashIp(getClientIp(request), env.IP_HASH_SALT)}`,
-      dayWindowStart(),
-      DAILY_LIMIT_PER_IP,
-    );
-    if (!allowed) return Response.json({ error: "Zbyt wiele prób. Spróbuj jutro." }, { status: 429 });
+    const ip = getClientIp(request);
+    if (!(await getCaptcha().verify({ token: turnstileToken, ip, action: "subscribe" }))) {
+      return Response.json({ error: "Weryfikacja nie powiodła się. Odśwież stronę i spróbuj ponownie." }, { status: 403 });
+    }
+    if (!(await consumeRateLimit("subscribe", hashIp(ip, env.IP_HASH_SALT)))) {
+      return Response.json({ error: "Zbyt wiele prób. Spróbuj jutro." }, { status: 429 });
+    }
+    // Per-address limit: silently skip extra emails so the answer stays the same.
+    if (!(await consumeRateLimit("subscribeEmail", hashIp(email, env.IP_HASH_SALT)))) {
+      return Response.json({ message: OK_MESSAGE });
+    }
 
     const existing = await repos.subscribers.getByEmail(email);
     if (!existing) {

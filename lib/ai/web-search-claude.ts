@@ -65,6 +65,9 @@ export async function searchWebWithClaude(input: WebSearchInput): Promise<WebSea
       name: "web_search",
       max_uses: WEB_SEARCH_MAX_USES,
       allowed_domains: domains,
+      // Direct calls only (no dynamic filtering through code execution): every use counts
+      // against max_uses and every fetch result stays visible for verification.
+      allowed_callers: ["direct"],
       user_location: { type: "approximate", country: "PL", timezone: "Europe/Warsaw" },
     },
     {
@@ -72,6 +75,7 @@ export async function searchWebWithClaude(input: WebSearchInput): Promise<WebSea
       name: "web_fetch",
       max_uses: WEB_FETCH_MAX_USES,
       allowed_domains: domains,
+      allowed_callers: ["direct"],
       max_content_tokens: 12_000,
       // Keep fetch result blocks in the response: they are our proof that a page was opened.
       response_inclusion: "full",

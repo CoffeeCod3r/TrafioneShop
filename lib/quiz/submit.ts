@@ -22,6 +22,8 @@ export async function submitQuiz(input: {
   try {
     response = await fetch("/api/analyze", {
       method: "POST",
+      // Slightly above the server's maxDuration (90 s).
+      signal: AbortSignal.timeout(100_000),
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         turnstileToken: input.turnstileToken,
@@ -30,7 +32,10 @@ export async function submitQuiz(input: {
         source: input.source,
       }),
     });
-  } catch {
+  } catch (error) {
+    if ((error as DOMException).name === "TimeoutError") {
+      throw new SubmitError("Analiza trwa zbyt długo. Spróbuj ponownie za chwilę.", 0);
+    }
     throw new SubmitError("Brak połączenia z internetem. Spróbuj ponownie.", 0);
   }
 

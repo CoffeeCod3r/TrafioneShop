@@ -4,6 +4,7 @@ import { getEnv } from "@/lib/env";
 import { runImport } from "@/lib/feeds/import";
 import { formatImportStats } from "@/lib/feeds/report";
 import { describeError, logEvent } from "@/lib/log";
+import { recoverStuckPayments } from "@/lib/paid/recover";
 import { getRepos } from "@/lib/services/db";
 
 // Node.js runtime and dynamic rendering are the defaults (cacheComponents forbids `runtime`/`dynamic` exports).
@@ -19,13 +20,14 @@ function isAuthorized(header: string | null, secret: string): boolean {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** Daily housekeeping: old rate-limit windows and sign-ups never confirmed within 7 days. */
+/** Daily housekeeping: old rate-limit windows, sign-ups never confirmed within 7 days, stuck paid searches. */
 async function cleanup() {
   const repos = getRepos();
   try {
     const rateLimits = await repos.rateLimits.deleteOlderThan(new Date(Date.now() - 2 * DAY_MS).toISOString());
     const subscribers = await repos.subscribers.deleteUnconfirmedOlderThan(new Date(Date.now() - 7 * DAY_MS).toISOString());
-    logEvent("cron.cleanup", { rateLimits, subscribers });
+    const stuckPayments = await recoverStuckPayments();
+    logEvent("cron.cleanup", { rateLimits, subscribers, stuckPayments });
   } catch (error) {
     logEvent("cron.cleanup_failed", describeError(error));
   }

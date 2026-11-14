@@ -1,8 +1,15 @@
 import { getRepos } from "./services/db.ts";
 
+/** Daily limits per hashed IP (or per hashed email for subscribeEmail). */
 export const RATE_LIMITS = {
   analyzeWithPhoto: { key: "analyze:photo", limitPerDay: 3 },
   analyzeWithoutPhoto: { key: "analyze:text", limitPerDay: 20 },
+  checkout: { key: "checkout", limitPerDay: 20 },
+  quizStart: { key: "quiz_start", limitPerDay: 40 },
+  subscribe: { key: "subscribe", limitPerDay: 5 },
+  /** Confirmation emails to one address, so nobody can flood someone else's inbox. */
+  subscribeEmail: { key: "subscribe_email", limitPerDay: 2 },
+  adminLogin: { key: "admin_login", limitPerDay: 10 },
 } as const;
 
 export type RateLimitName = keyof typeof RATE_LIMITS;

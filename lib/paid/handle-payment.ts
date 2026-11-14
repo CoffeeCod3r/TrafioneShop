@@ -36,14 +36,14 @@ export async function handlePaymentEvent(
   });
   if (!created) return { status: "duplicate" };
 
-  if (result.paid_status !== "none") {
+  // Atomic "none" → "pending": two concurrent payments for one result cannot both win.
+  if (!(await repos.results.claimPayment(event.resultId))) {
     // One result can be paid only once (e.g. two checkout tabs): refund the extra payment.
     // result_id: null so the refund does not touch the already paid result.
     schedule(() => refundPurchase({ ...purchase, result_id: null }, "already_paid"));
     return { status: "already_paid" };
   }
 
-  await repos.results.update(event.resultId, { paid_status: "pending" });
   logEvent("payment.accepted", { priceVariant: event.priceVariant });
   schedule(() => runWebSearch(purchase));
   return { status: "accepted" };

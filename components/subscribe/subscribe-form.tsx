@@ -1,15 +1,21 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useCallback, useId, useRef, useState } from "react";
 import { BellRing, Loader2, MailCheck } from "lucide-react";
 
+import { TurnstileWidget, type TurnstileHandle } from "@/components/turnstile-widget";
 import { Button } from "@/components/ui/button";
 import { track } from "@/lib/analytics/client";
 import { MARKETING_CONSENT_TEXT, SUBSCRIBE_OCCASIONS, type SubscribeOccasion } from "@/lib/subscribe/schema";
 import { cn } from "@/lib/utils";
 
 /** Newsletter / occasion reminders sign-up. Double opt-in: nothing is sent until the email link is clicked. */
-export function SubscribeForm() {
+type SubscribeFormProps = {
+  /** MOCK_MODE: no Turnstile widget (the demo captcha always passes). */
+  demo?: boolean;
+};
+
+export function SubscribeForm({ demo = false }: SubscribeFormProps) {
   const emailId = useId();
   const consentId = useId();
   const [email, setEmail] = useState("");
@@ -19,6 +25,9 @@ export function SubscribeForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(demo ? "demo" : null);
+  const turnstileRef = useRef<TurnstileHandle>(null);
+  const handleToken = useCallback((token: string | null) => setTurnstileToken(token), []);
 
   function toggle(value: SubscribeOccasion) {
     setOccasions((current) => (current.includes(value) ? current.filter((item) => item !== value) : [...current, value]));
@@ -29,13 +38,14 @@ export function SubscribeForm() {
     setError(null);
     if (occasions.length === 0) return setError("Wybierz co najmniej jedną okazję.");
     if (!consent) return setError("Zaznacz zgodę, aby się zapisać.");
+    if (!turnstileToken) return setError("Trwa weryfikacja, spróbuj za sekundę.");
 
     setBusy(true);
     try {
       const response = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email, occasions, consent, website }),
+        body: JSON.stringify({ email, occasions, consent, website, turnstileToken }),
       });
       const data = (await response.json().catch(() => null)) as { message?: string; error?: string } | null;
       if (!response.ok) throw new Error(data?.error ?? "Nie udało się zapisać.");
@@ -43,6 +53,8 @@ export function SubscribeForm() {
       track("subscribed", { occasions: occasions.length });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Nie udało się zapisać.");
+      // Turnstile tokens are single-use.
+      if (!demo) turnstileRef.current?.reset();
     } finally {
       setBusy(false);
     }
@@ -130,6 +142,8 @@ export function SubscribeForm() {
         />
         <span>{MARKETING_CONSENT_TEXT}</span>
       </label>
+
+      {!demo && <TurnstileWidget ref={turnstileRef} action="subscribe" onToken={handleToken} />}
 
       <Button type="submit" size="xl" disabled={busy}>
         {busy && <Loader2 className="animate-spin" aria-hidden />}
