@@ -4,7 +4,7 @@ import type { EmailService } from "@/lib/services/email";
 /** Demo email: prints the message to the server console instead of sending it. */
 export function createDemoEmail(): EmailService {
   return {
-    async send({ to, subject, text }) {
+    async send({ to, subject, text, headers }) {
       console.log(
         [
           "",
@@ -12,6 +12,7 @@ export function createDemoEmail(): EmailService {
           `From: ${getEnv().EMAIL_FROM}`,
           `To: ${to}`,
           `Subject: ${subject}`,
+          ...Object.entries(headers ?? {}).map(([name, value]) => `${name}: ${value}`),
           "",
           text,
           "──────────────────────",

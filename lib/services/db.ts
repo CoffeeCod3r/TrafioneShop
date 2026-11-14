@@ -63,6 +63,12 @@ export type PurchasesRepo = {
 
 export type SubscribersRepo = {
   upsertByEmail(row: Insert<"subscribers">): Promise<SubscriberRow>;
+  getByEmail(email: string): Promise<SubscriberRow | null>;
+  updateByEmail(email: string, patch: Update<"subscribers">): Promise<void>;
+  /** Unsubscribe: removes the record entirely. Returns false when nothing was deleted. */
+  deleteByEmail(email: string): Promise<boolean>;
+  /** Housekeeping: drops sign-ups that were never confirmed. Returns the number removed. */
+  deleteUnconfirmedOlderThan(isoDate: string): Promise<number>;
 };
 
 export type AllowedShopsRepo = {
@@ -78,6 +84,8 @@ export type AiUsageRepo = {
 export type RateLimitsRepo = {
   /** Atomically consumes one unit; false when the limit is reached. */
   consume(key: string, windowStart: string, limit: number): Promise<boolean>;
+  /** Housekeeping: removes old windows. Returns the number removed. */
+  deleteOlderThan(isoDate: string): Promise<number>;
 };
 
 export type Repos = {

@@ -6,7 +6,14 @@ import { isMockMode } from "@/lib/mode";
 import { createDemoEmail } from "@/lib/services/impl/email-demo";
 import { createRealEmail } from "@/lib/services/impl/email-real";
 
-export type EmailMessage = { to: string; subject: string; text: string; html?: string };
+export type EmailMessage = {
+  to: string;
+  subject: string;
+  text: string;
+  html?: string;
+  /** e.g. List-Unsubscribe / List-Unsubscribe-Post (RFC 8058 one-click). */
+  headers?: Record<string, string>;
+};
 
 export type EmailService = {
   send(message: EmailMessage): Promise<void>;

@@ -7,6 +7,7 @@ import { Info, RotateCcw, Sparkles } from "lucide-react";
 import { PaidSearchSection } from "@/components/results/paid-search-section";
 import { ProductCard } from "@/components/results/product-card";
 import { ShareButton } from "@/components/results/share-button";
+import { SubscribeForm } from "@/components/subscribe/subscribe-form";
 import { Button } from "@/components/ui/button";
 import { CHILD_PHOTO_NOTICE } from "@/lib/analyze/schema";
 import { CARD_HEIGHT, CARD_WIDTH, cardUrl } from "@/lib/og/card";
@@ -127,7 +128,7 @@ async function ResultContent({ params, searchParams }: PageProps) {
 
       <div className="flex flex-col gap-3">
         <ShareButton resultId={result.id} refCode={result.ref_code} />
-        {/* TODO(step 11): newsletter / occasion reminder signup (subscribers). */}
+        <SubscribeForm />
         <Button asChild variant="ghost" size="lg">
           <Link href="/quiz">
             <RotateCcw aria-hidden />

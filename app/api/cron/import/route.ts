@@ -3,6 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 import { getEnv } from "@/lib/env";
 import { runImport } from "@/lib/feeds/import";
 import { formatImportStats } from "@/lib/feeds/report";
+import { describeError, logEvent } from "@/lib/log";
 import { getRepos } from "@/lib/services/db";
 
 // Node.js runtime and dynamic rendering are the defaults (cacheComponents forbids `runtime`/`dynamic` exports).
@@ -16,12 +17,28 @@ function isAuthorized(header: string | null, secret: string): boolean {
   return received.length === expected.length && timingSafeEqual(received, expected);
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Daily housekeeping: old rate-limit windows and sign-ups never confirmed within 7 days. */
+async function cleanup() {
+  const repos = getRepos();
+  try {
+    const rateLimits = await repos.rateLimits.deleteOlderThan(new Date(Date.now() - 2 * DAY_MS).toISOString());
+    const subscribers = await repos.subscribers.deleteUnconfirmedOlderThan(new Date(Date.now() - 7 * DAY_MS).toISOString());
+    logEvent("cron.cleanup", { rateLimits, subscribers });
+  } catch (error) {
+    logEvent("cron.cleanup_failed", describeError(error));
+  }
+}
+
 /** Daily product feed import. Vercel Cron sends `Authorization: Bearer $CRON_SECRET`. */
 export async function GET(request: Request) {
   const env = getEnv();
   if (!isAuthorized(request.headers.get("authorization"), env.CRON_SECRET)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
+  await cleanup();
+
   if (!env.FEED_URLS?.length) {
     // Demo mode without feeds: the catalog comes from data/sample-products.json.
     return Response.json({ skipped: "FEED_URLS not set" });

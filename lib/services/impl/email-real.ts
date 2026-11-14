@@ -7,10 +7,10 @@ import type { EmailService } from "@/lib/services/email";
 export function createRealEmail(): EmailService {
   let client: Resend | undefined;
   return {
-    async send({ to, subject, text, html }) {
+    async send({ to, subject, text, html, headers }) {
       const env = getServiceEnv();
       client ??= new Resend(env.RESEND_API_KEY);
-      const { error } = await client.emails.send({ from: env.EMAIL_FROM, to, subject, text, html });
+      const { error } = await client.emails.send({ from: env.EMAIL_FROM, to, subject, text, html, headers });
       if (error) throw new Error(`Email failed (${error.name})`);
     },
   };

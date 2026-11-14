@@ -148,6 +148,30 @@ export function createRealRepos(): Repos {
         if (error) fail("Saving subscriber", error);
         return data;
       },
+      async getByEmail(email) {
+        const { data, error } = await db().from("subscribers").select("*").eq("email", email.toLowerCase()).maybeSingle();
+        if (error) fail("Loading subscriber", error);
+        return data;
+      },
+      async updateByEmail(email, patch) {
+        const { error } = await db().from("subscribers").update(patch).eq("email", email.toLowerCase());
+        if (error) fail("Updating subscriber", error);
+      },
+      async deleteByEmail(email) {
+        const { data, error } = await db().from("subscribers").delete().eq("email", email.toLowerCase()).select("id");
+        if (error) fail("Deleting subscriber", error);
+        return data.length > 0;
+      },
+      async deleteUnconfirmedOlderThan(isoDate) {
+        const { data, error } = await db()
+          .from("subscribers")
+          .delete()
+          .is("confirmed_at", null)
+          .lt("consent_at", isoDate)
+          .select("id");
+        if (error) fail("Cleaning subscribers", error);
+        return data.length;
+      },
     },
 
     allowedShops: {
@@ -185,6 +209,11 @@ export function createRealRepos(): Repos {
         });
         if (error) fail("Rate limit check", error);
         return data === true;
+      },
+      async deleteOlderThan(isoDate) {
+        const { data, error } = await db().from("rate_limits").delete().lt("window_start", isoDate).select("key");
+        if (error) fail("Cleaning rate limits", error);
+        return data.length;
       },
     },
   };

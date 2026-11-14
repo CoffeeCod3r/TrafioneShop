@@ -253,6 +253,24 @@ export function createDemoRepos(): Repos {
           data.subscribers.push(subscriber);
           return subscriber;
         }),
+      getByEmail: (email) => read((data) => data.subscribers.find((s) => s.email === email.toLowerCase()) ?? null),
+      updateByEmail: (email, patch) =>
+        write((data) => {
+          const subscriber = data.subscribers.find((s) => s.email === email.toLowerCase());
+          if (subscriber) Object.assign(subscriber, patch);
+        }),
+      deleteByEmail: (email) =>
+        write((data) => {
+          const before = data.subscribers.length;
+          data.subscribers = data.subscribers.filter((s) => s.email !== email.toLowerCase());
+          return data.subscribers.length < before;
+        }),
+      deleteUnconfirmedOlderThan: (isoDate) =>
+        write((data) => {
+          const before = data.subscribers.length;
+          data.subscribers = data.subscribers.filter((s) => s.confirmed_at !== null || s.consent_at >= isoDate);
+          return before - data.subscribers.length;
+        }),
     },
 
     allowedShops: {
@@ -291,6 +309,12 @@ export function createDemoRepos(): Repos {
           if (row.count >= limit) return false;
           row.count += 1;
           return true;
+        }),
+      deleteOlderThan: (isoDate) =>
+        write((data) => {
+          const before = data.rate_limits.length;
+          data.rate_limits = data.rate_limits.filter((row) => row.window_start >= isoDate);
+          return before - data.rate_limits.length;
         }),
     },
   };

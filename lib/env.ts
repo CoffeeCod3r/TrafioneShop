@@ -52,6 +52,7 @@ const serviceSchema = z.object({
 
   CRON_SECRET: z.string().min(32),
   IP_HASH_SALT: z.string().min(32),
+  EMAIL_TOKEN_SECRET: z.string().min(32),
   ADMIN_PASSWORD: z.string().min(12),
   FEED_URLS: feedSources,
 });
@@ -60,6 +61,7 @@ const serviceSchema = z.object({
 const DEMO_DEFAULTS = {
   CRON_SECRET: "demo-cron-secret-demo-cron-secret",
   IP_HASH_SALT: "demo-ip-hash-salt-demo-ip-hash-salt",
+  EMAIL_TOKEN_SECRET: "demo-email-token-secret-demo-email-token",
   ADMIN_PASSWORD: "demo-admin-pass",
   EMAIL_FROM: "Prezentownik AI (demo) <demo@example.pl>",
 };
@@ -69,7 +71,7 @@ type BaseEnv = z.infer<typeof baseSchema>;
 
 export type ServerEnv = BaseEnv &
   Partial<ServiceEnv> &
-  Pick<ServiceEnv, "CRON_SECRET" | "IP_HASH_SALT" | "ADMIN_PASSWORD" | "EMAIL_FROM"> & {
+  Pick<ServiceEnv, "CRON_SECRET" | "IP_HASH_SALT" | "EMAIL_TOKEN_SECRET" | "ADMIN_PASSWORD" | "EMAIL_FROM"> & {
     mockMode: boolean;
   };
 
