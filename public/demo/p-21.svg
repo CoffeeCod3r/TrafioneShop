@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" role="img" aria-label="Słuchawki bezprzewodowe nauszne">
+<rect width="400" height="400" fill="#FECACA"/>
+<g transform="translate(150 70)" fill="none" stroke="#1f2937" stroke-width="6" stroke-linejoin="round">
+<rect x="0" y="40" width="100" height="80" rx="6" fill="#ffffff"/><rect x="-8" y="22" width="116" height="24" rx="4" fill="#ffffff"/>
+<path d="M50 22v98"/><path d="M50 22c-12-26-40-26-36-6 3 10 24 8 36 6zM50 22c12-26 40-26 36-6-3 10-24 8-36 6z"/></g>
+<text x="200" y="250" text-anchor="middle" font-family="system-ui,sans-serif" font-size="24" font-weight="600" fill="#1f2937"><tspan x="200" dy="0">Słuchawki</tspan><tspan x="200" dy="30">bezprzewodowe</tspan><tspan x="200" dy="30">nauszne</tspan></text>
+<text x="200" y="370" text-anchor="middle" font-family="system-ui,sans-serif" font-size="16" fill="#374151">DEMO · TechSklep</text>
+</svg>

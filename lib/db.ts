@@ -1,13 +1,8 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-
-import { getEnv } from "@/lib/env";
-
 /**
- * Server-only Supabase client using the service role key (bypasses RLS).
- * Never import this file from client components.
- *
- * Types below mirror supabase/migrations. Once the project is linked you can
- * replace them with `supabase gen types typescript`.
+ * Database row types. They mirror supabase/migrations and are shared by both
+ * implementations of the db service (lib/services/db.ts): Supabase and the demo JSON file.
+ * Once the project is linked you can replace them with `supabase gen types typescript`.
+ * Type-only module: safe to import from Node scripts.
  */
 
 // ---------------------------------------------------------------------------
@@ -180,22 +175,3 @@ export type TableName = keyof Database["public"]["Tables"];
 export type Row<T extends TableName> = Database["public"]["Tables"][T]["Row"];
 export type Insert<T extends TableName> = Database["public"]["Tables"][T]["Insert"];
 export type Update<T extends TableName> = Database["public"]["Tables"][T]["Update"];
-
-// ---------------------------------------------------------------------------
-// Client
-// ---------------------------------------------------------------------------
-
-let client: SupabaseClient<Database> | undefined;
-
-export function getDb(): SupabaseClient<Database> {
-  if (typeof window !== "undefined") {
-    throw new Error("lib/db.ts must not be imported in client code");
-  }
-  if (client) return client;
-
-  const env = getEnv();
-  client = createClient<Database>(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-  });
-  return client;
-}

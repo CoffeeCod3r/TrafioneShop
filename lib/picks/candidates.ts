@@ -1,6 +1,5 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-
-import type { Database, ProductRow } from "../db.ts";
+import type { ProductRow } from "../db.ts";
+import { getRepos } from "../services/db.ts";
 import type { AllowedTag } from "../tags.ts";
 
 export const MAX_CANDIDATES = 40;
@@ -16,15 +15,7 @@ export type Candidate = Pick<
   "id" | "name" | "description" | "price_pln" | "merchant" | "category" | "tags" | "image_url" | "affiliate_url" | "commission_rate"
 > & { sharedTags: AllowedTag[] };
 
-const CANDIDATE_COLUMNS =
-  "id, name, description, price_pln, merchant, category, tags, image_url, affiliate_url, commission_rate" as const;
-
 type CandidateRow = Omit<Candidate, "sharedTags">;
-
-/** Postgres array literal. Tags come from ALLOWED_TAGS, quoting handles Polish characters. */
-function pgArray(values: readonly string[]): string {
-  return `{${values.map((value) => `"${value.replace(/["\\]/g, "")}"`).join(",")}}`;
-}
 
 /** Sorts by number of shared tags, then commission_rate (desc, nulls last), then price (desc). */
 export function rankCandidates(rows: CandidateRow[], tags: readonly AllowedTag[], avoid: readonly AllowedTag[]): Candidate[] {
@@ -65,26 +56,34 @@ export type CandidateSelection = {
  * having none of the avoided tags. With fewer than 10, the tag condition is dropped;
  * with fewer than 5, the lower price bound is dropped too.
  */
-export async function selectCandidates(
-  db: SupabaseClient<Database>,
-  options: { budget: number; tags: readonly AllowedTag[]; avoid: readonly AllowedTag[] },
-): Promise<CandidateSelection> {
+export async function selectCandidates(options: {
+  budget: number;
+  tags: readonly AllowedTag[];
+  avoid: readonly AllowedTag[];
+}): Promise<CandidateSelection> {
   const { budget, tags, avoid } = options;
+  const products = getRepos().products;
 
   async function fetchRows(minPrice: number, requireTags: boolean): Promise<CandidateRow[]> {
-    let query = db
-      .from("products")
-      .select(CANDIDATE_COLUMNS)
-      .eq("in_stock", true)
-      .gte("price_pln", minPrice)
-      .lte("price_pln", budget);
-    if (requireTags && tags.length > 0) query = query.overlaps("tags", [...tags]);
-    if (avoid.length > 0) query = query.not("tags", "ov", pgArray(avoid));
-    const { data, error } = await query
-      .order("commission_rate", { ascending: false, nullsFirst: false })
-      .limit(FETCH_LIMIT);
-    if (error) throw new Error(`Candidate query failed (${error.code ?? "unknown"})`);
-    return data;
+    const rows = await products.findCandidates({
+      minPrice,
+      maxPrice: budget,
+      anyOfTags: requireTags ? tags : undefined,
+      noneOfTags: avoid,
+      limit: FETCH_LIMIT,
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      price_pln: row.price_pln,
+      merchant: row.merchant,
+      category: row.category,
+      tags: row.tags,
+      image_url: row.image_url,
+      affiliate_url: row.affiliate_url,
+      commission_rate: row.commission_rate,
+    }));
   }
 
   const minPrice = Math.round(budget * MIN_PRICE_SHARE * 100) / 100;

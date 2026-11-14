@@ -2,8 +2,8 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 
 import { getAnthropic } from "@/lib/ai/anthropic";
-import type { UsageEntry } from "@/lib/ai/usage";
-import { CHILD_PHOTO_NOTICE, type AnalyzeRequest, type ProfileResult, type StyleProfile } from "@/lib/analyze/schema";
+import type { Photo, UsageEntry } from "@/lib/services/ai";
+import { CHILD_PHOTO_NOTICE, type ProfileResult, type StyleProfile } from "@/lib/analyze/schema";
 import { getEnv } from "@/lib/env";
 import { describeError, logEvent } from "@/lib/log";
 import { PROFILE_SYSTEM_PROMPT, SAVE_PROFILE_TOOL } from "@/lib/prompts";
@@ -27,7 +27,6 @@ const toolOutputSchema = z.object({
   avoid: z.array(z.string()).max(40).default([]),
 });
 
-type Photo = NonNullable<AnalyzeRequest["photo"]>;
 type Attempt = { ok: true; isChild: boolean; profile: StyleProfile } | { ok: false };
 
 function label<V>(options: readonly { value: V; label: string }[], value: V): string {

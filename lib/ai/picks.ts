@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { getAnthropic } from "@/lib/ai/anthropic";
 import { formatAnswers } from "@/lib/ai/profile";
-import type { UsageEntry } from "@/lib/ai/usage";
+import type { GiftPick, PicksResult, UsageEntry } from "@/lib/services/ai";
 import type { StyleProfile } from "@/lib/analyze/schema";
 import { getEnv } from "@/lib/env";
 import { describeError, logEvent } from "@/lib/log";
@@ -14,8 +14,6 @@ import type { QuizAnswers } from "@/lib/quiz/schema";
 export const PICKS_MAX_TOKENS = 600;
 const MAX_REASON_LENGTH = 200;
 
-export type GiftPick = { productId: string; reason: string };
-export type PicksResult = { picks: GiftPick[]; source: "ai" | "fallback" | "too_few_candidates" };
 
 const toolOutputSchema = z.object({
   picks: z.array(z.object({ product_id: z.string(), reason: z.string().trim().min(3) })),

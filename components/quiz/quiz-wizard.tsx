@@ -46,7 +46,14 @@ const TITLES = [
 
 type Errors = Partial<Record<QuizField, string>>;
 
-export function QuizWizard() {
+type QuizWizardProps = {
+  /** MOCK_MODE: skip the Turnstile widget (the demo captcha always passes). */
+  demo?: boolean;
+};
+
+const DEMO_TURNSTILE_TOKEN = "demo";
+
+export function QuizWizard({ demo = false }: QuizWizardProps) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<QuizDraft>({ interests: [] });
@@ -55,7 +62,7 @@ export function QuizWizard() {
   const [photo, setPhoto] = useState<ProcessedPhoto | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(demo ? DEMO_TURNSTILE_TOKEN : null);
   const [turnstileFailed, setTurnstileFailed] = useState(false);
   const turnstileRef = useRef<TurnstileHandle>(null);
   const handleToken = useCallback((token: string | null) => {
@@ -133,7 +140,7 @@ export function QuizWizard() {
       setSubmitting(false);
       setSubmitError(caught instanceof SubmitError ? caught.message : "Coś poszło nie tak. Spróbuj ponownie.");
       // Turnstile tokens are single-use.
-      turnstileRef.current?.reset();
+      if (!demo) turnstileRef.current?.reset();
     }
   }
 
@@ -277,7 +284,9 @@ export function QuizWizard() {
         <div className="flex flex-col gap-6">
           <PhotoInput value={photo} onChange={setPhoto} />
           <Summary draft={draft} onEdit={goTo} />
-          <TurnstileWidget ref={turnstileRef} action="analyze" onToken={handleToken} onError={handleTurnstileError} />
+          {!demo && (
+            <TurnstileWidget ref={turnstileRef} action="analyze" onToken={handleToken} onError={handleTurnstileError} />
+          )}
           {submitError && (
             <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive" role="alert">
               {submitError}

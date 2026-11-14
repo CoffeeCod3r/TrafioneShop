@@ -1,0 +1,945 @@
+[
+  {
+    "id": "d0000000-0000-4000-8000-000000000001",
+    "network": "demo",
+    "merchant": "Kawowy Zakątek",
+    "external_id": "demo-01",
+    "name": "Młynek do kawy ręczny ceramiczny",
+    "description": "Przykładowy produkt demo: młynek do kawy ręczny ceramiczny.",
+    "price_pln": 129,
+    "category": "Kuchnia > Akcesoria do kawy",
+    "tags": [
+      "kawa",
+      "gotowanie",
+      "dom"
+    ],
+    "image_url": "/demo/p-01.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000001",
+    "commission_rate": 0.03,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000002",
+    "network": "demo",
+    "merchant": "Kawowy Zakątek",
+    "external_id": "demo-02",
+    "name": "Kawa ziarnista Etiopia 1 kg",
+    "description": "Przykładowy produkt demo: kawa ziarnista etiopia 1 kg.",
+    "price_pln": 89.99,
+    "category": "Żywność > Kawa",
+    "tags": [
+      "kawa"
+    ],
+    "image_url": "/demo/p-02.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000002",
+    "commission_rate": 0.05,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000003",
+    "network": "demo",
+    "merchant": "Kawowy Zakątek",
+    "external_id": "demo-03",
+    "name": "Drip do kawy V60 z filtrami",
+    "description": "Przykładowy produkt demo: drip do kawy v60 z filtrami.",
+    "price_pln": 75.5,
+    "category": "Kuchnia > Akcesoria do kawy",
+    "tags": [
+      "kawa",
+      "gotowanie",
+      "dom"
+    ],
+    "image_url": "/demo/p-03.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000003",
+    "commission_rate": 0.08,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000004",
+    "network": "demo",
+    "merchant": "Herbaciarnia Liść",
+    "external_id": "demo-04",
+    "name": "Zestaw herbat liściastych w puszkach",
+    "description": "Przykładowy produkt demo: zestaw herbat liściastych w puszkach.",
+    "price_pln": 64,
+    "category": "Żywność > Herbata",
+    "tags": [
+      "herbata"
+    ],
+    "image_url": "/demo/p-04.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000004",
+    "commission_rate": 0.1,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000005",
+    "network": "demo",
+    "merchant": "Herbaciarnia Liść",
+    "external_id": "demo-05",
+    "name": "Zaparzacz do herbaty szklany",
+    "description": "Przykładowy produkt demo: zaparzacz do herbaty szklany.",
+    "price_pln": 39.9,
+    "category": "Kuchnia > Herbata",
+    "tags": [
+      "herbata",
+      "gotowanie",
+      "dom"
+    ],
+    "image_url": "/demo/p-05.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000005",
+    "commission_rate": 0.12,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000006",
+    "network": "demo",
+    "merchant": "KuchniaPro",
+    "external_id": "demo-06",
+    "name": "Nóż szefa kuchni 20 cm",
+    "description": "Przykładowy produkt demo: nóż szefa kuchni 20 cm.",
+    "price_pln": 249,
+    "category": "Kuchnia > Noże kuchenne",
+    "tags": [
+      "gotowanie",
+      "dom"
+    ],
+    "image_url": "/demo/p-06.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000006",
+    "commission_rate": null,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000007",
+    "network": "demo",
+    "merchant": "KuchniaPro",
+    "external_id": "demo-07",
+    "name": "Forma do pieczenia chleba z pokrywą",
+    "description": "Przykładowy produkt demo: forma do pieczenia chleba z pokrywą.",
+    "price_pln": 119,
+    "category": "Kuchnia > Pieczenie",
+    "tags": [
+      "gotowanie",
+      "dom",
+      "pieczenie"
+    ],
+    "image_url": "/demo/p-07.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000007",
+    "commission_rate": 0.03,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000008",
+    "network": "demo",
+    "merchant": "KuchniaPro",
+    "external_id": "demo-08",
+    "name": "Zestaw przypraw z całego świata",
+    "description": "Przykładowy produkt demo: zestaw przypraw z całego świata.",
+    "price_pln": 59,
+    "category": "Żywność > Przyprawy",
+    "tags": [
+      "gotowanie",
+      "dom"
+    ],
+    "image_url": "/demo/p-08.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000008",
+    "commission_rate": 0.05,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000009",
+    "network": "demo",
+    "merchant": "Szkło i Dom",
+    "external_id": "demo-09",
+    "name": "Karafka do wina z dekanterem",
+    "description": "Przykładowy produkt demo: karafka do wina z dekanterem.",
+    "price_pln": 139,
+    "category": "Dom > Akcesoria do wina",
+    "tags": [
+      "wino"
+    ],
+    "image_url": "/demo/p-09.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000009",
+    "commission_rate": 0.08,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000010",
+    "network": "demo",
+    "merchant": "Browar w Domu",
+    "external_id": "demo-10",
+    "name": "Zestaw do warzenia piwa w domu",
+    "description": "Przykładowy produkt demo: zestaw do warzenia piwa w domu.",
+    "price_pln": 229,
+    "category": "Hobby > Piwo domowe",
+    "tags": [
+      "piwo"
+    ],
+    "image_url": "/demo/p-10.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000010",
+    "commission_rate": 0.1,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000011",
+    "network": "demo",
+    "merchant": "Czekoladownia",
+    "external_id": "demo-11",
+    "name": "Pralinki ręcznie robione 24 szt.",
+    "description": "Przykładowy produkt demo: pralinki ręcznie robione 24 szt..",
+    "price_pln": 79,
+    "category": "Żywność > Słodycze > Czekolada",
+    "tags": [
+      "słodycze",
+      "eko"
+    ],
+    "image_url": "/demo/p-11.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000011",
+    "commission_rate": 0.12,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000012",
+    "network": "demo",
+    "merchant": "Planszomania",
+    "external_id": "demo-12",
+    "name": "Gra planszowa strategiczna dla 2–4 osób",
+    "description": "Przykładowy produkt demo: gra planszowa strategiczna dla 2–4 osób.",
+    "price_pln": 159,
+    "category": "Gry > Gry planszowe",
+    "tags": [
+      "planszówki",
+      "gry"
+    ],
+    "image_url": "/demo/p-12.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000012",
+    "commission_rate": null,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000013",
+    "network": "demo",
+    "merchant": "Planszomania",
+    "external_id": "demo-13",
+    "name": "Gra karciana imprezowa",
+    "description": "Przykładowy produkt demo: gra karciana imprezowa.",
+    "price_pln": 49,
+    "category": "Gry > Gry towarzyskie",
+    "tags": [
+      "planszówki",
+      "gry"
+    ],
+    "image_url": "/demo/p-13.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000013",
+    "commission_rate": 0.03,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000014",
+    "network": "demo",
+    "merchant": "Planszomania",
+    "external_id": "demo-14",
+    "name": "Puzzle 1000 elementów – mapa świata",
+    "description": "Przykładowy produkt demo: puzzle 1000 elementów – mapa świata.",
+    "price_pln": 59.99,
+    "category": "Zabawki > Puzzle",
+    "tags": [
+      "puzzle",
+      "zabawki",
+      "dzieci"
+    ],
+    "image_url": "/demo/p-14.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000014",
+    "commission_rate": 0.05,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000015",
+    "network": "demo",
+    "merchant": "GameStrefa",
+    "external_id": "demo-15",
+    "name": "Pad bezprzewodowy do konsoli",
+    "description": "Przykładowy produkt demo: pad bezprzewodowy do konsoli.",
+    "price_pln": 279,
+    "category": "Elektronika > Gaming > Pady",
+    "tags": [
+      "gry",
+      "technologia"
+    ],
+    "image_url": "/demo/p-15.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000015",
+    "commission_rate": 0.08,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000016",
+    "network": "demo",
+    "merchant": "TechSklep",
+    "external_id": "demo-16",
+    "name": "Czytnik e-booków 6 cali",
+    "description": "Przykładowy produkt demo: czytnik e-booków 6 cali.",
+    "price_pln": 499,
+    "category": "Elektronika > Czytniki e-book",
+    "tags": [
+      "książki",
+      "technologia"
+    ],
+    "image_url": "/demo/p-16.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000016",
+    "commission_rate": 0.1,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000017",
+    "network": "demo",
+    "merchant": "Księgarnia Strona",
+    "external_id": "demo-17",
+    "name": "Powieść fantasy – tom 1 w twardej oprawie",
+    "description": "Przykładowy produkt demo: powieść fantasy – tom 1 w twardej oprawie.",
+    "price_pln": 54.9,
+    "category": "Książki > Fantastyka",
+    "tags": [
+      "książki"
+    ],
+    "image_url": "/demo/p-17.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000017",
+    "commission_rate": 0.12,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000018",
+    "network": "demo",
+    "merchant": "Księgarnia Strona",
+    "external_id": "demo-18",
+    "name": "Poradnik fotografii dla początkujących",
+    "description": "Przykładowy produkt demo: poradnik fotografii dla początkujących.",
+    "price_pln": 69,
+    "category": "Książki > Poradniki > Fotografia",
+    "tags": [
+      "książki",
+      "fotografia"
+    ],
+    "image_url": "/demo/p-18.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000018",
+    "commission_rate": null,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000019",
+    "network": "demo",
+    "merchant": "Księgarnia Strona",
+    "external_id": "demo-19",
+    "name": "Manga – tom 1 serii przygodowej",
+    "description": "Przykładowy produkt demo: manga – tom 1 serii przygodowej.",
+    "price_pln": 29.99,
+    "category": "Książki > Komiksy > Manga",
+    "tags": [
+      "komiksy",
+      "anime"
+    ],
+    "image_url": "/demo/p-19.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000019",
+    "commission_rate": 0.03,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000020",
+    "network": "demo",
+    "merchant": "TechSklep",
+    "external_id": "demo-20",
+    "name": "Gramofon walizkowy z Bluetooth",
+    "description": "Przykładowy produkt demo: gramofon walizkowy z bluetooth.",
+    "price_pln": 399,
+    "category": "Elektronika > Audio > Gramofony",
+    "tags": [
+      "muzyka"
+    ],
+    "image_url": "/demo/p-20.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000020",
+    "commission_rate": 0.05,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000021",
+    "network": "demo",
+    "merchant": "TechSklep",
+    "external_id": "demo-21",
+    "name": "Słuchawki bezprzewodowe nauszne",
+    "description": "Przykładowy produkt demo: słuchawki bezprzewodowe nauszne.",
+    "price_pln": 349,
+    "category": "Elektronika > Audio > Słuchawki",
+    "tags": [
+      "muzyka"
+    ],
+    "image_url": "/demo/p-21.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000021",
+    "commission_rate": 0.08,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000022",
+    "network": "demo",
+    "merchant": "TechSklep",
+    "external_id": "demo-22",
+    "name": "Głośnik Bluetooth wodoodporny",
+    "description": "Przykładowy produkt demo: głośnik bluetooth wodoodporny.",
+    "price_pln": 199,
+    "category": "Elektronika > Audio > Głośniki",
+    "tags": [
+      "muzyka"
+    ],
+    "image_url": "/demo/p-22.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000022",
+    "commission_rate": 0.1,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000023",
+    "network": "demo",
+    "merchant": "TechSklep",
+    "external_id": "demo-23",
+    "name": "Powerbank 20 000 mAh",
+    "description": "Przykładowy produkt demo: powerbank 20 000 mah.",
+    "price_pln": 119,
+    "category": "Elektronika > Akcesoria GSM > Powerbanki",
+    "tags": [
+      "technologia"
+    ],
+    "image_url": "/demo/p-23.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000023",
+    "commission_rate": 0.12,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000024",
+    "network": "demo",
+    "merchant": "TechSklep",
+    "external_id": "demo-24",
+    "name": "Smartwatch z pomiarem tętna",
+    "description": "Przykładowy produkt demo: smartwatch z pomiarem tętna.",
+    "price_pln": 459,
+    "category": "Elektronika > Smartwatche",
+    "tags": [
+      "technologia",
+      "gadżety"
+    ],
+    "image_url": "/demo/p-24.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000024",
+    "commission_rate": null,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000025",
+    "network": "demo",
+    "merchant": "FotoŚwiat",
+    "external_id": "demo-25",
+    "name": "Aparat natychmiastowy z wkładem",
+    "description": "Przykładowy produkt demo: aparat natychmiastowy z wkładem.",
+    "price_pln": 429,
+    "category": "Elektronika > Fotografia > Aparaty",
+    "tags": [
+      "fotografia"
+    ],
+    "image_url": "/demo/p-25.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000025",
+    "commission_rate": 0.03,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000026",
+    "network": "demo",
+    "merchant": "TechSklep",
+    "external_id": "demo-26",
+    "name": "Inteligentna żarówka RGB",
+    "description": "Przykładowy produkt demo: inteligentna żarówka rgb.",
+    "price_pln": 69,
+    "category": "Elektronika > Smart home > Oświetlenie",
+    "tags": [
+      "smart-home",
+      "technologia"
+    ],
+    "image_url": "/demo/p-26.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000026",
+    "commission_rate": 0.05,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000027",
+    "network": "demo",
+    "merchant": "SportMax",
+    "external_id": "demo-27",
+    "name": "Pas do biegania na telefon",
+    "description": "Przykładowy produkt demo: pas do biegania na telefon.",
+    "price_pln": 59,
+    "category": "Sport > Bieganie > Akcesoria",
+    "tags": [
+      "bieganie",
+      "sport"
+    ],
+    "image_url": "/demo/p-27.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000027",
+    "commission_rate": 0.08,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000028",
+    "network": "demo",
+    "merchant": "SportMax",
+    "external_id": "demo-28",
+    "name": "Lampka rowerowa LED zestaw",
+    "description": "Przykładowy produkt demo: lampka rowerowa led zestaw.",
+    "price_pln": 89,
+    "category": "Sport > Rowery > Oświetlenie",
+    "tags": [
+      "rower",
+      "sport"
+    ],
+    "image_url": "/demo/p-28.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000028",
+    "commission_rate": 0.1,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000029",
+    "network": "demo",
+    "merchant": "SportMax",
+    "external_id": "demo-29",
+    "name": "Mata do jogi antypoślizgowa",
+    "description": "Przykładowy produkt demo: mata do jogi antypoślizgowa.",
+    "price_pln": 129,
+    "category": "Sport > Joga > Maty",
+    "tags": [
+      "joga",
+      "relaks"
+    ],
+    "image_url": "/demo/p-29.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000029",
+    "commission_rate": 0.12,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000030",
+    "network": "demo",
+    "merchant": "SportMax",
+    "external_id": "demo-30",
+    "name": "Hantle regulowane 2 × 10 kg",
+    "description": "Przykładowy produkt demo: hantle regulowane 2 × 10 kg.",
+    "price_pln": 299,
+    "category": "Sport > Fitness > Hantle",
+    "tags": [
+      "fitness",
+      "sport"
+    ],
+    "image_url": "/demo/p-30.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000030",
+    "commission_rate": null,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000031",
+    "network": "demo",
+    "merchant": "Górski Outlet",
+    "external_id": "demo-31",
+    "name": "Kijki trekkingowe składane",
+    "description": "Przykładowy produkt demo: kijki trekkingowe składane.",
+    "price_pln": 179,
+    "category": "Turystyka > Trekking > Kijki",
+    "tags": [
+      "góry",
+      "turystyka"
+    ],
+    "image_url": "/demo/p-31.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000031",
+    "commission_rate": 0.03,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000032",
+    "network": "demo",
+    "merchant": "Górski Outlet",
+    "external_id": "demo-32",
+    "name": "Plecak turystyczny 30 l",
+    "description": "Przykładowy produkt demo: plecak turystyczny 30 l.",
+    "price_pln": 249,
+    "category": "Turystyka > Plecaki",
+    "tags": [
+      "turystyka"
+    ],
+    "image_url": "/demo/p-32.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000032",
+    "commission_rate": 0.05,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000033",
+    "network": "demo",
+    "merchant": "Górski Outlet",
+    "external_id": "demo-33",
+    "name": "Hamak kempingowy z moskitierą",
+    "description": "Przykładowy produkt demo: hamak kempingowy z moskitierą.",
+    "price_pln": 139,
+    "category": "Turystyka > Kemping > Hamaki",
+    "tags": [
+      "kemping",
+      "turystyka"
+    ],
+    "image_url": "/demo/p-33.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000033",
+    "commission_rate": 0.08,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000034",
+    "network": "demo",
+    "merchant": "Walizkownia",
+    "external_id": "demo-34",
+    "name": "Organizer podróżny na kable",
+    "description": "Przykładowy produkt demo: organizer podróżny na kable.",
+    "price_pln": 45,
+    "category": "Podróże > Akcesoria podróżne",
+    "tags": [
+      "podróże"
+    ],
+    "image_url": "/demo/p-34.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000034",
+    "commission_rate": 0.1,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000035",
+    "network": "demo",
+    "merchant": "Przytulny Dom",
+    "external_id": "demo-35",
+    "name": "Koc z mikrofibry 150 × 200 cm",
+    "description": "Przykładowy produkt demo: koc z mikrofibry 150 × 200 cm.",
+    "price_pln": 99,
+    "category": "Dom > Tekstylia > Koce i pledy",
+    "tags": [
+      "dom"
+    ],
+    "image_url": "/demo/p-35.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000035",
+    "commission_rate": 0.12,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000036",
+    "network": "demo",
+    "merchant": "Przytulny Dom",
+    "external_id": "demo-36",
+    "name": "Plakat minimalistyczny w ramce",
+    "description": "Przykładowy produkt demo: plakat minimalistyczny w ramce.",
+    "price_pln": 89,
+    "category": "Dom > Dekoracje > Plakaty",
+    "tags": [
+      "dekoracje",
+      "dom",
+      "eko"
+    ],
+    "image_url": "/demo/p-36.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000036",
+    "commission_rate": null,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000037",
+    "network": "demo",
+    "merchant": "Przytulny Dom",
+    "external_id": "demo-37",
+    "name": "Wazon ceramiczny w stylu skandynawskim",
+    "description": "Przykładowy produkt demo: wazon ceramiczny w stylu skandynawskim.",
+    "price_pln": 79,
+    "category": "Dom > Dekoracje > Wazony",
+    "tags": [
+      "dekoracje",
+      "dom",
+      "eko"
+    ],
+    "image_url": "/demo/p-37.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000037",
+    "commission_rate": 0.03,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000038",
+    "network": "demo",
+    "merchant": "Zielony Parapet",
+    "external_id": "demo-38",
+    "name": "Zestaw do uprawy ziół na parapecie",
+    "description": "Przykładowy produkt demo: zestaw do uprawy ziół na parapecie.",
+    "price_pln": 69,
+    "category": "Ogród > Rośliny > Zestawy do uprawy",
+    "tags": [
+      "rośliny"
+    ],
+    "image_url": "/demo/p-38.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000038",
+    "commission_rate": 0.05,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000039",
+    "network": "demo",
+    "merchant": "Zielony Parapet",
+    "external_id": "demo-39",
+    "name": "Doniczka samonawadniająca",
+    "description": "Przykładowy produkt demo: doniczka samonawadniająca.",
+    "price_pln": 49,
+    "category": "Ogród > Rośliny > Doniczki",
+    "tags": [
+      "rośliny"
+    ],
+    "image_url": "/demo/p-39.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000039",
+    "commission_rate": 0.08,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000040",
+    "network": "demo",
+    "merchant": "Majster.pl",
+    "external_id": "demo-40",
+    "name": "Zestaw wkrętaków precyzyjnych 60 el.",
+    "description": "Przykładowy produkt demo: zestaw wkrętaków precyzyjnych 60 el..",
+    "price_pln": 109,
+    "category": "Narzędzia > Narzędzia ręczne > Wkrętaki",
+    "tags": [
+      "narzędzia"
+    ],
+    "image_url": "/demo/p-40.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000040",
+    "commission_rate": 0.1,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000041",
+    "network": "demo",
+    "merchant": "AutoDodatki",
+    "external_id": "demo-41",
+    "name": "Organizer do samochodu na fotel",
+    "description": "Przykładowy produkt demo: organizer do samochodu na fotel.",
+    "price_pln": 59,
+    "category": "Motoryzacja > Akcesoria samochodowe",
+    "tags": [
+      "motoryzacja"
+    ],
+    "image_url": "/demo/p-41.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000041",
+    "commission_rate": 0.12,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000042",
+    "network": "demo",
+    "merchant": "Piękna Strona",
+    "external_id": "demo-42",
+    "name": "Zestaw kosmetyków do pielęgnacji twarzy",
+    "description": "Przykładowy produkt demo: zestaw kosmetyków do pielęgnacji twarzy.",
+    "price_pln": 149,
+    "category": "Uroda > Pielęgnacja twarzy",
+    "tags": [
+      "uroda",
+      "pielęgnacja"
+    ],
+    "image_url": "/demo/p-42.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000042",
+    "commission_rate": null,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000043",
+    "network": "demo",
+    "merchant": "Piękna Strona",
+    "external_id": "demo-43",
+    "name": "Woda perfumowana 50 ml – nuty drzewne",
+    "description": "Przykładowy produkt demo: woda perfumowana 50 ml – nuty drzewne.",
+    "price_pln": 219,
+    "category": "Uroda > Perfumy",
+    "tags": [
+      "uroda",
+      "perfumy"
+    ],
+    "image_url": "/demo/p-43.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000043",
+    "commission_rate": 0.03,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000044",
+    "network": "demo",
+    "merchant": "Srebrna Nić",
+    "external_id": "demo-44",
+    "name": "Bransoletka srebrna z grawerem",
+    "description": "Przykładowy produkt demo: bransoletka srebrna z grawerem.",
+    "price_pln": 189,
+    "category": "Biżuteria > Bransoletki > Personalizowane",
+    "tags": [
+      "biżuteria",
+      "personalizacja"
+    ],
+    "image_url": "/demo/p-44.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000044",
+    "commission_rate": 0.05,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000045",
+    "network": "demo",
+    "merchant": "Czas i Styl",
+    "external_id": "demo-45",
+    "name": "Zegarek klasyczny ze skórzanym paskiem",
+    "description": "Przykładowy produkt demo: zegarek klasyczny ze skórzanym paskiem.",
+    "price_pln": 359,
+    "category": "Moda > Zegarki",
+    "tags": [
+      "moda",
+      "zegarki"
+    ],
+    "image_url": "/demo/p-45.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000045",
+    "commission_rate": 0.08,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000046",
+    "network": "demo",
+    "merchant": "Czas i Styl",
+    "external_id": "demo-46",
+    "name": "Portfel skórzany męski",
+    "description": "Przykładowy produkt demo: portfel skórzany męski.",
+    "price_pln": 149,
+    "category": "Moda > Torby i portfele",
+    "tags": [
+      "moda",
+      "torby"
+    ],
+    "image_url": "/demo/p-46.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000046",
+    "commission_rate": 0.1,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000047",
+    "network": "demo",
+    "merchant": "Przytulny Dom",
+    "external_id": "demo-47",
+    "name": "Świeca sojowa o zapachu lasu",
+    "description": "Przykładowy produkt demo: świeca sojowa o zapachu lasu.",
+    "price_pln": 24.99,
+    "category": "Dom > Świece i zapachy",
+    "tags": [
+      "perfumy",
+      "świece",
+      "relaks"
+    ],
+    "image_url": "/demo/p-47.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000047",
+    "commission_rate": 0.12,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000048",
+    "network": "demo",
+    "merchant": "Piękna Strona",
+    "external_id": "demo-48",
+    "name": "Zestaw do kąpieli spa",
+    "description": "Przykładowy produkt demo: zestaw do kąpieli spa.",
+    "price_pln": 99,
+    "category": "Uroda > Kąpiel > Zestawy spa",
+    "tags": [
+      "pielęgnacja",
+      "uroda",
+      "spa",
+      "relaks"
+    ],
+    "image_url": "/demo/p-48.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000048",
+    "commission_rate": null,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000049",
+    "network": "demo",
+    "merchant": "Zoo Dom",
+    "external_id": "demo-49",
+    "name": "Drapak dla kota z budką",
+    "description": "Przykładowy produkt demo: drapak dla kota z budką.",
+    "price_pln": 199,
+    "category": "Zwierzęta > Koty > Drapaki",
+    "tags": [
+      "koty",
+      "zwierzęta"
+    ],
+    "image_url": "/demo/p-49.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000049",
+    "commission_rate": 0.03,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  },
+  {
+    "id": "d0000000-0000-4000-8000-000000000050",
+    "network": "demo",
+    "merchant": "Papierowe Love",
+    "external_id": "demo-50",
+    "name": "Planer roczny w twardej oprawie",
+    "description": "Przykładowy produkt demo: planer roczny w twardej oprawie.",
+    "price_pln": 69,
+    "category": "Biuro > Kalendarze i planery",
+    "tags": [
+      "biuro",
+      "planowanie"
+    ],
+    "image_url": "/demo/p-50.svg",
+    "affiliate_url": "/demo-produkt/d0000000-0000-4000-8000-000000000050",
+    "commission_rate": 0.05,
+    "in_stock": true,
+    "updated_at": "2026-11-14T00:00:00.000Z"
+  }
+]

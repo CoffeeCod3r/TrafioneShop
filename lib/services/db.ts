@@ -1,0 +1,96 @@
+/**
+ * Database service: one repository per table.
+ * Implementations: Supabase (impl/db-real.ts) and a demo JSON file (impl/db-demo.ts).
+ * The rest of the code uses only this interface via getRepos().
+ * Shared with Node scripts: relative imports with `.ts` extensions only.
+ */
+import type {
+  AiUsageRow,
+  AllowedShopRow,
+  ClickRow,
+  Insert,
+  ProductRow,
+  PurchaseRow,
+  ResultRow,
+  SubscriberRow,
+  Update,
+} from "../db.ts";
+import type { ProductUpsert } from "../feeds/normalize.ts";
+import { isMockMode } from "../mode.ts";
+import { createDemoRepos } from "./impl/db-demo.ts";
+import { createRealRepos } from "./impl/db-real.ts";
+
+export type ProductCandidateQuery = {
+  minPrice: number;
+  maxPrice: number;
+  /** When set, products must share at least one of these tags. */
+  anyOfTags?: readonly string[];
+  /** Products with any of these tags are excluded. */
+  noneOfTags?: readonly string[];
+  limit: number;
+};
+
+export type ProductsRepo = {
+  upsertMany(rows: ProductUpsert[]): Promise<void>;
+  listInStockExternalIds(network: string): Promise<string[]>;
+  markOutOfStock(network: string, externalIds: string[]): Promise<void>;
+  /** In-stock products matching the query, ordered by commission_rate desc (nulls last). */
+  findCandidates(query: ProductCandidateQuery): Promise<ProductRow[]>;
+  getByIds(ids: readonly string[]): Promise<ProductRow[]>;
+  getById(id: string): Promise<ProductRow | null>;
+};
+
+export type ResultsRepo = {
+  create(row: Insert<"results">): Promise<ResultRow>;
+  getById(id: string): Promise<ResultRow | null>;
+  update(id: string, patch: Update<"results">): Promise<void>;
+};
+
+export type ClicksRepo = {
+  create(row: Insert<"clicks">): Promise<ClickRow>;
+};
+
+export type PurchasesRepo = {
+  /** Inserts unless a purchase with the same stripe_session_id exists (idempotent webhooks). */
+  createIfNew(row: Insert<"purchases">): Promise<{ purchase: PurchaseRow; created: boolean }>;
+  getBySessionId(stripeSessionId: string): Promise<PurchaseRow | null>;
+  update(id: string, patch: Update<"purchases">): Promise<void>;
+};
+
+export type SubscribersRepo = {
+  upsertByEmail(row: Insert<"subscribers">): Promise<SubscriberRow>;
+};
+
+export type AllowedShopsRepo = {
+  listActive(): Promise<AllowedShopRow[]>;
+};
+
+export type AiUsageRepo = {
+  createMany(rows: Insert<"ai_usage">[]): Promise<void>;
+  /** For the admin panel. */
+  listSince(since: string): Promise<AiUsageRow[]>;
+};
+
+export type RateLimitsRepo = {
+  /** Atomically consumes one unit; false when the limit is reached. */
+  consume(key: string, windowStart: string, limit: number): Promise<boolean>;
+};
+
+export type Repos = {
+  results: ResultsRepo;
+  products: ProductsRepo;
+  clicks: ClicksRepo;
+  purchases: PurchasesRepo;
+  subscribers: SubscribersRepo;
+  allowedShops: AllowedShopsRepo;
+  aiUsage: AiUsageRepo;
+  rateLimits: RateLimitsRepo;
+};
+
+let repos: Repos | undefined;
+
+export function getRepos(): Repos {
+  if (typeof window !== "undefined") throw new Error("Database repositories are server-only");
+  repos ??= isMockMode() ? createDemoRepos() : createRealRepos();
+  return repos;
+}

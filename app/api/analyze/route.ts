@@ -1,15 +1,13 @@
-import { choosePicks } from "@/lib/ai/picks";
-import { analyzeProfile } from "@/lib/ai/profile";
 import { recordAiUsage } from "@/lib/ai/usage";
 import { analyzeRequestSchema, type AnalyzeResponse } from "@/lib/analyze/schema";
-import { getDb } from "@/lib/db";
 import { getEnv } from "@/lib/env";
 import { describeError, logEvent } from "@/lib/log";
 import { selectCandidates } from "@/lib/picks/candidates";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { getClientIp, hashIp, readJsonBody, RequestBodyError } from "@/lib/request";
 import { createResult } from "@/lib/results";
-import { verifyTurnstile } from "@/lib/turnstile";
+import { getAi } from "@/lib/services/ai";
+import { getCaptcha } from "@/lib/services/captcha";
 
 // Node.js runtime and dynamic rendering are the defaults (cacheComponents forbids `runtime`/`dynamic` exports).
 // Profile (with possible retries) + picks (with retry) + DB writes.
@@ -44,19 +42,16 @@ export async function POST(request: Request) {
 
     // 1. Turnstile
     const ip = getClientIp(request);
-    const human = await verifyTurnstile({
+    const human = await getCaptcha().verify({
       token: typeof raw.turnstileToken === "string" ? raw.turnstileToken : undefined,
-      secret: env.TURNSTILE_SECRET_KEY,
       ip,
-      expectedAction: "analyze",
+      action: "analyze",
     });
     if (!human) return error(403, "Weryfikacja nie powiodła się. Odśwież stronę i spróbuj ponownie.");
 
     // 2. Rate limit (photo and no-photo analyses have separate daily limits)
-    const db = getDb();
     const withPhoto = raw.photo !== undefined && raw.photo !== null;
     const allowed = await consumeRateLimit(
-      db,
       withPhoto ? "analyzeWithPhoto" : "analyzeWithoutPhoto",
       hashIp(ip, env.IP_HASH_SALT),
     );
@@ -79,20 +74,21 @@ export async function POST(request: Request) {
 
     // 4. Style profile (the photo is used only here and then dropped)
     const { answers, photo } = parsed.data;
-    const profileStep = await analyzeProfile(answers, photo ?? null);
+    const ai = getAi();
+    const profileStep = await ai.analyzeProfile(answers, photo ?? null);
     const { profile } = profileStep.response;
 
     // 5. Candidates from the catalog and AI picks
-    const { candidates, relaxed } = await selectCandidates(db, {
+    const { candidates, relaxed } = await selectCandidates({
       budget: answers.budget,
       tags: profile.tags,
       avoid: profile.avoid,
     });
-    const picksStep = await choosePicks(answers, profile, candidates);
+    const picksStep = await ai.pickProducts(answers, profile, candidates);
 
     // 6. Save the result (no photo) and the token usage
     const { id, refCode } = await createResult({ answers, profile, picks: picksStep.result.picks });
-    await recordAiUsage([...profileStep.usage, ...picksStep.usage].map((entry) => ({ ...entry, resultId: id })));
+    await recordAiUsage([...profileStep.usage, ...picksStep.usage], id);
 
     logEvent("analyze.done", {
       withPhoto,

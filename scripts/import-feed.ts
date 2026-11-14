@@ -1,5 +1,5 @@
 /**
- * Imports product feeds into the products table.
+ * Imports product feeds into the products table (Supabase, or the demo file when MOCK_MODE=true).
  *
  *   npm run import:feed                                   # all feeds from FEED_URLS
  *   npm run import:feed -- --dry-run                      # parse + validate only, no writes
@@ -12,9 +12,10 @@ import { parseFeedSources } from "../lib/feeds/config.ts";
 import { decodeFeedBody } from "../lib/feeds/fetch.ts";
 import { runImport } from "../lib/feeds/import.ts";
 import { formatImportStats } from "../lib/feeds/report.ts";
-import { supabaseProductStore, type ProductStore } from "../lib/feeds/store.ts";
+import type { ProductStore } from "../lib/feeds/store.ts";
 import type { FeedSource } from "../lib/feeds/types.ts";
-import { createScriptDb } from "./script-db.ts";
+import { isMockMode } from "../lib/mode.ts";
+import { getRepos } from "../lib/services/db.ts";
 
 const { values } = parseArgs({
   options: {
@@ -28,7 +29,7 @@ const dryRun = values["dry-run"] ?? false;
 
 /** Store that only reports, for --dry-run without a database. */
 const dryRunStore: ProductStore = {
-  async upsert() {},
+  async upsertMany() {},
   async listInStockExternalIds() {
     return [];
   },
@@ -50,7 +51,8 @@ async function main() {
     sources = parseFeedSources(feedUrls);
   }
 
-  const store = dryRun ? dryRunStore : supabaseProductStore(createScriptDb());
+  if (!dryRun) console.log(`Target: ${isMockMode() ? "demo database file (MOCK_MODE=true)" : "Supabase"}`);
+  const store = dryRun ? dryRunStore : getRepos().products;
   const stats = await runImport({ sources, store, loadFeed, dryRun, log: (message) => console.log(message) });
 
   console.log("");

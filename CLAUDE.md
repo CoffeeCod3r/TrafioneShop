@@ -41,3 +41,9 @@ about the recipient and can optionally add a photo of them.
 - After every change run typecheck and lint; at the end briefly describe what was done
   and how to test it.
 - Do not add libraries outside the stack without asking first.
+- Every external service (AI, payments, database, captcha, email) has an interface in
+  `lib/services/<name>.ts` and two implementations in `lib/services/impl/`: a real one and
+  a demo one. The rest of the code uses only the interface (`getAi()`, `getPayments()`,
+  `getRepos()`, `getCaptcha()`, `getEmail()`), never an SDK or an implementation directly.
+  `MOCK_MODE` (default `true`) picks the demo implementations. `MOCK_MODE=true` must never
+  reach production: the build and the server refuse to start when `VERCEL_ENV=production`.

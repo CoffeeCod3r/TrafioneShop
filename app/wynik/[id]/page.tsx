@@ -5,6 +5,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ExternalLink, Info, RotateCcw, Sparkles } from "lucide-react";
 
+import { PaidSearchSection } from "@/components/results/paid-search-section";
 import { Button } from "@/components/ui/button";
 import { CHILD_PHOTO_NOTICE } from "@/lib/analyze/schema";
 import { getResultView } from "@/lib/results";
@@ -39,6 +40,7 @@ async function ResultContent({ params, searchParams }: PageProps) {
   const [view, query] = await Promise.all([getResultView(id), searchParams]);
   if (!view) notFound();
   const photoSkipped = query.zdjecie === "pominiete";
+  const justPaid = query.platnosc === "ok";
 
   return (
     <div className="flex flex-col gap-6 py-6">
@@ -111,6 +113,20 @@ async function ResultContent({ params, searchParams }: PageProps) {
           </ol>
         )}
       </section>
+
+      {justPaid && view.result.paid_status !== "ready" && view.result.paid_status !== "refunded" && (
+        <p className="rounded-xl bg-secondary p-4 text-sm" role="status">
+          Dziękujemy za płatność! Wyniki z całego internetu pojawią się poniżej za chwilę.
+        </p>
+      )}
+
+      <PaidSearchSection
+        resultId={view.result.id}
+        status={view.result.paid_status}
+        priceVariant={view.result.price_variant}
+        webPicks={view.result.webPicks}
+        dedications={view.result.dedications}
+      />
 
       <p className="text-xs text-muted-foreground">
         Linki do sklepów są linkami partnerskimi: jeśli coś kupisz, możemy dostać prowizję. Cena dla Ciebie się nie

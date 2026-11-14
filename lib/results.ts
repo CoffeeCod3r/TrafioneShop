@@ -1,19 +1,27 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomInt } from "node:crypto";
 
-import type { GiftPick } from "@/lib/ai/picks";
 import type { StyleProfile } from "@/lib/analyze/schema";
-import { getDb, type ProductRow, type ResultRow } from "@/lib/db";
+import type { PriceVariant, ProductRow, ResultRow } from "@/lib/db";
+import type { Dedications, WebPick } from "@/lib/paid/schema";
 import type { QuizAnswers } from "@/lib/quiz/schema";
+import type { GiftPick } from "@/lib/services/ai";
+import { getRepos } from "@/lib/services/db";
 
 /** No 0/O/1/I/L to avoid confusion when the code is typed or read aloud. */
 const REF_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
 export const REF_CODE_LENGTH = 7;
+export const PRICE_VARIANTS: readonly PriceVariant[] = [499, 999];
 
 export function generateRefCode(length = REF_CODE_LENGTH): string {
   const bytes = randomBytes(length);
   let code = "";
   for (const byte of bytes) code += REF_ALPHABET[byte % REF_ALPHABET.length];
   return code;
+}
+
+/** A/B price for paid search, assigned once per result so the shown price never changes. */
+export function pickPriceVariant(): PriceVariant {
+  return PRICE_VARIANTS[randomInt(PRICE_VARIANTS.length)];
 }
 
 /** Saves the result (answers and profile only, never the photo). Returns id and ref_code. */
@@ -23,13 +31,12 @@ export async function createResult(input: {
   picks: GiftPick[];
 }): Promise<{ id: string; refCode: string }> {
   const { answers, profile, picks } = input;
-  const db = getDb();
+  const results = getRepos().results;
 
   for (let attempt = 1; attempt <= 3; attempt++) {
     const refCode = generateRefCode();
-    const { data, error } = await db
-      .from("results")
-      .insert({
+    try {
+      const row = await results.create({
         recipient: answers.recipient,
         budget_pln: answers.budget,
         occasion: answers.occasion,
@@ -40,13 +47,13 @@ export async function createResult(input: {
         product_ids: picks.map((pick) => pick.productId),
         reasons: Object.fromEntries(picks.map((pick) => [pick.productId, pick.reason])),
         ref_code: refCode,
-      })
-      .select("id, ref_code")
-      .single();
-
-    if (!error) return { id: data.id, refCode: data.ref_code ?? refCode };
-    // 23505 = unique violation (ref_code collision): try a new code.
-    if (error.code !== "23505") throw new Error(`Saving result failed (${error.code ?? "unknown"})`);
+        price_variant: pickPriceVariant(),
+      });
+      return { id: row.id, refCode: row.ref_code ?? refCode };
+    } catch (error) {
+      // 23505 = unique violation (ref_code collision): try a new code.
+      if ((error as { code?: string }).code !== "23505") throw error;
+    }
   }
   throw new Error("Saving result failed (ref_code collisions)");
 }
@@ -57,35 +64,35 @@ export type ResultProduct = Pick<
 > & { reason: string };
 
 export type ResultView = {
-  result: Pick<ResultRow, "id" | "created_at" | "style_profile" | "tags" | "ref_code" | "budget_pln" | "paid_status">;
+  result: Pick<
+    ResultRow,
+    "id" | "created_at" | "style_profile" | "tags" | "ref_code" | "budget_pln" | "paid_status" | "price_variant"
+  > & { webPicks: WebPick[] | null; dedications: Dedications | null };
   products: ResultProduct[];
 };
 
 /** Result with its products in pick order. Returns null when not found. */
 export async function getResultView(id: string): Promise<ResultView | null> {
-  const db = getDb();
-  const { data: result, error } = await db
-    .from("results")
-    .select("id, created_at, style_profile, tags, ref_code, budget_pln, paid_status, product_ids, reasons")
-    .eq("id", id)
-    .maybeSingle();
-  if (error) throw new Error(`Loading result failed (${error.code ?? "unknown"})`);
+  const repos = getRepos();
+  const result = await repos.results.getById(id);
   if (!result) return null;
 
   const reasons = (result.reasons ?? {}) as Record<string, string>;
-  let products: ResultProduct[] = [];
-  if (result.product_ids.length > 0) {
-    const { data, error: productsError } = await db
-      .from("products")
-      .select("id, name, price_pln, merchant, image_url, affiliate_url, in_stock")
-      .in("id", result.product_ids);
-    if (productsError) throw new Error(`Loading products failed (${productsError.code ?? "unknown"})`);
-    const byId = new Map(data.map((product) => [product.id, product]));
-    products = result.product_ids
-      .map((productId) => byId.get(productId))
-      .filter((product): product is NonNullable<typeof product> => Boolean(product))
-      .map((product) => ({ ...product, reason: reasons[product.id] ?? "" }));
-  }
+  const rows = await repos.products.getByIds(result.product_ids);
+  const byId = new Map(rows.map((product) => [product.id, product]));
+  const products = result.product_ids
+    .map((productId) => byId.get(productId))
+    .filter((product): product is ProductRow => Boolean(product))
+    .map((product) => ({
+      id: product.id,
+      name: product.name,
+      price_pln: product.price_pln,
+      merchant: product.merchant,
+      image_url: product.image_url,
+      affiliate_url: product.affiliate_url,
+      in_stock: product.in_stock,
+      reason: reasons[product.id] ?? "",
+    }));
 
   return {
     result: {
@@ -96,6 +103,9 @@ export async function getResultView(id: string): Promise<ResultView | null> {
       ref_code: result.ref_code,
       budget_pln: result.budget_pln,
       paid_status: result.paid_status,
+      price_variant: result.price_variant,
+      webPicks: (result.web_picks as WebPick[] | null) ?? null,
+      dedications: (result.dedications as Dedications | null) ?? null,
     },
     products,
   };

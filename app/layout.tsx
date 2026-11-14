@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 
+import { DemoBanner } from "@/components/demo-banner";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import "./globals.css";
@@ -27,6 +28,7 @@ export default function RootLayout({
   return (
     <html lang="pl" className={`${geistSans.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">
+        <DemoBanner />
         <SiteHeader />
         <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4">
           {children}

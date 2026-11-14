@@ -124,7 +124,7 @@ export async function runImport({
       stats.accepted = rows.length;
       for (const row of rows) if (row.in_stock !== false) seen.add(row.external_id);
 
-      if (!dryRun && rows.length > 0) await store.upsert(rows);
+      if (!dryRun && rows.length > 0) await store.upsertMany(rows);
       stats.upserted = dryRun ? 0 : rows.length;
       log(`Feed ${label}: parsed ${stats.parsed}, accepted ${stats.accepted}`);
     } catch (error) {

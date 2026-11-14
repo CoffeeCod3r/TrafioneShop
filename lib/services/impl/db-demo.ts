@@ -1,0 +1,295 @@
+import { randomUUID } from "node:crypto";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import path from "node:path";
+
+import demoShops from "../../../data/demo-shops.json" with { type: "json" };
+import sampleProducts from "../../../data/sample-products.json" with { type: "json" };
+import type {
+  AiUsageRow,
+  AllowedShopRow,
+  ClickRow,
+  ProductRow,
+  PurchaseRow,
+  RateLimitRow,
+  ResultRow,
+  SubscriberRow,
+} from "../../db.ts";
+import type { Repos } from "../db.ts";
+
+/**
+ * Demo database: a JSON file (default .data/demo-db.json, git-ignored).
+ * On Vercel previews the project folder is read-only, so /tmp is used there.
+ * Delete the file to reset the demo data.
+ */
+
+type DemoData = {
+  products: ProductRow[];
+  results: ResultRow[];
+  clicks: ClickRow[];
+  purchases: PurchaseRow[];
+  subscribers: SubscriberRow[];
+  allowed_shops: AllowedShopRow[];
+  ai_usage: AiUsageRow[];
+  rate_limits: RateLimitRow[];
+};
+
+export function demoDbPath(): string {
+  if (process.env.DEMO_DB_PATH) return process.env.DEMO_DB_PATH;
+  if (process.env.VERCEL) return "/tmp/demo-db.json";
+  return path.join(process.cwd(), ".data", "demo-db.json");
+}
+
+function emptyData(): DemoData {
+  return {
+    products: [],
+    results: [],
+    clicks: [],
+    purchases: [],
+    subscribers: [],
+    allowed_shops: [],
+    ai_usage: [],
+    rate_limits: [],
+  };
+}
+
+/** First run: sample catalog and shops. Deterministic (no random IDs) so reads are stable. */
+function initialData(): DemoData {
+  return {
+    ...emptyData(),
+    products: structuredClone(sampleProducts) as ProductRow[],
+    allowed_shops: demoShops.map((shop, index) => ({
+      id: `d5000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+      active: true,
+      ...shop,
+    })),
+  };
+}
+
+const now = () => new Date().toISOString();
+
+// All access is serialized so concurrent requests cannot lose writes.
+let queue: Promise<unknown> = Promise.resolve();
+
+async function load(file: string): Promise<DemoData> {
+  try {
+    return { ...emptyData(), ...(JSON.parse(await readFile(file, "utf8")) as Partial<DemoData>) };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return initialData();
+    throw new Error("Demo database file is corrupted. Delete it to reset the demo data.");
+  }
+}
+
+async function save(file: string, data: DemoData): Promise<void> {
+  await mkdir(path.dirname(file), { recursive: true });
+  const temp = `${file}.${process.pid}.tmp`;
+  await writeFile(temp, JSON.stringify(data, null, 2));
+  await rename(temp, file);
+}
+
+function withData<T>(fn: (data: DemoData) => T, options: { write: boolean }): Promise<T> {
+  const run = queue.then(async () => {
+    const file = demoDbPath();
+    const data = await load(file);
+    const result = fn(data);
+    if (options.write) await save(file, data);
+    return result;
+  });
+  queue = run.catch(() => undefined);
+  return run;
+}
+
+const read = <T>(fn: (data: DemoData) => T) => withData(fn, { write: false });
+const write = <T>(fn: (data: DemoData) => T) => withData(fn, { write: true });
+
+function byCommissionDesc(a: ProductRow, b: ProductRow): number {
+  return (b.commission_rate ?? -1) - (a.commission_rate ?? -1);
+}
+
+export function createDemoRepos(): Repos {
+  return {
+    products: {
+      upsertMany: (rows) =>
+        write((data) => {
+          for (const row of rows) {
+            const existing = data.products.find(
+              (product) => product.network === row.network && product.external_id === row.external_id,
+            );
+            if (existing) Object.assign(existing, row, { updated_at: now() });
+            else
+              data.products.push({
+                id: randomUUID(),
+                description: null,
+                category: null,
+                tags: [],
+                image_url: null,
+                commission_rate: null,
+                in_stock: true,
+                ...row,
+                updated_at: now(),
+              });
+          }
+        }),
+      listInStockExternalIds: (network) =>
+        read((data) => data.products.filter((p) => p.network === network && p.in_stock).map((p) => p.external_id)),
+      markOutOfStock: (network, externalIds) =>
+        write((data) => {
+          const ids = new Set(externalIds);
+          for (const product of data.products) {
+            if (product.network === network && ids.has(product.external_id)) {
+              product.in_stock = false;
+              product.updated_at = now();
+            }
+          }
+        }),
+      findCandidates: ({ minPrice, maxPrice, anyOfTags, noneOfTags, limit }) =>
+        read((data) =>
+          data.products
+            .filter(
+              (p) =>
+                p.in_stock &&
+                p.price_pln >= minPrice &&
+                p.price_pln <= maxPrice &&
+                (!anyOfTags?.length || p.tags.some((tag) => anyOfTags.includes(tag))) &&
+                !(noneOfTags?.length && p.tags.some((tag) => noneOfTags.includes(tag))),
+            )
+            .sort(byCommissionDesc)
+            .slice(0, limit),
+        ),
+      getByIds: (ids) => read((data) => data.products.filter((p) => ids.includes(p.id))),
+      getById: (id) => read((data) => data.products.find((p) => p.id === id) ?? null),
+    },
+
+    results: {
+      create: (row) =>
+        write((data) => {
+          if (row.ref_code && data.results.some((result) => result.ref_code === row.ref_code)) {
+            throw Object.assign(new Error("Saving result failed (23505)"), { code: "23505" });
+          }
+          const result: ResultRow = {
+            id: randomUUID(),
+            created_at: now(),
+            recipient: null,
+            budget_pln: null,
+            occasion: null,
+            answers: {},
+            style_profile: null,
+            tags: [],
+            avoid: [],
+            product_ids: [],
+            reasons: {},
+            ref_code: null,
+            price_variant: null,
+            paid_status: "none",
+            web_picks: null,
+            dedications: null,
+            ...row,
+          };
+          data.results.push(result);
+          return result;
+        }),
+      getById: (id) => read((data) => data.results.find((result) => result.id === id) ?? null),
+      update: (id, patch) =>
+        write((data) => {
+          const result = data.results.find((item) => item.id === id);
+          if (!result) throw new Error("Updating result failed (not found)");
+          Object.assign(result, patch);
+        }),
+    },
+
+    clicks: {
+      create: (row) =>
+        write((data) => {
+          const click: ClickRow = { id: randomUUID(), created_at: now(), result_id: null, product_id: null, ...row };
+          data.clicks.push(click);
+          return click;
+        }),
+    },
+
+    purchases: {
+      createIfNew: (row) =>
+        write((data) => {
+          const existing = data.purchases.find((p) => p.stripe_session_id === row.stripe_session_id);
+          if (existing) return { purchase: existing, created: false };
+          const purchase: PurchaseRow = {
+            id: randomUUID(),
+            created_at: now(),
+            result_id: null,
+            payment_intent_id: null,
+            status: "paid",
+            ...row,
+          };
+          data.purchases.push(purchase);
+          return { purchase, created: true };
+        }),
+      getBySessionId: (sessionId) =>
+        read((data) => data.purchases.find((p) => p.stripe_session_id === sessionId) ?? null),
+      update: (id, patch) =>
+        write((data) => {
+          const purchase = data.purchases.find((p) => p.id === id);
+          if (!purchase) throw new Error("Updating purchase failed (not found)");
+          Object.assign(purchase, patch);
+        }),
+    },
+
+    subscribers: {
+      upsertByEmail: (row) =>
+        write((data) => {
+          const email = row.email.toLowerCase();
+          const existing = data.subscribers.find((s) => s.email === email);
+          if (existing) {
+            Object.assign(existing, row, { email });
+            return existing;
+          }
+          const subscriber: SubscriberRow = {
+            id: randomUUID(),
+            consent_at: now(),
+            confirmed_at: null,
+            occasions: [],
+            ...row,
+            email,
+          };
+          data.subscribers.push(subscriber);
+          return subscriber;
+        }),
+    },
+
+    allowedShops: {
+      listActive: () => read((data) => data.allowed_shops.filter((shop) => shop.active)),
+    },
+
+    aiUsage: {
+      createMany: (rows) =>
+        write((data) => {
+          for (const row of rows) {
+            data.ai_usage.push({
+              id: randomUUID(),
+              created_at: now(),
+              result_id: null,
+              input_tokens: 0,
+              output_tokens: 0,
+              web_searches: 0,
+              web_fetches: 0,
+              ...row,
+            });
+          }
+        }),
+      listSince: (since) =>
+        read((data) => data.ai_usage.filter((row) => row.created_at >= since).sort((a, b) => b.created_at.localeCompare(a.created_at))),
+    },
+
+    rateLimits: {
+      consume: (key, windowStart, limit) =>
+        write((data) => {
+          if (limit <= 0) return false;
+          const row = data.rate_limits.find((item) => item.key === key && item.window_start === windowStart);
+          if (!row) {
+            data.rate_limits.push({ key, window_start: windowStart, count: 1 });
+            return true;
+          }
+          if (row.count >= limit) return false;
+          row.count += 1;
+          return true;
+        }),
+    },
+  };
+}

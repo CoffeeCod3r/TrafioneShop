@@ -1,0 +1,62 @@
+[
+  {
+    "id": "w1",
+    "title": "Personalizowany kubek emaliowany z grawerem",
+    "price_pln": 69,
+    "shop_domain": "sklep-z-pasja.example",
+    "shop_name": "Sklep z Pasją",
+    "url": "/demo-produkt/w1",
+    "image_url": "/demo/web-1.svg",
+    "reason": "Pasuje do kogoś, kto kocha poranną kawę w plenerze."
+  },
+  {
+    "id": "w2",
+    "title": "Lampka nocna w kształcie księżyca",
+    "price_pln": 119,
+    "shop_domain": "gadzetownia.example",
+    "shop_name": "Gadżetownia",
+    "url": "/demo-produkt/w2",
+    "image_url": "/demo/web-2.svg",
+    "reason": "Przytulny gadżet do czytania wieczorem."
+  },
+  {
+    "id": "w3",
+    "title": "Zestaw zakładek do książek z drewna",
+    "price_pln": 39,
+    "shop_domain": "ksiegarnia-pod-chmurka.example",
+    "shop_name": "Księgarnia pod Chmurką",
+    "url": "/demo-produkt/w3",
+    "image_url": "/demo/web-3.svg",
+    "reason": "Mały, ale bardzo osobisty prezent dla mola książkowego."
+  },
+  {
+    "id": "w4",
+    "title": "Bambusowy zestaw do parzenia herbaty",
+    "price_pln": 89,
+    "shop_domain": "eko-dom.example",
+    "shop_name": "Eko Dom",
+    "url": "/demo-produkt/w4",
+    "image_url": "/demo/web-4.svg",
+    "reason": "Ekologiczny rytuał na spokojne popołudnia."
+  },
+  {
+    "id": "w5",
+    "title": "Butelka termiczna 750 ml na wycieczki",
+    "price_pln": 99,
+    "shop_domain": "sportowy-swiat.example",
+    "shop_name": "Sportowy Świat",
+    "url": "/demo-produkt/w5",
+    "image_url": "/demo/web-5.svg",
+    "reason": "Przyda się na każdym szlaku i treningu."
+  },
+  {
+    "id": "w6",
+    "title": "Kalendarz adwentowy z herbatami",
+    "price_pln": 79,
+    "shop_domain": "gadzetownia.example",
+    "shop_name": "Gadżetownia",
+    "url": "/demo-produkt/w6",
+    "image_url": "/demo/web-6.svg",
+    "reason": "Codzienna mała niespodzianka aż do świąt."
+  }
+]

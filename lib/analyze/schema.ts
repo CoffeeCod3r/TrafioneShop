@@ -33,8 +33,8 @@ export type AnalyzeResponse = {
   resultId: string;
   refCode: string;
   profile: StyleProfile;
-  /** "ai" = from the model, "fallback" = built from quiz answers after AI failure */
-  source: "ai" | "fallback";
+  /** "ai" = from the model, "fallback" = built from quiz answers after AI failure, "demo" = MOCK_MODE */
+  source: "ai" | "fallback" | "demo";
   /** User-facing message, e.g. when a photo was not analyzed */
   notice?: string;
 };

@@ -1,0 +1,37 @@
+[
+  {
+    "domain": "sklep-z-pasja.example",
+    "name": "Sklep z Pasją",
+    "has_affiliate": true,
+    "deeplink_template": "https://partner.example/click?url={url}",
+    "network": "demo"
+  },
+  {
+    "domain": "gadzetownia.example",
+    "name": "Gadżetownia",
+    "has_affiliate": false,
+    "deeplink_template": null,
+    "network": null
+  },
+  {
+    "domain": "ksiegarnia-pod-chmurka.example",
+    "name": "Księgarnia pod Chmurką",
+    "has_affiliate": true,
+    "deeplink_template": "https://partner.example/click?url={url}",
+    "network": "demo"
+  },
+  {
+    "domain": "eko-dom.example",
+    "name": "Eko Dom",
+    "has_affiliate": false,
+    "deeplink_template": null,
+    "network": null
+  },
+  {
+    "domain": "sportowy-swiat.example",
+    "name": "Sportowy Świat",
+    "has_affiliate": true,
+    "deeplink_template": "https://partner.example/click?url={url}",
+    "network": "demo"
+  }
+]
