@@ -6,8 +6,7 @@ import { runImport } from "@/lib/feeds/import";
 import { formatImportStats } from "@/lib/feeds/report";
 import { supabaseProductStore } from "@/lib/feeds/store";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+// Node.js runtime and dynamic rendering are the defaults (cacheComponents forbids `runtime`/`dynamic` exports).
 // Feeds can be large; Vercel caps this per plan.
 export const maxDuration = 300;
 

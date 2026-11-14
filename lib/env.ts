@@ -47,6 +47,7 @@ const serverEnvSchema = z.object({
   NEXT_PUBLIC_POSTHOG_HOST: z.url().default("https://eu.i.posthog.com"),
 
   CRON_SECRET: z.string().min(32),
+  IP_HASH_SALT: z.string().min(32),
   ADMIN_PASSWORD: z.string().min(12),
   FEED_URLS: feedSources,
 });

@@ -165,7 +165,12 @@ export type Database = {
       >;
     };
     Views: Record<never, never>;
-    Functions: Record<never, never>;
+    Functions: {
+      consume_rate_limit: {
+        Args: { p_key: string; p_window_start: string; p_limit: number };
+        Returns: boolean;
+      };
+    };
     Enums: Record<never, never>;
     CompositeTypes: Record<never, never>;
   };
