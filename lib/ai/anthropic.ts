@@ -11,7 +11,7 @@ export function getAnthropic(): Anthropic {
   client = new Anthropic({
     apiKey: getEnv().ANTHROPIC_API_KEY,
     maxRetries: 0,
-    timeout: 20_000,
+    timeout: 15_000,
     // Never let the SDK log requests (they can contain the photo), even if ANTHROPIC_LOG is set.
     logLevel: "off",
   });

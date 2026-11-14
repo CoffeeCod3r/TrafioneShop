@@ -1,15 +1,19 @@
+import { choosePicks } from "@/lib/ai/picks";
 import { analyzeProfile } from "@/lib/ai/profile";
 import { recordAiUsage } from "@/lib/ai/usage";
-import { analyzeRequestSchema } from "@/lib/analyze/schema";
+import { analyzeRequestSchema, type AnalyzeResponse } from "@/lib/analyze/schema";
 import { getDb } from "@/lib/db";
 import { getEnv } from "@/lib/env";
 import { describeError, logEvent } from "@/lib/log";
+import { selectCandidates } from "@/lib/picks/candidates";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { getClientIp, hashIp, readJsonBody, RequestBodyError } from "@/lib/request";
+import { createResult } from "@/lib/results";
 import { verifyTurnstile } from "@/lib/turnstile";
 
 // Node.js runtime and dynamic rendering are the defaults (cacheComponents forbids `runtime`/`dynamic` exports).
-export const maxDuration = 60;
+// Profile (with possible retries) + picks (with retry) + DB writes.
+export const maxDuration = 90;
 
 /** 300 KB photo + answers + token, with headroom. */
 const MAX_BODY_BYTES = 360 * 1024;
@@ -20,9 +24,10 @@ function error(status: number, message: string, extra: Record<string, unknown> =
 
 /**
  * POST /api/analyze
- * Order: Turnstile → rate limit → body validation → AI → usage.
+ * Order: Turnstile → rate limit → validation → profile (AI) → candidates → picks (AI)
+ * → save result → usage.
  * PRIVACY: the request body (answers + photo) is never logged, stored or forwarded to analytics.
- * Only token counts go to ai_usage.
+ * The photo is used only for the profile call. results stores answers and picks, never the photo.
  */
 export async function POST(request: Request) {
   try {
@@ -48,9 +53,10 @@ export async function POST(request: Request) {
     if (!human) return error(403, "Weryfikacja nie powiodła się. Odśwież stronę i spróbuj ponownie.");
 
     // 2. Rate limit (photo and no-photo analyses have separate daily limits)
+    const db = getDb();
     const withPhoto = raw.photo !== undefined && raw.photo !== null;
     const allowed = await consumeRateLimit(
-      getDb(),
+      db,
       withPhoto ? "analyzeWithPhoto" : "analyzeWithoutPhoto",
       hashIp(ip, env.IP_HASH_SALT),
     );
@@ -71,14 +77,33 @@ export async function POST(request: Request) {
       });
     }
 
-    // 4. AI
+    // 4. Style profile (the photo is used only here and then dropped)
     const { answers, photo } = parsed.data;
-    const { response, usage } = await analyzeProfile(answers, photo ?? null);
+    const profileStep = await analyzeProfile(answers, photo ?? null);
+    const { profile } = profileStep.response;
 
-    // 5. Usage only
-    await recordAiUsage(usage);
-    logEvent("analyze.done", { withPhoto, source: response.source, childPhoto: Boolean(response.notice) });
+    // 5. Candidates from the catalog and AI picks
+    const { candidates, relaxed } = await selectCandidates(db, {
+      budget: answers.budget,
+      tags: profile.tags,
+      avoid: profile.avoid,
+    });
+    const picksStep = await choosePicks(answers, profile, candidates);
 
+    // 6. Save the result (no photo) and the token usage
+    const { id, refCode } = await createResult({ answers, profile, picks: picksStep.result.picks });
+    await recordAiUsage([...profileStep.usage, ...picksStep.usage].map((entry) => ({ ...entry, resultId: id })));
+
+    logEvent("analyze.done", {
+      withPhoto,
+      profileSource: profileStep.response.source,
+      picksSource: picksStep.result.source,
+      candidates: candidates.length,
+      relaxed,
+      childPhoto: Boolean(profileStep.response.notice),
+    });
+
+    const response: AnalyzeResponse = { resultId: id, refCode, ...profileStep.response };
     return Response.json(response);
   } catch (caught) {
     logEvent("analyze.failed", describeError(caught));

@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { getAnthropic } from "@/lib/ai/anthropic";
 import type { UsageEntry } from "@/lib/ai/usage";
-import { CHILD_PHOTO_NOTICE, type AnalyzeRequest, type AnalyzeResponse, type StyleProfile } from "@/lib/analyze/schema";
+import { CHILD_PHOTO_NOTICE, type AnalyzeRequest, type ProfileResult, type StyleProfile } from "@/lib/analyze/schema";
 import { getEnv } from "@/lib/env";
 import { describeError, logEvent } from "@/lib/log";
 import { PROFILE_SYSTEM_PROMPT, SAVE_PROFILE_TOOL } from "@/lib/prompts";
@@ -132,7 +132,7 @@ async function callWithRetry(answers: QuizAnswers, photo: Photo | null, usage: U
 export async function analyzeProfile(
   answers: QuizAnswers,
   photo: Photo | null,
-): Promise<{ response: AnalyzeResponse; usage: UsageEntry[] }> {
+): Promise<{ response: ProfileResult; usage: UsageEntry[] }> {
   const usage: UsageEntry[] = [];
   let notice: string | undefined;
 

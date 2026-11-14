@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Gift, Pencil } from "lucide-react";
 
+import { AnalyzingOverlay } from "@/components/quiz/analyzing-overlay";
 import { OptionTile } from "@/components/quiz/option-tile";
 import { PhotoInput } from "@/components/quiz/photo-input";
 import { TagChip } from "@/components/quiz/tag-chip";
+import { TurnstileWidget, type TurnstileHandle } from "@/components/turnstile-widget";
 import { Button } from "@/components/ui/button";
 import {
   BUDGET_OPTIONS,
@@ -20,11 +23,11 @@ import {
   RECIPIENT_OPTIONS,
   tagLabel,
   validateFields,
-  type QuizAnswers,
   type QuizDraft,
   type QuizField,
 } from "@/lib/quiz/schema";
 import type { ProcessedPhoto } from "@/lib/photo/resize";
+import { submitQuiz, SubmitError } from "@/lib/quiz/submit";
 import { ALLOWED_TAGS, type AllowedTag } from "@/lib/tags";
 
 const QUESTION_COUNT = QUIZ_QUESTION_FIELDS.length;
@@ -43,22 +46,23 @@ const TITLES = [
 
 type Errors = Partial<Record<QuizField, string>>;
 
-type QuizWizardProps = {
-  /**
-   * Called with validated answers and the optional in-memory photo.
-   * Wired to the results API in a later step.
-   */
-  onComplete?: (answers: QuizAnswers, photo: ProcessedPhoto | null) => void | Promise<void>;
-};
-
-export function QuizWizard({ onComplete }: QuizWizardProps) {
+export function QuizWizard() {
+  const router = useRouter();
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<QuizDraft>({ interests: [] });
   const [errors, setErrors] = useState<Errors>({});
   // Kept separately from the answers: never persisted, never logged.
   const [photo, setPhoto] = useState<ProcessedPhoto | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileFailed, setTurnstileFailed] = useState(false);
+  const turnstileRef = useRef<TurnstileHandle>(null);
+  const handleToken = useCallback((token: string | null) => {
+    setTurnstileToken(token);
+    if (token) setTurnstileFailed(false);
+  }, []);
+  const handleTurnstileError = useCallback(() => setTurnstileFailed(true), []);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -110,12 +114,26 @@ export function QuizWizard({ onComplete }: QuizWizardProps) {
       setErrors(validateFields(draft, QUIZ_QUESTION_FIELDS[index === -1 ? 0 : index]));
       return;
     }
+    if (!turnstileToken) {
+      setSubmitError(
+        turnstileFailed
+          ? "Nie udało się zweryfikować przeglądarki. Odśwież stronę i spróbuj ponownie."
+          : "Trwa weryfikacja, spróbuj za sekundę.",
+      );
+      return;
+    }
+
+    setSubmitError(null);
     setSubmitting(true);
     try {
-      await onComplete?.(result.data, photo);
-      setDone(true);
-    } finally {
+      const response = await submitQuiz({ answers: result.data, photo, turnstileToken });
+      router.push(`/wynik/${response.resultId}${response.notice ? "?zdjecie=pominiete" : ""}`);
+      // Keep the overlay until the results page replaces this one.
+    } catch (caught) {
       setSubmitting(false);
+      setSubmitError(caught instanceof SubmitError ? caught.message : "Coś poszło nie tak. Spróbuj ponownie.");
+      // Turnstile tokens are single-use.
+      turnstileRef.current?.reset();
     }
   }
 
@@ -125,6 +143,7 @@ export function QuizWizard({ onComplete }: QuizWizardProps) {
 
   return (
     <div className="flex flex-1 flex-col pb-28 pt-6">
+      {submitting && <AnalyzingOverlay />}
       <div className="mb-6">
         <div className="mb-2 flex justify-between text-sm text-muted-foreground">
           <span>{isQuestion ? `Pytanie ${step + 1} z ${QUESTION_COUNT}` : "Ostatni krok"}</span>
@@ -258,9 +277,10 @@ export function QuizWizard({ onComplete }: QuizWizardProps) {
         <div className="flex flex-col gap-6">
           <PhotoInput value={photo} onChange={setPhoto} />
           <Summary draft={draft} onEdit={goTo} />
-          {done && (
-            <p className="rounded-xl bg-secondary p-4 text-center" role="status">
-              Gotowe! Szukamy prezentów…
+          <TurnstileWidget ref={turnstileRef} action="analyze" onToken={handleToken} onError={handleTurnstileError} />
+          {submitError && (
+            <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive" role="alert">
+              {submitError}
             </p>
           )}
         </div>

@@ -29,11 +29,17 @@ export type StyleProfile = {
 };
 
 export type AnalyzeResponse = {
+  /** results.id – the front redirects to /wynik/[id] */
+  resultId: string;
+  refCode: string;
   profile: StyleProfile;
   /** "ai" = from the model, "fallback" = built from quiz answers after AI failure */
   source: "ai" | "fallback";
   /** User-facing message, e.g. when a photo was not analyzed */
   notice?: string;
 };
+
+/** Internal result of step 1 (profile), before picks and saving. */
+export type ProfileResult = Omit<AnalyzeResponse, "resultId" | "refCode">;
 
 export const CHILD_PHOTO_NOTICE = "Nie analizujemy zdjęć dzieci, dobierzemy prezent na podstawie odpowiedzi";
