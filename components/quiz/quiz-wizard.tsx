@@ -31,6 +31,7 @@ import { submitQuiz, SubmitError } from "@/lib/quiz/submit";
 import { track } from "@/lib/analytics/client";
 import { sourceFromParams } from "@/lib/attribution";
 import { ALLOWED_TAGS, type AllowedTag } from "@/lib/tags";
+import { cn } from "@/lib/utils";
 
 const QUESTION_COUNT = QUIZ_QUESTION_FIELDS.length;
 /** Questions + the final photo screen. */
@@ -58,6 +59,8 @@ const DEMO_TURNSTILE_TOKEN = "demo";
 export function QuizWizard({ demo = false }: QuizWizardProps) {
   const router = useRouter();
   const [step, setStep] = useState(0);
+  // Direction of the last move, for the slide-in animation (forward: from right, back: from left).
+  const [direction, setDirection] = useState<"forward" | "back">("forward");
   const [draft, setDraft] = useState<QuizDraft>({ interests: [] });
   const [errors, setErrors] = useState<Errors>({});
   // Kept separately from the answers: never persisted, never logged.
@@ -101,6 +104,7 @@ export function QuizWizard({ demo = false }: QuizWizardProps) {
   }
 
   function goTo(nextStep: number) {
+    setDirection(nextStep >= step ? "forward" : "back");
     setErrors({});
     setStep(Math.max(0, Math.min(SCREEN_COUNT - 1, nextStep)));
   }
@@ -187,6 +191,13 @@ export function QuizWizard({ demo = false }: QuizWizardProps) {
         </div>
       </div>
 
+      <div
+        key={step}
+        className={cn(
+          "animate-in fade-in duration-300",
+          direction === "forward" ? "slide-in-from-right-8" : "slide-in-from-left-8",
+        )}
+      >
       <h1 ref={headingRef} tabIndex={-1} className="mb-6 text-3xl font-bold leading-tight outline-none">
         {TITLES[step]}
       </h1>
@@ -313,6 +324,8 @@ export function QuizWizard({ demo = false }: QuizWizardProps) {
           )}
         </div>
       )}
+
+      </div>
 
       {Object.values(errors).some(Boolean) && (
         <p className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive" role="alert">

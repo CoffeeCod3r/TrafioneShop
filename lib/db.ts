@@ -65,6 +65,8 @@ export type ResultRow = {
   dedications: Json | null;
   /** utm_source or "ref:<ref_code>" (see lib/attribution.ts). */
   source: string | null;
+  /** 2–3 sentences: which pick fits best and why. */
+  pick_summary: string | null;
 };
 
 export type QuizStartRow = {

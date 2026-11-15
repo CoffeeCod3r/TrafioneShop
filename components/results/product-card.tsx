@@ -20,7 +20,12 @@ export function ProductCard({ product, position, resultId, shared = false }: Pro
   const href = `/go/${product.id}?r=${resultId}${shared ? "&src=share" : ""}`;
 
   return (
-    <li className="overflow-hidden rounded-2xl border-2 border-border bg-card">
+    <li
+      id={`produkt-${position}`}
+      className="animate-in fade-in slide-in-from-bottom-4 scroll-mt-20 overflow-hidden rounded-2xl border-2 border-border bg-card duration-500"
+      // Cards appear one after another (the result page's single reveal moment).
+      style={{ animationDelay: `${150 + position * 90}ms`, animationFillMode: "both" }}
+    >
       {product.replaces && (
         <p className="flex items-center gap-2 bg-secondary px-4 py-2 text-xs">
           <Repeat className="size-3.5 shrink-0" aria-hidden />

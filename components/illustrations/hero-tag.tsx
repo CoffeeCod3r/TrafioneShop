@@ -16,7 +16,7 @@ export function HeroTag({ children }: { children: ReactNode }) {
       >
         <path d="M4 2c20 4 30 20 36 54" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
       </svg>
-      <div className="relative -rotate-2 drop-shadow-[6px_8px_0_var(--ink)]">
+      <div className="tag-swing-in relative -rotate-2 drop-shadow-[6px_8px_0_var(--ink)]">
         <div
           className="relative border-[3px] border-ink bg-white px-6 pb-7 pl-14 pt-7 sm:pl-16"
           style={{

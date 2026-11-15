@@ -188,6 +188,7 @@ export function createDemoRepos(): Repos {
             web_picks: null,
             dedications: null,
             source: null,
+            pick_summary: null,
             ...row,
           };
           data.results.push(result);

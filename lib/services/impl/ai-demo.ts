@@ -1,5 +1,5 @@
 import demoWebPicks from "@/data/demo-web-picks.json";
-import { fallbackPicks } from "@/lib/ai/picks";
+import { fallbackResult } from "@/lib/ai/picks";
 import { demoDelay, randomInt } from "@/lib/demo/delay";
 import { PICKS_COUNT } from "@/lib/picks/candidates";
 import type { OCCASION_OPTIONS } from "@/lib/quiz/schema";
@@ -62,7 +62,7 @@ export function createDemoAi(): AiService {
     async pickProducts(_answers, profile, candidates) {
       await demoDelay();
       return {
-        result: { picks: fallbackPicks(candidates.slice(0, PICKS_COUNT), profile), source: "demo" },
+        result: fallbackResult(candidates.slice(0, PICKS_COUNT), profile, "demo"),
         usage: [fakeUsage("picks")],
       };
     },

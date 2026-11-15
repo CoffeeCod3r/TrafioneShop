@@ -63,14 +63,23 @@ Uzasadnienie (reason):
 - Odwołuj się do zainteresowań i stylu, nigdy do wyglądu, wieku ani cech ciała.
 - Nie dopisuj cech produktu, których nie ma w nazwie ani opisie.
 
+Podsumowanie (summary):
+- 2–3 zdania po polsku (maks. 400 znaków) dla osoby, która kupuje prezent.
+- Powiedz, który prezent najlepiej trafi (ten pierwszy na liście) i dlaczego: połącz go z zainteresowaniami, stylem życia, okazją i preferowanym typem prezentu z quizu.
+- Ciepło i konkretnie, bez ogólników typu „idealny prezent dla każdego”. Bez odniesień do wyglądu, wieku i cech ciała.
+
 Zwróć wynik wyłącznie przez narzędzie save_picks.`;
 
 export const SAVE_PICKS_TOOL = {
   name: "save_picks",
-  description: "Zapisuje 5 wybranych prezentów z uzasadnieniem.",
+  description: "Zapisuje 5 wybranych prezentów z uzasadnieniem i krótkim podsumowaniem.",
   input_schema: {
     type: "object" as const,
     properties: {
+      summary: {
+        type: "string",
+        description: "2–3 zdania: który prezent (pierwszy) najlepiej pasuje i dlaczego",
+      },
       picks: {
         type: "array",
         minItems: 5,
@@ -85,7 +94,7 @@ export const SAVE_PICKS_TOOL = {
         },
       },
     },
-    required: ["picks"],
+    required: ["summary", "picks"],
   },
 };
 

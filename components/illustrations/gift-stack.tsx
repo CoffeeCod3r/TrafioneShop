@@ -59,9 +59,9 @@ export function GiftStack({ className }: { className?: string }) {
 
       {/* sparkles */}
       <g fill="var(--sun)" stroke="var(--ink)" strokeWidth="3" strokeLinejoin="round">
-        <path d="M38 52l6 14 14 6-14 6-6 14-6-14-14-6 14-6Z" />
-        <path d="M268 40l4 9 9 4-9 4-4 9-4-9-9-4 9-4Z" />
-        <path d="M292 104l3 7 7 3-7 3-3 7-3-7-7-3 7-3Z" />
+        <path className="sparkle" d="M38 52l6 14 14 6-14 6-6 14-6-14-14-6 14-6Z" />
+        <path className="sparkle" d="M268 40l4 9 9 4-9 4-4 9-4-9-9-4 9-4Z" />
+        <path className="sparkle" d="M292 104l3 7 7 3-7 3-3 7-3-7-7-3 7-3Z" />
       </g>
       <circle cx="232" cy="88" r="5" fill="var(--ribbon)" />
       <circle cx="70" cy="34" r="4" fill="var(--ribbon)" />

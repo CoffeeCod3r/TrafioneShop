@@ -6,6 +6,7 @@ import { Info, RotateCcw, Sparkles } from "lucide-react";
 
 import { ResultTracker } from "@/components/analytics/result-tracker";
 import { GiftStack } from "@/components/illustrations/gift-stack";
+import { BestMatch } from "@/components/results/best-match";
 import { PaidSearchSection } from "@/components/results/paid-search-section";
 import { ProductCard } from "@/components/results/product-card";
 import { ShareButton } from "@/components/results/share-button";
@@ -96,6 +97,10 @@ async function ResultContent({ params, searchParams }: PageProps) {
           </p>
         )}
       </header>
+
+      {result.pick_summary && products.length > 0 && (
+        <BestMatch summary={result.pick_summary} product={products[0]} />
+      )}
 
       <section aria-labelledby="partner-picks" className="flex flex-col gap-3">
         <h2 id="partner-picks" className="text-2xl font-bold">

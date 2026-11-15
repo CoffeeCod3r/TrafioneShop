@@ -1,0 +1,18 @@
+import { ImageResponse } from "next/og";
+
+export const size = { width: 180, height: 180 };
+export const contentType = "image/png";
+
+const MARK = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><path d="M6 5c5-2 9 1 10 6" fill="none" stroke="#e8336d" stroke-width="3" stroke-linecap="round"/><path d="M15.5 9.5 33 11.6a2.6 2.6 0 0 1 2.3 2.8l-1.4 18.2a2.6 2.6 0 0 1-2.9 2.4L13.9 33a2.6 2.6 0 0 1-2.3-2.8l1-13.3a2.6 2.6 0 0 1 .8-1.7l2.2-2.3" fill="#bdefd9" stroke="#1c1b3a" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="16.6" cy="14.6" r="1.9" fill="#fff6f9" stroke="#1c1b3a" stroke-width="2"/><path d="M24 27.6s-5.2-3-5-6.4c.1-1.6 1.4-2.6 2.8-2.4 1 .1 1.8.8 2.2 1.6.5-.8 1.4-1.4 2.4-1.4 1.4 0 2.6 1.2 2.4 2.8-.3 3.3-4.8 5.8-4.8 5.8Z" fill="#e8336d" stroke="#1c1b3a" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
+
+/** Home-screen icon (iOS/Android): the logo mark on blush paper. */
+export default function AppleIcon() {
+  return new ImageResponse(
+    (
+      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#fff6f9" }}>
+        <img src={`data:image/svg+xml;base64,${Buffer.from(MARK).toString("base64")}`} width={150} height={150} alt="" />
+      </div>
+    ),
+    size,
+  );
+}

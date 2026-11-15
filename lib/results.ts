@@ -29,9 +29,10 @@ export async function createResult(input: {
   answers: QuizAnswers;
   profile: StyleProfile;
   picks: GiftPick[];
+  summary?: string | null;
   source?: string | null;
 }): Promise<{ id: string; refCode: string }> {
-  const { answers, profile, picks, source = null } = input;
+  const { answers, profile, picks, summary = null, source = null } = input;
   const results = getRepos().results;
 
   for (let attempt = 1; attempt <= 3; attempt++) {
@@ -50,6 +51,7 @@ export async function createResult(input: {
         ref_code: refCode,
         price_variant: pickPriceVariant(),
         source,
+        pick_summary: summary,
       });
       return { id: row.id, refCode: row.ref_code ?? refCode };
     } catch (error) {
@@ -81,6 +83,7 @@ export type ResultView = {
     | "budget_pln"
     | "paid_status"
     | "price_variant"
+    | "pick_summary"
   > & { webPicks: WebPick[] | null; dedications: Dedications | null };
   products: ResultProduct[];
 };
@@ -171,6 +174,7 @@ export async function getResultView(id: string): Promise<ResultView | null> {
       budget_pln: result.budget_pln,
       paid_status: result.paid_status,
       price_variant: result.price_variant,
+      pick_summary: result.pick_summary ?? null,
       webPicks: (result.web_picks as WebPick[] | null) ?? null,
       dedications: (result.dedications as Dedications | null) ?? null,
     },

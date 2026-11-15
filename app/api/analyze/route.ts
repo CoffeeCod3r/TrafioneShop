@@ -1,4 +1,4 @@
-import { fallbackPicks } from "@/lib/ai/picks";
+import { fallbackResult } from "@/lib/ai/picks";
 import { recordAiUsage } from "@/lib/ai/usage";
 import { analyzeRequestSchema, type AnalyzeResponse } from "@/lib/analyze/schema";
 import { getEnv } from "@/lib/env";
@@ -88,11 +88,17 @@ export async function POST(request: Request) {
     // If the profile step already fell back (AI down or failing), do not wait on AI again.
     const picksStep =
       profileStep.response.source === "fallback"
-        ? { result: { picks: fallbackPicks(candidates, profile), source: "fallback" as const }, usage: [] }
+        ? { result: fallbackResult(candidates, profile, "fallback"), usage: [] }
         : await ai.pickProducts(answers, profile, candidates);
 
     // 6. Save the result (no photo) and the token usage
-    const { id, refCode } = await createResult({ answers, profile, picks: picksStep.result.picks, source });
+    const { id, refCode } = await createResult({
+      answers,
+      profile,
+      picks: picksStep.result.picks,
+      summary: picksStep.result.summary,
+      source,
+    });
     await recordAiUsage([...profileStep.usage, ...picksStep.usage], id);
 
     logEvent("analyze.done", {

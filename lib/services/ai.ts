@@ -23,7 +23,12 @@ export type UsageEntry = {
 export type Photo = { mediaType: "image/jpeg"; base64: string };
 
 export type GiftPick = { productId: string; reason: string };
-export type PicksResult = { picks: GiftPick[]; source: "ai" | "fallback" | "too_few_candidates" | "demo" };
+export type PicksResult = {
+  picks: GiftPick[];
+  /** 2–3 sentences shown above the picks: which gift fits best (the first one) and why. */
+  summary: string;
+  source: "ai" | "fallback" | "too_few_candidates" | "demo";
+};
 
 export type WebSearchInput = {
   answers: QuizAnswers;
