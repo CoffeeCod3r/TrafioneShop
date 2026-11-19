@@ -110,8 +110,6 @@ const ENV_RULES: EnvRule[] = [
   { name: "ANTHROPIC_API_KEY", hint: "console.anthropic.com → API Keys (zaczyna się od sk-ant-)", valid: (v) => startsWith("sk-ant-")(v) && v.length > 12 },
   { name: "STRIPE_SECRET_KEY", hint: "Stripe Dashboard → Developers → API keys (w trybie testowym sk_test_…)", valid: (v) => /^sk_(test|live)_.{8,}/.test(v) },
   { name: "STRIPE_WEBHOOK_SECRET", hint: "Stripe → Developers → Webhooks → signing secret albo `stripe listen` (whsec_…)", valid: (v) => startsWith("whsec_")(v) && v.length > 10 },
-  { name: "STRIPE_PRICE_ID_A", hint: "Stripe → Product catalog → cena 4,99 PLN (price_…)", valid: (v) => startsWith("price_")(v) && v.length > 8 },
-  { name: "STRIPE_PRICE_ID_B", hint: "Stripe → Product catalog → cena 9,99 PLN (price_…)", valid: (v) => startsWith("price_")(v) && v.length > 8 },
   { name: "NEXT_PUBLIC_TURNSTILE_SITE_KEY", hint: "Cloudflare → Turnstile → site key (klucz testowy: 1x00000000000000000000AA)", valid: minLength(1) },
   { name: "TURNSTILE_SECRET_KEY", hint: "Cloudflare → Turnstile → secret key", valid: minLength(1) },
   { name: "RESEND_API_KEY", hint: "resend.com → API Keys (zaczyna się od re_)", valid: (v) => startsWith("re_")(v) && v.length > 5 },
@@ -147,6 +145,20 @@ function checkEnv() {
     leaked.length === 0 ? "nie znaleziono" : `podejrzane: ${leaked.join(", ")}`,
     leaked.length ? "Zmień nazwę zmiennych, usuwając prefiks NEXT_PUBLIC_ – inaczej trafią do kodu w przeglądarce." : undefined,
   );
+
+  // Promo deadline of the pack of 8 (optional; the built-in default is Black Friday 2026).
+  const promoRaw = process.env.PROMO_ENDS_AT?.trim();
+  const promoEnd = new Date(promoRaw || "2026-11-27T23:59:59+01:00");
+  if (Number.isNaN(promoEnd.getTime())) {
+    record("Promocja: PROMO_ENDS_AT", false, "niepoprawna data", "Wpisz datę w formacie ISO 8601, np. 2026-11-27T23:59:59+01:00, albo usuń zmienną.");
+  } else {
+    const active = promoEnd.getTime() > Date.now();
+    record(
+      "Promocja: koniec ceny promocyjnej pakietu",
+      true,
+      `${promoEnd.toLocaleString("pl-PL", { timeZone: "Europe/Warsaw" })} (${active ? "trwa" : "zakończona, pakiet kosztuje 19,99 zł"})`,
+    );
+  }
 
   const mock = (process.env.MOCK_MODE ?? "true").trim().toLowerCase();
   if (["true", "1", "yes", "on"].includes(mock)) {
@@ -193,6 +205,34 @@ async function checkSupabase() {
       throw new CheckError("połączono, ale tabela `products` jest pusta", "Załaduj katalog: ustaw MOCK_MODE=false i uruchom `npm run seed` (albo `npm run import:feed`).");
     }
     return `${count} produktów`;
+  });
+
+  await check("Supabase: katalog bez produktów demo (wymagane na produkcji)", async () => {
+    need(["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"], "połączenie z Supabase");
+    const { count, error } = await admin().from("products").select("*", { count: "exact", head: true }).eq("network", "demo");
+    if (error) throw new CheckError(`odczyt nie powiódł się: ${error.message || error.code || "brak szczegółów"}`, SUPABASE_FIX);
+    if (count) {
+      throw new CheckError(
+        `${count} produktów z sieci „demo” (ich linki /demo-produkt/… dają 404 poza trybem demo, a katalog jest za mały do trafnych wyników)`,
+        "Na produkcji zaimportuj prawdziwe feedy: ustaw FEED_URLS i uruchom `npm run import:feed`; produkty demo usuń: delete from products where network = 'demo';",
+      );
+    }
+    return "brak produktów demo";
+  });
+
+  await check("Supabase: migracja ofert i pakietów (purchases.offer, funkcje pakietu)", async () => {
+    need(["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"], "połączenie z Supabase");
+    const client = admin();
+    const columns = await client.from("purchases").select("offer, searches_total, searches_left, pack_code").limit(1);
+    // A random id: the function finds nothing and changes nothing, it only proves that it exists.
+    const rpc = await client.rpc("consume_pack_search", { p_id: "00000000-0000-4000-8000-000000000000" });
+    if (columns.error || rpc.error) {
+      throw new CheckError(
+        `brak kolumn lub funkcji (${columns.error?.message || rpc.error?.message || "błąd"})`,
+        "Zastosuj migrację supabase/migrations/20261119000000_offers_and_packs.sql (`supabase db push` albo wklej ją w SQL Editor).",
+      );
+    }
+    return "kolumny i funkcje pakietu istnieją";
   });
 
   await check("Supabase: zapis i usunięcie testowego wiersza w `results`", async () => {
@@ -322,6 +362,8 @@ async function checkStripe() {
     }
     return "BLIK i karta dostępne";
   });
+
+  // Prices are sent inline with every Checkout Session (see lib/offers.ts), so there are no Price IDs to check.
 }
 
 // ---------------------------------------------------------------------------

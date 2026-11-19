@@ -48,13 +48,13 @@ function mergeUnique(primary: Candidate[], extra: Candidate[], limit: number): C
 export type CandidateSelection = {
   candidates: Candidate[];
   /** Which conditions had to be relaxed to find enough products. */
-  relaxed: "none" | "tags" | "tags_and_price";
+  relaxed: "none" | "price" | "tags" | "tags_and_price";
 };
 
 /**
  * Up to 40 in-stock products priced 40–100% of the budget, sharing at least one tag and
- * having none of the avoided tags. With fewer than 10, the tag condition is dropped;
- * with fewer than 5, the lower price bound is dropped too.
+ * having none of the avoided tags. With fewer than 10, the lower price bound is dropped first,
+ * then the tag condition (on-topic products still rank first), and finally both.
  */
 export async function selectCandidates(options: {
   budget: number;
@@ -90,6 +90,11 @@ export async function selectCandidates(options: {
   let candidates = rankCandidates(await fetchRows(minPrice, true), tags, avoid).slice(0, MAX_CANDIDATES);
   if (candidates.length >= MIN_CANDIDATES_BEFORE_RELAXING) return { candidates, relaxed: "none" };
 
+  // 1. Drop the price floor first: a cheaper gift on topic beats an off-topic one.
+  candidates = mergeUnique(candidates, rankCandidates(await fetchRows(0, true), tags, avoid), MAX_CANDIDATES);
+  if (candidates.length >= MIN_CANDIDATES_BEFORE_RELAXING) return { candidates, relaxed: "price" };
+
+  // 2. Still too few: drop the tag condition (on-topic products stay first because of the ranking).
   candidates = mergeUnique(candidates, rankCandidates(await fetchRows(minPrice, false), tags, avoid), MAX_CANDIDATES);
   if (candidates.length >= PICKS_COUNT) return { candidates, relaxed: "tags" };
 

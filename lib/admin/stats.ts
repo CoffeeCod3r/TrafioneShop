@@ -129,7 +129,12 @@ export async function getAdminStats(period: Period): Promise<AdminStats> {
   }));
 
   // Price test
-  const priceTest: PriceTestRow[] = ([499, 999] as const).map((variant) => {
+  // One row per price seen in the period: legacy A/B prices (499 / 999 on results and purchases) and the
+  // current offers (purchases: 499 single, 1299 / 1999 pack of 8).
+  const variants = [...new Set([...results.map((r) => r.price_variant), ...purchases.map((p) => p.price_variant)])]
+    .filter((variant): variant is number => typeof variant === "number")
+    .sort((a, b) => a - b);
+  const priceTest: PriceTestRow[] = variants.map((variant) => {
     const variantResults = results.filter((r) => r.price_variant === variant).length;
     const variantPurchases = purchases.filter((p) => p.price_variant === variant);
     const refunded = variantPurchases.filter((p) => p.status === "refunded").length;

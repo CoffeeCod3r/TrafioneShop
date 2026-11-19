@@ -1,7 +1,7 @@
-import { randomBytes, randomInt } from "node:crypto";
+import { randomBytes } from "node:crypto";
 
 import type { StyleProfile } from "@/lib/analyze/schema";
-import type { PriceVariant, ProductRow, ResultRow } from "@/lib/db";
+import type { ProductRow, ResultRow } from "@/lib/db";
 import type { Dedications, WebPick } from "@/lib/paid/schema";
 import type { QuizAnswers } from "@/lib/quiz/schema";
 import type { GiftPick } from "@/lib/services/ai";
@@ -10,18 +10,12 @@ import { getRepos } from "@/lib/services/db";
 /** No 0/O/1/I/L to avoid confusion when the code is typed or read aloud. */
 const REF_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
 export const REF_CODE_LENGTH = 7;
-export const PRICE_VARIANTS: readonly PriceVariant[] = [499, 999];
 
 export function generateRefCode(length = REF_CODE_LENGTH): string {
   const bytes = randomBytes(length);
   let code = "";
   for (const byte of bytes) code += REF_ALPHABET[byte % REF_ALPHABET.length];
   return code;
-}
-
-/** A/B price for paid search, assigned once per result so the shown price never changes. */
-export function pickPriceVariant(): PriceVariant {
-  return PRICE_VARIANTS[randomInt(PRICE_VARIANTS.length)];
 }
 
 /** Saves the result (answers and profile only, never the photo). Returns id and ref_code. */
@@ -49,7 +43,8 @@ export async function createResult(input: {
         product_ids: picks.map((pick) => pick.productId),
         reasons: Object.fromEntries(picks.map((pick) => [pick.productId, pick.reason])),
         ref_code: refCode,
-        price_variant: pickPriceVariant(),
+        // No A/B price test any more: both offers (single / pack of 8) are shown to everyone.
+        price_variant: null,
         source,
         pick_summary: summary,
       });

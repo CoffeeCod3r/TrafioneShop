@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { CreditCard } from "lucide-react";
 
 import { isMockMode } from "@/lib/mode";
+import { isOfferId, OFFERS } from "@/lib/offers";
 
 import { DemoCheckoutActions } from "./demo-checkout-actions";
 
@@ -28,10 +29,11 @@ async function DemoCheckout({ searchParams }: PageProps) {
   const query = await searchParams;
   const session = typeof query.session === "string" ? query.session : "";
   const resultId = typeof query.result === "string" ? query.result : "";
-  const variant = query.variant === "499" ? 499 : query.variant === "999" ? 999 : null;
+  const offer = isOfferId(query.offer) ? query.offer : null;
+  const amount = typeof query.amount === "string" && /^\d{2,5}$/.test(query.amount) ? Number(query.amount) : null;
   const cancel = typeof query.cancel === "string" && query.cancel.includes("/wynik/") ? query.cancel : `/wynik/${resultId}`;
 
-  if (!session.startsWith("demo_cs_") || !UUID.test(resultId) || !variant) notFound();
+  if (!session.startsWith("demo_cs_") || !UUID.test(resultId) || !offer || !amount) notFound();
   // Keep the user on this site: only use the path of the cancel URL.
   let cancelPath = `/wynik/${resultId}`;
   try {
@@ -52,14 +54,14 @@ async function DemoCheckout({ searchParams }: PageProps) {
       <dl className="divide-y rounded-xl border">
         <div className="flex justify-between px-4 py-3">
           <dt>Usługa</dt>
-          <dd className="font-medium">Szukaj w całym internecie</dd>
+          <dd className="font-medium">{OFFERS[offer].checkoutName}</dd>
         </div>
         <div className="flex justify-between px-4 py-3">
           <dt>Kwota</dt>
-          <dd className="font-bold">{pln.format(variant / 100)}</dd>
+          <dd className="font-bold">{pln.format(amount / 100)}</dd>
         </div>
       </dl>
-      <DemoCheckoutActions session={session} resultId={resultId} variant={variant} cancelUrl={cancelPath} />
+      <DemoCheckoutActions session={session} resultId={resultId} offer={offer} amount={amount} cancelUrl={cancelPath} />
     </div>
   );
 }

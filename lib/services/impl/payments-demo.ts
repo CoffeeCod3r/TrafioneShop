@@ -11,16 +11,22 @@ const demoEventSchema = z.object({
   sessionId: z.string().startsWith("demo_cs_"),
   paymentIntentId: z.string().nullable(),
   resultId: z.uuid(),
+  offer: z.enum(["single", "pack8"]),
   amountGrosze: z.number().int().positive(),
-  priceVariant: z.union([z.literal(499), z.literal(999)]),
 });
 
 /** Demo payments: no Stripe. Checkout opens /demo-checkout with "Zapłać (demo)" and "Anuluj". */
 export function createDemoPayments(): PaymentsService {
   return {
-    async createCheckout({ resultId, priceVariant, cancelUrl }) {
+    async createCheckout({ resultId, offer, amountGrosze, cancelUrl }) {
       const sessionId = `demo_cs_${randomUUID()}`;
-      const params = new URLSearchParams({ session: sessionId, result: resultId, variant: String(priceVariant), cancel: cancelUrl });
+      const params = new URLSearchParams({
+        session: sessionId,
+        result: resultId,
+        offer,
+        amount: String(amountGrosze),
+        cancel: cancelUrl,
+      });
       return { sessionId, url: `/demo-checkout?${params}` };
     },
 

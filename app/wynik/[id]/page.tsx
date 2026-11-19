@@ -7,6 +7,7 @@ import { Info, RotateCcw, Sparkles } from "lucide-react";
 import { ResultTracker } from "@/components/analytics/result-tracker";
 import { GiftStack } from "@/components/illustrations/gift-stack";
 import { BestMatch } from "@/components/results/best-match";
+import { PackInfo } from "@/components/results/pack-info";
 import { PaidSearchSection } from "@/components/results/paid-search-section";
 import { ProductCard } from "@/components/results/product-card";
 import { ShareButton } from "@/components/results/share-button";
@@ -15,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { CHILD_PHOTO_NOTICE } from "@/lib/analyze/schema";
 import { CARD_HEIGHT, CARD_WIDTH, cardUrl } from "@/lib/og/card";
 import { isMockMode } from "@/lib/mode";
+import { getOffersQuote } from "@/lib/offers-server";
+import { getPackFromCookies } from "@/lib/packs";
 import { getResultView } from "@/lib/results";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -71,6 +74,11 @@ async function ResultContent({ params, searchParams }: PageProps) {
   const photoSkipped = query.zdjecie === "pominiete";
   const justPaid = query.platnosc === "ok";
   const shared = typeof query.ref === "string" && result.ref_code !== null && query.ref === result.ref_code;
+  // Read after the dynamic data above: the promo deadline and the visitor's pack depend on "now" and cookies.
+  const quote = getOffersQuote();
+  const pack = await getPackFromCookies();
+  // A search from a pack that found too few products goes back into the pack and the result is "none" again.
+  const creditRestored = pack !== null && result.paid_status === "none" && (justPaid || query.pakiet === "zwrot");
 
   return (
     <div className="flex flex-col gap-8 py-6">
@@ -138,10 +146,16 @@ async function ResultContent({ params, searchParams }: PageProps) {
       <PaidSearchSection
         resultId={result.id}
         status={result.paid_status}
-        priceVariant={result.price_variant}
+        quote={quote}
+        pack={pack ? { searchesLeft: pack.searchesLeft, searchesTotal: pack.searchesTotal } : null}
+        creditRestored={creditRestored}
         webPicks={result.webPicks}
         dedications={result.dedications}
       />
+
+      {pack && result.paid_status !== "none" && (
+        <PackInfo code={pack.code} searchesLeft={pack.searchesLeft} searchesTotal={pack.searchesTotal} />
+      )}
 
       <div className="flex flex-col gap-3">
         <ShareButton resultId={result.id} refCode={result.ref_code} />

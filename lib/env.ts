@@ -28,6 +28,12 @@ const baseSchema = z.object({
   PAID_SEARCH_MAX_SEARCHES: z.coerce.number().int().positive().max(20).default(5),
   PAID_SEARCH_MAX_FETCHES: z.coerce.number().int().positive().max(30).default(15),
   NEXT_PUBLIC_POSTHOG_HOST: z.url().default("https://eu.i.posthog.com"),
+  /** End of the pack promotion (ISO 8601, e.g. 2026-11-27T23:59:59+01:00). Empty = built-in default. */
+  PROMO_ENDS_AT: z
+    .string()
+    .trim()
+    .refine((value) => value === "" || !Number.isNaN(Date.parse(value)), "Expected an ISO 8601 date")
+    .optional(),
   /** PLN per 1 USD, for AI costs in /admin. */
   USD_PLN_RATE: z.coerce.number().positive().max(100).default(4),
 });
@@ -41,8 +47,6 @@ const serviceSchema = z.object({
 
   STRIPE_SECRET_KEY: z.string().regex(/^sk_(test|live)_/, "Expected a Stripe secret key"),
   STRIPE_WEBHOOK_SECRET: z.string().startsWith("whsec_"),
-  STRIPE_PRICE_ID_A: z.string().startsWith("price_"),
-  STRIPE_PRICE_ID_B: z.string().startsWith("price_"),
 
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().min(1),
   TURNSTILE_SECRET_KEY: z.string().min(1),

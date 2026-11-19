@@ -18,13 +18,20 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { track } from "@/lib/analytics/client";
-import type { PaidStatus, PriceVariant } from "@/lib/db";
+import type { PaidStatus, PurchaseOffer } from "@/lib/db";
+import { OFFERS, singlesTotal } from "@/lib/offers";
+import type { OffersQuote } from "@/lib/offers-server";
 import type { Dedications, WebPick } from "@/lib/paid/schema";
 
 type PaidSearchSectionProps = {
   resultId: string;
   status: PaidStatus;
-  priceVariant: PriceVariant | null;
+  /** Prices and promo deadline, decided on the server for this page view. */
+  quote: OffersQuote;
+  /** The visitor's pack of 8 (from the cookie), if any. */
+  pack: { searchesLeft: number; searchesTotal: number } | null;
+  /** True when a search from a pack just failed and was given back to the pack. */
+  creditRestored: boolean;
   webPicks: WebPick[] | null;
   dedications: Dedications | null;
 };
@@ -45,7 +52,15 @@ const IN_PROGRESS: PaidStatus[] = ["pending", "searching"];
 export const CONSENT_TEXT =
   "Zgadzam się na wykonanie usługi i dostarczenie treści cyfrowej przed upływem 14 dni i przyjmuję do wiadomości utratę prawa odstąpienia od umowy";
 
-export function PaidSearchSection({ resultId, status, priceVariant, webPicks, dedications }: PaidSearchSectionProps) {
+export function PaidSearchSection({
+  resultId,
+  status,
+  quote,
+  pack,
+  creditRestored,
+  webPicks,
+  dedications,
+}: PaidSearchSectionProps) {
   if (IN_PROGRESS.includes(status)) return <SearchProgress resultId={resultId} status={status} />;
 
   if (status === "refunded") {
@@ -110,7 +125,10 @@ export function PaidSearchSection({ resultId, status, priceVariant, webPicks, de
     );
   }
 
-  return <BuyBox resultId={resultId} priceVariant={priceVariant} />;
+  if (pack && pack.searchesLeft > 0) {
+    return <PackRedeem resultId={resultId} pack={pack} creditRestored={creditRestored} />;
+  }
+  return <OfferPicker resultId={resultId} quote={quote} packUsedUp={pack !== null} />;
 }
 
 function Section({ children }: { children: React.ReactNode }) {
@@ -137,7 +155,10 @@ function SearchProgress({ resultId, status }: { resultId: string; status: PaidSt
       try {
         const response = await fetch(`/api/results/${resultId}/status`, { cache: "no-store" });
         const data = (await response.json()) as { paidStatus?: PaidStatus };
-        if (!stopped && data.paidStatus && data.paidStatus !== status) router.refresh();
+        if (stopped || !data.paidStatus || data.paidStatus === status) return;
+        // Back to "none": a search from a pack found too few products and went back into the pack.
+        if (data.paidStatus === "none") router.replace(`/wynik/${resultId}?pakiet=zwrot`);
+        else router.refresh();
       } catch {
         // Network hiccup: try again on the next tick.
       }
@@ -190,15 +211,74 @@ const BENEFITS = [
   { icon: RotateCcw, text: "Zwrot pieniędzy, jeśli znajdziemy mniej niż 5 prezentów" },
 ];
 
-function BuyBox({ resultId, priceVariant }: { resultId: string; priceVariant: PriceVariant | null }) {
+const promoDate = new Intl.DateTimeFormat("pl-PL", {
+  day: "numeric",
+  month: "long",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Europe/Warsaw",
+});
+
+const pad = (value: number) => String(value).padStart(2, "0");
+
+/** Time left until the promo deadline; ticks every second and refreshes the page when it ends. */
+function Countdown({ endsAt, serverNow }: { endsAt: string; serverNow: number }) {
+  const router = useRouter();
+  const [left, setLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    // The deadline is a fixed moment for everybody; the server clock corrects a wrong device clock.
+    const skew = serverNow - Date.now();
+    const end = new Date(endsAt).getTime();
+    let expired = false;
+    const tick = () => {
+      const remaining = end - (Date.now() + skew);
+      setLeft(Math.max(remaining, 0));
+      if (remaining <= 0 && !expired) {
+        expired = true;
+        router.refresh();
+      }
+    };
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, [endsAt, serverNow, router]);
+
+  if (left === null) return <>do {promoDate.format(new Date(endsAt))}</>;
+  const totalSeconds = Math.floor(left / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const clock = `${pad(Math.floor((totalSeconds % 86400) / 3600))}:${pad(Math.floor((totalSeconds % 3600) / 60))}:${pad(totalSeconds % 60)}`;
+  return (
+    <>
+      jeszcze {days > 0 ? `${days} d ` : ""}
+      <span className="tabular-nums">{clock}</span>
+    </>
+  );
+}
+
+const grosze = (value: number) => pln.format(value / 100);
+
+function OfferPicker({ resultId, quote, packUsedUp }: { resultId: string; quote: OffersQuote; packUsedUp: boolean }) {
+  const router = useRouter();
+  // The pack is pre-selected; the single search is one tap away.
+  const [offer, setOffer] = useState<PurchaseOffer>("pack8");
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const price = priceVariant ? pln.format(priceVariant / 100) : null;
+  const amount = quote.prices[offer];
+
+  const packPrice = quote.prices.pack8;
+  const perPerson = packPrice / OFFERS.pack8.searches;
+  const savings = singlesTotal(OFFERS.pack8.searches) - packPrice;
 
   useEffect(() => {
-    track("web_search_viewed", { price_variant: priceVariant });
-  }, [priceVariant]);
+    track("web_search_viewed", { promo_active: quote.promoActive });
+  }, [quote.promoActive]);
+
+  function choose(next: PurchaseOffer) {
+    setOffer(next);
+    track("offer_selected", { offer: next, promo_active: quote.promoActive });
+  }
 
   async function buy() {
     setBusy(true);
@@ -207,9 +287,10 @@ function BuyBox({ resultId, priceVariant }: { resultId: string; priceVariant: Pr
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ resultId, consent }),
+        body: JSON.stringify({ resultId, consent, offer, expectedAmountGrosze: amount }),
       });
-      const data = (await response.json().catch(() => null)) as { url?: string; error?: string } | null;
+      const data = (await response.json().catch(() => null)) as { url?: string; error?: string; priceChanged?: boolean } | null;
+      if (data?.priceChanged) router.refresh();
       if (!response.ok || !data?.url) throw new Error(data?.error ?? "Nie udało się rozpocząć płatności.");
       window.location.assign(data.url);
     } catch (caught) {
@@ -221,12 +302,9 @@ function BuyBox({ resultId, priceVariant }: { resultId: string; priceVariant: Pr
   return (
     <Section>
       <div className="flex flex-col gap-4 rounded-2xl border-[3px] border-ink bg-lilac/60 p-5 shadow-[5px_5px_0_var(--ink)]">
-        <div className="flex items-baseline justify-between gap-3">
-          <p className="text-lg font-semibold">Szukaj w całym internecie</p>
-          {price && <p className="shrink-0 text-xl font-bold">{price}</p>}
-        </div>
         <p className="text-sm text-muted-foreground">
           AI przeszuka zaufane polskie sklepy spoza naszego katalogu, dopasowując prezenty do tego samego profilu.
+          {packUsedUp && " Wykorzystałeś już wszystkie wyszukiwania z poprzedniego pakietu."}
         </p>
         <ul className="flex flex-col gap-2 text-sm">
           {BENEFITS.map(({ icon: Icon, text }) => (
@@ -236,6 +314,42 @@ function BuyBox({ resultId, priceVariant }: { resultId: string; priceVariant: Pr
             </li>
           ))}
         </ul>
+
+        <div role="radiogroup" aria-label="Wybierz ofertę" className="flex flex-col gap-3">
+          <OfferOption
+            selected={offer === "pack8"}
+            onSelect={() => choose("pack8")}
+            title="Pakiet na 8 osób"
+            price={grosze(packPrice)}
+            badge={
+              quote.promoActive && quote.promoEndsAt ? (
+                <>
+                  Promocja: <Countdown endsAt={quote.promoEndsAt} serverNow={quote.serverNow} />
+                </>
+              ) : null
+            }
+          >
+            <span>8 wyszukiwań dla 8 różnych osób, wykorzystasz je kiedy chcesz (to {grosze(Math.round(perPerson))} za osobę).</span>
+            <span>
+              Osobno 8 wyszukiwań kosztuje {grosze(singlesTotal(OFFERS.pack8.searches))}: oszczędzasz {grosze(savings)}.
+            </span>
+            {quote.promoActive && quote.promoEndsAt && (
+              <span className="font-medium">
+                Cena promocyjna do {promoDate.format(new Date(quote.promoEndsAt))}, potem {grosze(OFFERS.pack8.regularGrosze)}.
+              </span>
+            )}
+          </OfferOption>
+          <OfferOption
+            selected={offer === "single"}
+            onSelect={() => choose("single")}
+            title="Jedno wyszukiwanie"
+            price={grosze(quote.prices.single)}
+            badge={null}
+          >
+            <span>Dla jednej osoby, czyli dla tego wyniku.</span>
+          </OfferOption>
+        </div>
+
         <label className="flex min-h-11 cursor-pointer items-start gap-3 text-sm">
           <input
             type="checkbox"
@@ -245,11 +359,117 @@ function BuyBox({ resultId, priceVariant }: { resultId: string; priceVariant: Pr
           />
           <span>{CONSENT_TEXT}.</span>
         </label>
-        <Button type="button" size="xl" onClick={buy} disabled={!consent || busy || !price}>
+        <Button type="button" size="xl" onClick={buy} disabled={!consent || busy}>
           {busy ? <Loader2 className="animate-spin" aria-hidden /> : <Globe aria-hidden />}
-          {price ? `Szukaj za ${price}` : "Niedostępne"}
+          {offer === "pack8" ? `Kup pakiet za ${grosze(amount)}` : `Szukaj za ${grosze(amount)}`}
         </Button>
-        <p className="text-center text-xs text-muted-foreground">Płatność jednorazowa: BLIK lub karta (Stripe).</p>
+        <p className="text-center text-xs text-muted-foreground">
+          Płatność jednorazowa: BLIK lub karta (Stripe). Jeśli nie znajdziemy co najmniej 5 prezentów, przy jednym
+          wyszukiwaniu zwracamy pieniądze, a przy pakiecie wyszukiwanie wraca do pakietu.
+        </p>
+        {error && (
+          <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+    </Section>
+  );
+}
+
+function OfferOption({
+  selected,
+  onSelect,
+  title,
+  price,
+  badge,
+  children,
+}: {
+  selected: boolean;
+  onSelect: () => void;
+  title: string;
+  price: string;
+  badge: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <label
+      className={`flex min-h-14 cursor-pointer flex-col gap-2 rounded-xl border-[3px] bg-card p-4 transition-colors ${
+        selected ? "border-ink shadow-[3px_3px_0_var(--ink)]" : "border-transparent outline outline-1 outline-border"
+      }`}
+    >
+      {badge && (
+        <span className="self-start rounded-full bg-ink px-3 py-1 text-xs font-bold text-white" aria-live="off">
+          {badge}
+        </span>
+      )}
+      <span className="flex items-center gap-3">
+        <input
+          type="radio"
+          name="offer"
+          checked={selected}
+          onChange={onSelect}
+          className="size-5 shrink-0 accent-primary"
+        />
+        <span className="flex-1 text-lg font-semibold leading-tight">{title}</span>
+        <span className="shrink-0 text-xl font-bold">{price}</span>
+      </span>
+      <span className="flex flex-col gap-1 pl-8 text-sm text-muted-foreground">{children}</span>
+    </label>
+  );
+}
+
+function PackRedeem({
+  resultId,
+  pack,
+  creditRestored,
+}: {
+  resultId: string;
+  pack: { searchesLeft: number; searchesTotal: number };
+  creditRestored: boolean;
+}) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function redeem() {
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/pack/redeem", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ resultId }),
+      });
+      const data = (await response.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+      if (!response.ok || !data?.ok) throw new Error(data?.error ?? "Nie udało się uruchomić wyszukiwania.");
+      track("pack_redeemed", { left: pack.searchesLeft - 1 });
+      router.refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Nie udało się uruchomić wyszukiwania.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Section>
+      <div className="flex flex-col gap-4 rounded-2xl border-[3px] border-ink bg-lilac/60 p-5 shadow-[5px_5px_0_var(--ink)]">
+        {creditRestored && (
+          <p className="rounded-lg bg-secondary p-3 text-sm" role="status">
+            Tym razem nie znaleźliśmy co najmniej 5 sprawdzonych prezentów, więc to wyszukiwanie wróciło do Twojego
+            pakietu. Możesz spróbować jeszcze raz.
+          </p>
+        )}
+        <p className="text-lg font-semibold">
+          Masz pakiet na 8 osób: zostało {pack.searchesLeft} z {pack.searchesTotal} wyszukiwań
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Użyj jednego wyszukiwania dla tej osoby, bez ponownej płatności.
+        </p>
+        <Button type="button" size="xl" onClick={redeem} disabled={busy}>
+          {busy ? <Loader2 className="animate-spin" aria-hidden /> : <Globe aria-hidden />}
+          Szukaj w internecie (użyj 1 z pakietu)
+        </Button>
         {error && (
           <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive" role="alert">
             {error}

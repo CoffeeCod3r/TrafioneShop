@@ -171,6 +171,20 @@ export function createRealRepos(): Repos {
         if (error) fail("Loading purchase", error);
         return data;
       },
+      async getByPackCode(code) {
+        const { data, error } = await db().from("purchases").select("*").eq("pack_code", code).maybeSingle();
+        if (error) fail("Loading pack", error);
+        return data;
+      },
+      async consumeSearch(id) {
+        const { data, error } = await db().rpc("consume_pack_search", { p_id: id });
+        if (error) fail("Using pack search", error);
+        return data === true;
+      },
+      async restoreSearch(id) {
+        const { error } = await db().rpc("restore_pack_search", { p_id: id });
+        if (error) fail("Restoring pack search", error);
+      },
       async update(id, patch) {
         const { error } = await db().from("purchases").update(patch).eq("id", id);
         if (error) fail("Updating purchase", error);

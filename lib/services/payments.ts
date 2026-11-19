@@ -3,14 +3,17 @@
  * (impl/payments-demo.ts, which opens /demo-checkout instead of Stripe).
  * The rest of the code uses only this interface via getPayments().
  */
-import type { PriceVariant } from "@/lib/db";
+import type { PurchaseOffer } from "@/lib/db";
 import { isRealService } from "@/lib/mode";
 import { createDemoPayments } from "@/lib/services/impl/payments-demo";
 import { createRealPayments } from "@/lib/services/impl/payments-real";
 
 export type CheckoutInput = {
   resultId: string;
-  priceVariant: PriceVariant;
+  offer: PurchaseOffer;
+  /** Amount to charge in grosze, decided on the server (see lib/offers-server.ts). */
+  amountGrosze: number;
+  /** May contain Stripe's {CHECKOUT_SESSION_ID} placeholder. */
   successUrl: string;
   cancelUrl: string;
 };
@@ -24,8 +27,8 @@ export type PaymentEvent =
       sessionId: string;
       paymentIntentId: string | null;
       resultId: string;
+      offer: PurchaseOffer;
       amountGrosze: number;
-      priceVariant: PriceVariant;
     }
   | { type: "ignored"; reason: string };
 

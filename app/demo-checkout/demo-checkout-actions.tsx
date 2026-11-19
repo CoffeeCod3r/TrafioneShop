@@ -6,9 +6,9 @@ import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-type Props = { session: string; resultId: string; variant: 499 | 999; cancelUrl: string };
+type Props = { session: string; resultId: string; offer: "single" | "pack8"; amount: number; cancelUrl: string };
 
-export function DemoCheckoutActions({ session, resultId, variant, cancelUrl }: Props) {
+export function DemoCheckoutActions({ session, resultId, offer, amount, cancelUrl }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +20,7 @@ export function DemoCheckoutActions({ session, resultId, variant, cancelUrl }: P
       const response = await fetch("/api/demo-checkout/pay", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ session, resultId, variant }),
+        body: JSON.stringify({ session, resultId, offer, amount }),
       });
       const data = (await response.json().catch(() => null)) as { redirect?: string; error?: string } | null;
       if (!response.ok || !data?.redirect) throw new Error(data?.error ?? "Płatność demo nie powiodła się.");

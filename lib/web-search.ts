@@ -135,6 +135,20 @@ export function verifyWebPicks(
 
 async function refund(purchase: PurchaseRow, reason: string): Promise<void> {
   const repos = getRepos();
+  if (purchase.offer === "pack8") {
+    // A pack is not refunded per search: the failed search goes back into the pack and the
+    // result can be searched again. (`purchase.result_id` is the result of this very search.)
+    try {
+      await repos.purchases.restoreSearch(purchase.id);
+      if (purchase.result_id) {
+        await repos.results.update(purchase.result_id, { paid_status: "none", web_picks: null, dedications: null });
+      }
+      logEvent("paid.credit_restored", { reason });
+    } catch (error) {
+      logEvent("paid.credit_restore_failed", { reason, purchaseId: purchase.id, ...describeError(error) });
+    }
+    return;
+  }
   try {
     const { refundId } = await getPayments().refund({
       sessionId: purchase.stripe_session_id,

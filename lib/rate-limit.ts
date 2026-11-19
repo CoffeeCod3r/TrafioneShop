@@ -5,6 +5,8 @@ export const RATE_LIMITS = {
   analyzeWithPhoto: { key: "analyze:photo", limitPerDay: 3 },
   analyzeWithoutPhoto: { key: "analyze:text", limitPerDay: 20 },
   checkout: { key: "checkout", limitPerDay: 20 },
+  /** Using a search from a pack of 8. */
+  redeem: { key: "redeem", limitPerDay: 40 },
   quizStart: { key: "quiz_start", limitPerDay: 40 },
   subscribe: { key: "subscribe", limitPerDay: 5 },
   /** Confirmation emails to one address, so nobody can flood someone else's inbox. */

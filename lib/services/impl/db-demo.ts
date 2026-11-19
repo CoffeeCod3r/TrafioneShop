@@ -243,6 +243,10 @@ export function createDemoRepos(): Repos {
             result_id: null,
             payment_intent_id: null,
             status: "paid",
+            offer: "single",
+            searches_total: 1,
+            searches_left: 0,
+            pack_code: null,
             ...row,
           };
           data.purchases.push(purchase);
@@ -250,6 +254,21 @@ export function createDemoRepos(): Repos {
         }),
       getBySessionId: (sessionId) =>
         read((data) => data.purchases.find((p) => p.stripe_session_id === sessionId) ?? null),
+      getByPackCode: (code) => read((data) => data.purchases.find((p) => p.pack_code === code) ?? null),
+      consumeSearch: (id) =>
+        write((data) => {
+          const purchase = data.purchases.find((p) => p.id === id);
+          if (!purchase || purchase.status !== "paid" || purchase.searches_left <= 0) return false;
+          purchase.searches_left -= 1;
+          return true;
+        }),
+      restoreSearch: (id) =>
+        write((data) => {
+          const purchase = data.purchases.find((p) => p.id === id);
+          if (purchase && purchase.status === "paid") {
+            purchase.searches_left = Math.min(purchase.searches_left + 1, purchase.searches_total);
+          }
+        }),
       update: (id, patch) =>
         write((data) => {
           const purchase = data.purchases.find((p) => p.id === id);

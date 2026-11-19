@@ -85,8 +85,17 @@ export default function TermsPage() {
             na bilecik.
           </li>
           <li>
-            Cena jest podana przy przycisku płatności (4,99 zł albo 9,99 zł brutto) i dla danego wyniku zawsze jest taka
-            sama. Płatność jest jednorazowa, przez Stripe (BLIK lub karta). Jeden wynik można opłacić tylko raz.
+            Dostępne są dwie oferty: <strong>jedno wyszukiwanie</strong> (4,99 zł brutto) oraz{" "}
+            <strong>pakiet na 8 osób</strong>, czyli 8 wyszukiwań dla 8 różnych wyników. Pakiet kosztuje 12,99 zł brutto
+            w promocji do 27 listopada 2026 r., do godz. 23:59, a po jej zakończeniu 19,99 zł brutto. Cena widoczna
+            przy przycisku płatności jest ceną, którą zapłacisz. Płatność jest jednorazowa, przez Stripe (BLIK lub
+            karta). Jeden wynik można opłacić tylko raz.
+          </li>
+          <li>
+            Pakiet nie ma terminu ważności ani konta: dostęp do niego daje przeglądarka, w której go kupiono, oraz link
+            do pakietu pokazywany po zakupie (nie udostępniaj go). Wyszukiwanie z pakietu, które nie znajdzie co
+            najmniej 5 sprawdzonych produktów, wraca do pakietu. <Fill>[do weryfikacji przez prawnika: zwrot za
+            niewykorzystane wyszukiwania z pakietu i prawo odstąpienia]</Fill>
           </li>
           <li>Umowa zostaje zawarta z chwilą potwierdzenia płatności. Wyniki pojawiają się zwykle w ciągu kilku minut.</li>
           <li>
@@ -97,8 +106,9 @@ export default function TermsPage() {
             <strong>Sprzedawcą produktów jest dany sklep</strong>, nie my. Część linków może być linkami partnerskimi.
           </li>
           <li>
-            <strong>Automatyczny zwrot</strong>: jeśli nie znajdziemy co najmniej 5 sprawdzonych produktów albo
-            wystąpi błąd, automatycznie zwracamy całą zapłaconą kwotę tą samą metodą płatności. Nie musisz o to prosić.
+            <strong>Automatyczny zwrot</strong>: jeśli przy pojedynczym wyszukiwaniu nie znajdziemy co najmniej 5
+            sprawdzonych produktów albo wystąpi błąd, automatycznie zwracamy całą zapłaconą kwotę tą samą metodą
+            płatności. Nie musisz o to prosić.
             Zwrot zlecamy od razu, a jego zaksięgowanie zależy od banku (zwykle do <Fill>[10]</Fill> dni roboczych).
             Darmowe wyniki pozostają dostępne.
           </li>

@@ -1,7 +1,7 @@
 import Stripe from "stripe";
 
-import type { PriceVariant } from "@/lib/db";
 import { requireEnv } from "@/lib/env";
+import { isOfferId, OFFERS } from "@/lib/offers";
 import type { PaymentEvent, PaymentsService } from "@/lib/services/payments";
 
 let stripe: Stripe | undefined;
@@ -9,10 +9,6 @@ let stripe: Stripe | undefined;
 function getStripe(): Stripe {
   stripe ??= new Stripe(requireEnv("STRIPE_SECRET_KEY").STRIPE_SECRET_KEY, { maxNetworkRetries: 2 });
   return stripe;
-}
-
-function parseVariant(value: string | undefined): PriceVariant | null {
-  return value === "499" ? 499 : value === "999" ? 999 : null;
 }
 
 function toEvent(event: Stripe.Event): PaymentEvent {
@@ -23,27 +19,38 @@ function toEvent(event: Stripe.Event): PaymentEvent {
   if (session.payment_status !== "paid") return { type: "ignored", reason: `payment_status=${session.payment_status}` };
 
   const resultId = session.metadata?.result_id ?? session.client_reference_id;
-  const priceVariant = parseVariant(session.metadata?.price_variant);
-  if (!resultId || !priceVariant) return { type: "ignored", reason: "missing metadata" };
+  // Sessions created before the offers existed carry no `offer`: they were single searches.
+  const offer = session.metadata?.offer ?? "single";
+  if (!resultId || !isOfferId(offer) || !session.amount_total) return { type: "ignored", reason: "missing metadata" };
 
   return {
     type: "checkout_completed",
     sessionId: session.id,
     paymentIntentId: typeof session.payment_intent === "string" ? session.payment_intent : (session.payment_intent?.id ?? null),
     resultId,
-    amountGrosze: session.amount_total ?? priceVariant,
-    priceVariant,
+    offer,
+    amountGrosze: session.amount_total,
   };
 }
 
 /** Stripe Checkout (BLIK and card enabled in the Dashboard), refunds via Stripe Refunds. */
 export function createRealPayments(): PaymentsService {
   return {
-    async createCheckout({ resultId, priceVariant, successUrl, cancelUrl }) {
-      const env = requireEnv("STRIPE_PRICE_ID_A", "STRIPE_PRICE_ID_B");
+    async createCheckout({ resultId, offer, amountGrosze, successUrl, cancelUrl }) {
+      const metadata = { result_id: resultId, offer };
       const session = await getStripe().checkout.sessions.create({
         mode: "payment",
-        line_items: [{ price: priceVariant === 499 ? env.STRIPE_PRICE_ID_A : env.STRIPE_PRICE_ID_B, quantity: 1 }],
+        // Inline price: the amount is decided by the server (promo or regular), no Stripe Price objects to keep in sync.
+        line_items: [
+          {
+            price_data: {
+              currency: "pln",
+              unit_amount: amountGrosze,
+              product_data: { name: OFFERS[offer].checkoutName },
+            },
+            quantity: 1,
+          },
+        ],
         // BLIK first, card second. This API version uses dynamic payment methods: the list filters
         // what is enabled in the Dashboard, and Stripe decides the final order (BLIK is shown
         // first for Polish customers). Both must be enabled in Dashboard → Payment methods.
@@ -51,8 +58,8 @@ export function createRealPayments(): PaymentsService {
         currency: "pln",
         locale: "pl",
         client_reference_id: resultId,
-        metadata: { result_id: resultId, price_variant: String(priceVariant) },
-        payment_intent_data: { metadata: { result_id: resultId, price_variant: String(priceVariant) } },
+        metadata,
+        payment_intent_data: { metadata },
         success_url: successUrl,
         cancel_url: cancelUrl,
       });

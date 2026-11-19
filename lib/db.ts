@@ -17,8 +17,10 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-/** Price variant in grosze: 499 = 4.99 PLN, 999 = 9.99 PLN. */
-export type PriceVariant = 499 | 999;
+/** Price in grosze (499 = 4.99 PLN). On purchases: the amount actually charged. */
+export type PriceVariant = number;
+/** Paid offers: one web search, or a pack of 8 searches (for 8 different recipients). */
+export type PurchaseOffer = "single" | "pack8";
 export type PaidStatus = "none" | "pending" | "searching" | "ready" | "refunded";
 export type ClickSource = "free" | "web" | "share";
 export type PurchaseStatus = "paid" | "refunded";
@@ -104,6 +106,12 @@ export type PurchaseRow = {
   amount_pln: number;
   price_variant: PriceVariant;
   status: PurchaseStatus;
+  offer: PurchaseOffer;
+  searches_total: number;
+  /** Searches still available to use on other results (the first one is used at purchase). */
+  searches_left: number;
+  /** Secret pack code (pack8 only), derived from the Stripe session. */
+  pack_code: string | null;
 };
 
 export type SubscriberRow = {
@@ -162,7 +170,7 @@ export type Database = {
       quiz_starts: TableDef<QuizStartRow, "id" | "created_at">;
       allowed_shops: TableDef<AllowedShopRow, "id" | "active" | "has_affiliate">;
       clicks: TableDef<ClickRow, "id" | "created_at">;
-      purchases: TableDef<PurchaseRow, "id" | "created_at" | "status">;
+      purchases: TableDef<PurchaseRow, "id" | "created_at" | "status" | "offer" | "searches_total" | "searches_left">;
       subscribers: TableDef<SubscriberRow, "id" | "consent_at" | "occasions">;
       rate_limits: TableDef<RateLimitRow, "count">;
       ai_usage: TableDef<
@@ -176,6 +184,8 @@ export type Database = {
         Args: { p_key: string; p_window_start: string; p_limit: number };
         Returns: boolean;
       };
+      consume_pack_search: { Args: { p_id: string }; Returns: boolean };
+      restore_pack_search: { Args: { p_id: string }; Returns: undefined };
     };
     Enums: Record<never, never>;
     CompositeTypes: Record<never, never>;

@@ -76,6 +76,12 @@ export type PurchasesRepo = {
   /** Inserts unless a purchase with the same stripe_session_id exists (idempotent webhooks). */
   createIfNew(row: Insert<"purchases">): Promise<{ purchase: PurchaseRow; created: boolean }>;
   getBySessionId(stripeSessionId: string): Promise<PurchaseRow | null>;
+  /** Pack lookup by its secret code (cookie / pack link). */
+  getByPackCode(code: string): Promise<PurchaseRow | null>;
+  /** Atomically uses one search of a paid pack. False when none is left. */
+  consumeSearch(id: string): Promise<boolean>;
+  /** Gives one search back (e.g. the search found too few verified products). */
+  restoreSearch(id: string): Promise<void>;
   update(id: string, patch: Update<"purchases">): Promise<void>;
   listByResult(resultId: string): Promise<PurchaseRow[]>;
   /** Admin stats. */

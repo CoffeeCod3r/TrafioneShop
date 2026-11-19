@@ -16,6 +16,8 @@ export type AnalyticsEvent =
   | "product_clicked"
   | "share_clicked"
   | "web_search_viewed"
+  | "offer_selected"
+  | "pack_redeemed"
   | "web_search_paid"
   | "web_search_refunded"
   | "subscribed";

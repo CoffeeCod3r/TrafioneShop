@@ -6,7 +6,11 @@ about the recipient and can optionally add a photo of them.
 ## Business model
 - FREE: the AI picks 5 gifts from our catalog of partner shops (affiliate links, we earn
   a commission). Results are clearly labelled "Z naszych sklepów partnerskich".
-- PAID (4.99 PLN or 9.99 PLN, A/B test): "Szukaj w całym internecie". The AI with web search
+- PAID: "Szukaj w całym internecie", two offers (lib/offers.ts): one search for 4.99 PLN, or a pack of
+  8 searches for 8 recipients (12.99 PLN promo until `PROMO_ENDS_AT`, default 2026-11-27 23:59 Warsaw, then
+  19.99 PLN). The server decides the price and rejects a checkout whose expected price changed. Stripe prices
+  are inline (`price_data`), there are no Stripe Price IDs. The pack is held by a cookie / pack link, no accounts.
+  Description of the search itself: The AI with web search
   looks through trusted Polish shops outside our catalog, checks price and availability on each
   product page, and returns 5–10 suggestions plus 3 gift-card dedications.
   If it finds fewer than 5 verified products, the payment is refunded automatically.
