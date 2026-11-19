@@ -14,14 +14,16 @@ export function logEvent(event: string, fields: Record<string, SafeValue> = {}):
   console.log(JSON.stringify({ event, ...safe }));
 }
 
-/** Error description without message bodies: type and HTTP status only. */
-export function describeError(error: unknown): { errorName: string; status?: number } {
+/** Error description without message bodies: type, HTTP status and machine code (e.g. Postgres 42501) only. */
+export function describeError(error: unknown): { errorName: string; status?: number; code?: string } {
   if (error && typeof error === "object") {
     const name = (error as { name?: unknown }).name;
     const status = (error as { status?: unknown }).status;
+    const code = (error as { code?: unknown }).code;
     return {
       errorName: typeof name === "string" ? name.slice(0, 50) : "UnknownError",
       status: typeof status === "number" ? status : undefined,
+      code: typeof code === "string" && /^[A-Za-z0-9_.-]{1,40}$/.test(code) ? code : undefined,
     };
   }
   return { errorName: "UnknownError" };

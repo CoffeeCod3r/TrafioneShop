@@ -4,7 +4,7 @@
  * The rest of the code uses only this interface via getPayments().
  */
 import type { PriceVariant } from "@/lib/db";
-import { isMockMode } from "@/lib/mode";
+import { isRealService } from "@/lib/mode";
 import { createDemoPayments } from "@/lib/services/impl/payments-demo";
 import { createRealPayments } from "@/lib/services/impl/payments-real";
 
@@ -40,6 +40,6 @@ export type PaymentsService = {
 let service: PaymentsService | undefined;
 
 export function getPayments(): PaymentsService {
-  service ??= isMockMode() ? createDemoPayments() : createRealPayments();
+  service ??= isRealService("payments") ? createRealPayments() : createDemoPayments();
   return service;
 }

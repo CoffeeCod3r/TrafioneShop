@@ -185,7 +185,7 @@ async function checkSupabase() {
     if (error) {
       const missingTable = error.code === "42P01" || error.code === "PGRST205";
       throw new CheckError(
-        `odczyt nie powiódł się: ${error.message}`,
+        `odczyt nie powiódł się: ${error.message || error.code || "brak szczegółów (najpewniej błędny klucz service role)"}`,
         missingTable ? "Zastosuj migracje: `supabase db push` (folder supabase/migrations)." : SUPABASE_FIX,
       );
     }

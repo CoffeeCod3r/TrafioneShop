@@ -1,13 +1,13 @@
 import Stripe from "stripe";
 
 import type { PriceVariant } from "@/lib/db";
-import { getServiceEnv } from "@/lib/env";
+import { requireEnv } from "@/lib/env";
 import type { PaymentEvent, PaymentsService } from "@/lib/services/payments";
 
 let stripe: Stripe | undefined;
 
 function getStripe(): Stripe {
-  stripe ??= new Stripe(getServiceEnv().STRIPE_SECRET_KEY, { maxNetworkRetries: 2 });
+  stripe ??= new Stripe(requireEnv("STRIPE_SECRET_KEY").STRIPE_SECRET_KEY, { maxNetworkRetries: 2 });
   return stripe;
 }
 
@@ -40,7 +40,7 @@ function toEvent(event: Stripe.Event): PaymentEvent {
 export function createRealPayments(): PaymentsService {
   return {
     async createCheckout({ resultId, priceVariant, successUrl, cancelUrl }) {
-      const env = getServiceEnv();
+      const env = requireEnv("STRIPE_PRICE_ID_A", "STRIPE_PRICE_ID_B");
       const session = await getStripe().checkout.sessions.create({
         mode: "payment",
         line_items: [{ price: priceVariant === 499 ? env.STRIPE_PRICE_ID_A : env.STRIPE_PRICE_ID_B, quantity: 1 }],
@@ -74,7 +74,7 @@ export function createRealPayments(): PaymentsService {
     async verifyWebhook(rawBody, signature) {
       if (!signature) return null;
       try {
-        const event = getStripe().webhooks.constructEvent(rawBody, signature, getServiceEnv().STRIPE_WEBHOOK_SECRET);
+        const event = getStripe().webhooks.constructEvent(rawBody, signature, requireEnv("STRIPE_WEBHOOK_SECRET").STRIPE_WEBHOOK_SECRET);
         return toEvent(event);
       } catch {
         return null;

@@ -3,9 +3,11 @@ import type { NextConfig } from "next";
 // Fail the build/start when demo mode would reach production.
 // (Same rule as lib/mode.ts, inlined so the config has no app imports.)
 const mockMode = !["false", "0", "no", "off"].includes((process.env.MOCK_MODE ?? "true").trim().toLowerCase());
-if (process.env.VERCEL_ENV === "production" && mockMode) {
+const productionDeploy =
+  process.env.VERCEL_ENV === "production" || (process.env.NETLIFY === "true" && process.env.CONTEXT === "production");
+if (productionDeploy && mockMode) {
   throw new Error(
-    "MOCK_MODE=true is not allowed in production (VERCEL_ENV=production). Set MOCK_MODE=false and configure all service keys.",
+    "MOCK_MODE=true is not allowed in production (VERCEL_ENV=production or Netlify CONTEXT=production). Set MOCK_MODE=false and configure all service keys.",
   );
 }
 
@@ -16,7 +18,7 @@ const securityHeaders = [
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), browsing-topics=(), interest-cohort=()",
+    value: "camera=(), microphone=(), geolocation=()",
   },
 ];
 

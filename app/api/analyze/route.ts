@@ -21,6 +21,41 @@ function error(status: number, message: string, extra: Record<string, unknown> =
   return Response.json({ error: message, ...extra }, { status });
 }
 
+/** Pipeline steps, used only to log where a request failed and to pick a user-facing message. */
+type Step = "env" | "captcha" | "rate_limit" | "profile" | "candidates" | "picks" | "save" | "usage";
+
+class StepError extends Error {
+  readonly step: Step;
+  readonly original: unknown;
+  constructor(step: Step, original: unknown) {
+    super(`analyze step failed: ${step}`);
+    this.name = "StepError";
+    this.step = step;
+    this.original = original;
+  }
+}
+
+async function runStep<T>(step: Step, run: () => Promise<T> | T): Promise<T> {
+  try {
+    return await run();
+  } catch (caught) {
+    throw new StepError(step, caught);
+  }
+}
+
+const GENERIC_ERROR = "Coś poszło nie tak. Spróbuj ponownie za chwilę.";
+const DB_ERROR = "Nie udało się połączyć z bazą danych. Spróbuj ponownie za chwilę.";
+const STEP_MESSAGES: Record<Step, string> = {
+  env: "Serwis jest chwilowo niedostępny z naszej strony. Pracujemy nad tym, spróbuj ponownie później.",
+  captcha: "Nie udało się sprawdzić zabezpieczenia antyspamowego. Odśwież stronę i spróbuj ponownie.",
+  rate_limit: DB_ERROR,
+  profile: "Nie udało się połączyć z AI. Spróbuj ponownie za chwilę.",
+  candidates: DB_ERROR,
+  picks: "Nie udało się połączyć z AI. Spróbuj ponownie za chwilę.",
+  save: DB_ERROR,
+  usage: DB_ERROR,
+};
+
 /**
  * POST /api/analyze
  * Order: Turnstile → rate limit → validation → profile (AI) → candidates → picks (AI)
@@ -30,7 +65,7 @@ function error(status: number, message: string, extra: Record<string, unknown> =
  */
 export async function POST(request: Request) {
   try {
-    const env = getEnv();
+    const env = await runStep("env", () => getEnv());
 
     let body: unknown;
     try {
@@ -43,18 +78,19 @@ export async function POST(request: Request) {
 
     // 1. Turnstile
     const ip = getClientIp(request);
-    const human = await getCaptcha().verify({
-      token: typeof raw.turnstileToken === "string" ? raw.turnstileToken : undefined,
-      ip,
-      action: "analyze",
-    });
+    const human = await runStep("captcha", () =>
+      getCaptcha().verify({
+        token: typeof raw.turnstileToken === "string" ? raw.turnstileToken : undefined,
+        ip,
+        action: "analyze",
+      }),
+    );
     if (!human) return error(403, "Weryfikacja nie powiodła się. Odśwież stronę i spróbuj ponownie.");
 
     // 2. Rate limit (photo and no-photo analyses have separate daily limits)
     const withPhoto = raw.photo !== undefined && raw.photo !== null;
-    const allowed = await consumeRateLimit(
-      withPhoto ? "analyzeWithPhoto" : "analyzeWithoutPhoto",
-      hashIp(ip, env.IP_HASH_SALT),
+    const allowed = await runStep("rate_limit", () =>
+      consumeRateLimit(withPhoto ? "analyzeWithPhoto" : "analyzeWithoutPhoto", hashIp(ip, env.IP_HASH_SALT)),
     );
     if (!allowed) {
       return error(
@@ -76,30 +112,30 @@ export async function POST(request: Request) {
     // 4. Style profile (the photo is used only here and then dropped)
     const { answers, photo, source } = parsed.data;
     const ai = getAi();
-    const profileStep = await ai.analyzeProfile(answers, photo ?? null);
+    const profileStep = await runStep("profile", () => ai.analyzeProfile(answers, photo ?? null));
     const { profile } = profileStep.response;
 
     // 5. Candidates from the catalog and AI picks
-    const { candidates, relaxed } = await selectCandidates({
-      budget: answers.budget,
-      tags: profile.tags,
-      avoid: profile.avoid,
-    });
+    const { candidates, relaxed } = await runStep("candidates", () =>
+      selectCandidates({ budget: answers.budget, tags: profile.tags, avoid: profile.avoid }),
+    );
     // If the profile step already fell back (AI down or failing), do not wait on AI again.
     const picksStep =
       profileStep.response.source === "fallback"
         ? { result: fallbackResult(candidates, profile, "fallback"), usage: [] }
-        : await ai.pickProducts(answers, profile, candidates);
+        : await runStep("picks", () => ai.pickProducts(answers, profile, candidates));
 
     // 6. Save the result (no photo) and the token usage
-    const { id, refCode } = await createResult({
-      answers,
-      profile,
-      picks: picksStep.result.picks,
-      summary: picksStep.result.summary,
-      source,
-    });
-    await recordAiUsage([...profileStep.usage, ...picksStep.usage], id);
+    const { id, refCode } = await runStep("save", () =>
+      createResult({
+        answers,
+        profile,
+        picks: picksStep.result.picks,
+        summary: picksStep.result.summary,
+        source,
+      }),
+    );
+    await runStep("usage", () => recordAiUsage([...profileStep.usage, ...picksStep.usage], id));
 
     logEvent("analyze.done", {
       withPhoto,
@@ -113,7 +149,17 @@ export async function POST(request: Request) {
     const response: AnalyzeResponse = { resultId: id, refCode, ...profileStep.response };
     return Response.json(response);
   } catch (caught) {
-    logEvent("analyze.failed", describeError(caught));
-    return error(500, "Coś poszło nie tak. Spróbuj ponownie za chwilę.");
+    const failed = caught instanceof StepError ? caught : null;
+    const cause = failed ? failed.original : caught;
+    logEvent("analyze.failed", {
+      step: failed?.step ?? "other",
+      ...describeError(cause),
+      // Config errors list variable NAMES only (see lib/env.ts), never values, so they are safe to log.
+      detail:
+        failed?.step === "env" && cause instanceof Error && /environment variables|MOCK_MODE/i.test(cause.message)
+          ? cause.message.slice(0, 200)
+          : undefined,
+    });
+    return error(500, failed ? STEP_MESSAGES[failed.step] : GENERIC_ERROR);
   }
 }

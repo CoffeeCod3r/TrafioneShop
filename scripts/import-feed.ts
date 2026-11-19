@@ -14,7 +14,7 @@ import { runImport } from "../lib/feeds/import.ts";
 import { formatImportStats } from "../lib/feeds/report.ts";
 import type { ProductStore } from "../lib/feeds/store.ts";
 import type { FeedSource } from "../lib/feeds/types.ts";
-import { isMockMode } from "../lib/mode.ts";
+import { isRealService } from "../lib/mode.ts";
 import { getRepos } from "../lib/services/db.ts";
 
 const { values } = parseArgs({
@@ -51,7 +51,7 @@ async function main() {
     sources = parseFeedSources(feedUrls);
   }
 
-  if (!dryRun) console.log(`Target: ${isMockMode() ? "demo database file (MOCK_MODE=true)" : "Supabase"}`);
+  if (!dryRun) console.log(`Target: ${isRealService("db") ? "Supabase" : "demo database file (MOCK_MODE=true)"}`);
   const store = dryRun ? dryRunStore : getRepos().products;
   const stats = await runImport({ sources, store, loadFeed, dryRun, log: (message) => console.log(message) });
 

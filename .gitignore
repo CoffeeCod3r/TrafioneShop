@@ -45,3 +45,6 @@ next-env.d.ts
 
 # demo database (MOCK_MODE)
 .data
+
+# Local Netlify folder
+.netlify

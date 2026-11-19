@@ -114,6 +114,18 @@ export function getEnv(): ServerEnv {
   return cached;
 }
 
+/**
+ * Selected service variables that must be set. Used by real implementations that may run
+ * while MOCK_MODE=true (REAL_DB / REAL_PAYMENTS), where getServiceEnv() is not available.
+ * Error messages name variables only, never values.
+ */
+export function requireEnv<K extends keyof ServiceEnv>(...keys: K[]): Pick<ServiceEnv, K> {
+  const env = getEnv();
+  const missing = keys.filter((key) => !env[key]);
+  if (missing.length) throw new Error(`Missing environment variables: ${missing.join(", ")}`);
+  return env as unknown as Pick<ServiceEnv, K>;
+}
+
 /** Full service configuration. Only for real (non-demo) service implementations. */
 export function getServiceEnv(): BaseEnv & ServiceEnv {
   const env = getEnv();

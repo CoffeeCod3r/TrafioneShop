@@ -11,12 +11,12 @@ import { parseArgs } from "node:util";
 
 import sampleProducts from "../data/sample-products.json" with { type: "json" };
 import type { ProductUpsert } from "../lib/feeds/normalize.ts";
-import { isMockMode } from "../lib/mode.ts";
+import { isRealService } from "../lib/mode.ts";
 import { getRepos } from "../lib/services/db.ts";
 
 async function main() {
   const { values } = parseArgs({ options: { "dry-run": { type: "boolean", default: false } } });
-  const mock = isMockMode();
+  const mock = !isRealService("db");
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
   const absolute = (url: string) => (mock || !url.startsWith("/") ? url : `${siteUrl}${url}`);
 

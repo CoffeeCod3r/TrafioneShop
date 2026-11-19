@@ -17,7 +17,7 @@ import type {
   Update,
 } from "../db.ts";
 import type { ProductUpsert } from "../feeds/normalize.ts";
-import { isMockMode } from "../mode.ts";
+import { isRealService } from "../mode.ts";
 import { createDemoRepos } from "./impl/db-demo.ts";
 import { createRealRepos } from "./impl/db-real.ts";
 
@@ -125,6 +125,6 @@ let repos: Repos | undefined;
 
 export function getRepos(): Repos {
   if (typeof window !== "undefined") throw new Error("Database repositories are server-only");
-  repos ??= isMockMode() ? createDemoRepos() : createRealRepos();
+  repos ??= isRealService("db") ? createRealRepos() : createDemoRepos();
   return repos;
 }

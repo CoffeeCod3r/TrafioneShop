@@ -1,0 +1,1 @@
+ADMIN_PASSWORD = W$V$t4wt3ta55bab5ayb
