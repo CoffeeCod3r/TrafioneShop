@@ -49,6 +49,46 @@ export const GIFT_TYPE_OPTIONS = [
   { value: "funny", label: "Coś śmiesznego", emoji: "😄" },
 ] as const satisfies readonly Option<string>[];
 
+export const DESCRIPTION_MAX_LENGTH = 200;
+
+/** Quick suggestions under the description field: each one appends its text. */
+export const DESCRIPTION_SUGGESTIONS = [
+  "kocha zwierzęta",
+  "ma wszystko",
+  "lubi gotować",
+  "ciągle w podróży",
+  "słucha winyli",
+  "gra w planszówki",
+] as const;
+
+/**
+ * Cleans the free-text description of the recipient. Everything that could carry contact data or an
+ * injected link is replaced by a space: control and invisible characters, angle brackets and braces
+ * (they could close the <opis_od_uzytkownika> tag in the prompts), links, e-mail addresses, bare domains
+ * and phone numbers. Idempotent; an empty result is valid.
+ */
+export function sanitizeDescription(value: string): string {
+  return value
+    .normalize("NFC")
+    .replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu, " ")
+    .replace(/[<>{}]/g, " ")
+    .replace(/(?:https?:\/\/|ftp:\/\/|www\.)\S*/gi, " ")
+    .replace(/[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.[\p{L}]{2,}/gu, " ")
+    .replace(/\b(?:[a-z0-9-]+\.)+(?:pl|com|net|org|eu|io|co|info|xyz|de|ru|shop|store|online|site|me|tv)\b\S*/gi, " ")
+    .replace(/(?:\+|00)?\d(?:[\s().-]?\d){6,}/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Lowercase, without punctuation: the form of the description used in the result-memory hash. */
+export function normalizeDescription(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export const MIN_INTERESTS = 3;
 export const MAX_INTERESTS = 5;
 export const OWNED_ITEMS_MAX_LENGTH = 100;
@@ -80,6 +120,14 @@ export const ownedItemsSchema = z
   .max(OWNED_ITEMS_MAX_LENGTH, `Maksymalnie ${OWNED_ITEMS_MAX_LENGTH} znaków.`)
   .optional();
 
+/** Optional description of the person. At most 1000 raw characters are examined, 200 may remain after cleaning. */
+export const descriptionSchema = z
+  .string()
+  .max(1000, `Maksymalnie ${DESCRIPTION_MAX_LENGTH} znaków.`)
+  .transform(sanitizeDescription)
+  .pipe(z.string().max(DESCRIPTION_MAX_LENGTH, `Maksymalnie ${DESCRIPTION_MAX_LENGTH} znaków.`))
+  .optional();
+
 export const quizAnswersSchema = z.object({
   recipient: recipientSchema,
   budget: budgetSchema,
@@ -88,6 +136,7 @@ export const quizAnswersSchema = z.object({
   lifestyle: lifestyleSchema,
   giftType: giftTypeSchema,
   ownedItems: ownedItemsSchema,
+  description: descriptionSchema,
 });
 
 export type QuizAnswers = z.infer<typeof quizAnswersSchema>;
@@ -102,6 +151,7 @@ export const QUIZ_QUESTION_FIELDS: QuizField[][] = [
   ["interests"],
   ["lifestyle"],
   ["giftType", "ownedItems"],
+  ["description"],
 ];
 
 /** Validates only the given fields of a draft. Returns the first error per field. */

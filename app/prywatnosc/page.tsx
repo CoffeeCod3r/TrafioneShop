@@ -47,10 +47,30 @@ export default function PrivacyPolicyPage() {
       </section>
 
       <section>
+        <h2>2a. Opis osoby obdarowanej</h2>
+        <ul>
+          <li>
+            W quizie możesz dodać krótki, opcjonalny opis osoby, dla której szukasz prezentu (do 200 znaków). Prosimy,
+            żeby nie podawać w nim imienia, nazwiska ani danych kontaktowych. Linki, adresy e-mail i numery telefonu
+            automatycznie usuwamy z opisu.
+          </li>
+          <li>
+            Opis trafia do dostawcy AI (Anthropic) w jednym celu: dobrania prezentów. Jest przechowywany razem z
+            wynikiem (w odpowiedziach z quizu) i podlega temu samemu okresowi przechowywania. Nie wysyłamy go do
+            narzędzi analitycznych.
+          </li>
+          <li>
+            Prosimy, żeby w opisie nie podawać informacji wrażliwych (np. o zdrowiu, religii, poglądach lub
+            orientacji). Jeśli się jednak pojawią, AI ma polecenie, żeby nie powtarzać ich w wyniku.
+          </li>
+        </ul>
+      </section>
+
+      <section>
         <h2>3. Wyszukiwanie w sklepach (wynik darmowy i płatne „Więcej propozycji”)</h2>
         <p>
           Zarówno przy wyniku darmowym, jak i przy płatnych „Więcej propozycji” do AI (Anthropic) przekazujemy
-          wyłącznie zapisany profil stylu, tagi i odpowiedzi z quizu (przy płatnych dodatkowo nazwy produktów z wyniku
+          wyłącznie zapisany profil stylu, tagi i odpowiedzi z quizu wraz z opisem osoby (przy płatnych dodatkowo nazwy produktów z wyniku
           darmowego). <strong>Zdjęcie nie jest przekazywane</strong>, bo go nie przechowujemy. AI przegląda strony
           zaufanych polskich sklepów, żeby sprawdzić ceny i dostępność. Wyszukiwanie działa w tle na naszym koncie w
           Supabase (funkcja brzegowa), a jego postęp pokazujemy na stronie wyniku.
@@ -66,12 +86,12 @@ export default function PrivacyPolicyPage() {
         <ul>
           <li>
             <strong>Odpowiedzi z quizu i wynik</strong> (dla kogo, budżet, okazja, zainteresowania, styl życia, typ
-            prezentu, „co już ma”, profil stylu, wybrane produkty): żeby pokazać wynik pod stałym linkiem i umożliwić
+            prezentu, „co już ma”, opis osoby, profil stylu, wybrane produkty): żeby pokazać wynik pod stałym linkiem i umożliwić
             jego udostępnienie. Podstawa: wykonanie usługi (art. 6 ust. 1 lit. b RODO). Nie zawierają Twojego imienia
             ani e-maila. Przechowujemy je przez <Fill>[OKRES, np. 12 miesięcy]</Fill>.
           </li>
           <li>
-            <strong>Pamięć wyników</strong>: skrót (hash) Twoich odpowiedzi z quizu, policzony z tajną solą. Nie zawiera
+            <strong>Pamięć wyników</strong>: skrót (hash) Twoich odpowiedzi z quizu (także opisu osoby), policzony z tajną solą. Nie zawiera
             zdjęcia (przy zdjęciu do skrótu trafiają tylko tagi z profilu stylu) i nie da się z niego odczytać
             odpowiedzi. Dzięki niemu ten sam quiz w ciągu 24 godzin dostaje gotowe, sprawdzone produkty bez nowego
             wyszukiwania, co ogranicza koszty. Podstawa: prawnie uzasadniony interes (art. 6 ust. 1 lit. f RODO).

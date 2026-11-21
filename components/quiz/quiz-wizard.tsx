@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Gift, Pencil } from "lucide-react";
 
 import { AnalyzingOverlay } from "@/components/quiz/analyzing-overlay";
+import { DescriptionStep } from "@/components/quiz/description-step";
 import { OptionTile } from "@/components/quiz/option-tile";
 import { PhotoInput } from "@/components/quiz/photo-input";
 import { TagChip } from "@/components/quiz/tag-chip";
@@ -34,7 +35,7 @@ import { ALLOWED_TAGS, type AllowedTag } from "@/lib/tags";
 import { cn } from "@/lib/utils";
 
 const QUESTION_COUNT = QUIZ_QUESTION_FIELDS.length;
-/** Questions + the final photo screen. */
+/** Questions (the last one is the optional description) + the final photo screen. */
 const SCREEN_COUNT = QUESTION_COUNT + 1;
 
 const TITLES = [
@@ -44,6 +45,7 @@ const TITLES = [
   "Czym się interesuje?",
   "Jaki ma styl życia?",
   "Jaki prezent wolisz?",
+  "Opisz tę osobę w kilku słowach",
   "Dodaj zdjęcie (opcjonalnie)",
 ];
 
@@ -156,7 +158,13 @@ export function QuizWizard({ demo = false }: QuizWizardProps) {
     setSubmitting(true);
     try {
       const response = await submitQuiz({ answers: result.data, photo, turnstileToken, source: sourceRef.current });
-      track("quiz_completed", { has_photo: photo !== null, budget: result.data.budget, source: sourceRef.current });
+      // Never the description text itself, only whether one was given.
+      track("quiz_completed", {
+        has_photo: photo !== null,
+        has_description: Boolean(result.data.description),
+        budget: result.data.budget,
+        source: sourceRef.current,
+      });
       router.push(`/wynik/${response.resultId}${response.notice ? "?zdjecie=pominiete" : ""}`);
       // Keep the overlay until the results page replaces this one.
     } catch (caught) {
@@ -311,6 +319,28 @@ export function QuizWizard({ demo = false }: QuizWizardProps) {
       )}
 
       {step === 6 && (
+        <div className="flex flex-col gap-4">
+          <DescriptionStep
+            value={draft.description ?? ""}
+            onChange={(value) => update("description", value)}
+            error={errors.description}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={() => {
+              const nextDraft = { ...draft, description: "" };
+              setDraft(nextDraft);
+              next(nextDraft);
+            }}
+          >
+            Pomiń
+          </Button>
+        </div>
+      )}
+
+      {step === 7 && (
         <div className="flex flex-col gap-6">
           <PhotoInput value={photo} onChange={setPhoto} />
           <Summary draft={draft} onEdit={goTo} />
@@ -378,6 +408,7 @@ function Summary({ draft, onEdit }: { draft: QuizDraft; onEdit: (step: number) =
       labelOf(GIFT_TYPE_OPTIONS, draft.giftType) + (draft.ownedItems?.trim() ? ` · ma już: ${draft.ownedItems.trim()}` : ""),
       5,
     ],
+    ["Opis", draft.description?.trim() || "–", 6],
   ];
   return (
     <dl className="divide-y rounded-xl border">

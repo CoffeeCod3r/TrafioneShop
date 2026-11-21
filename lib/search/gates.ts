@@ -3,7 +3,7 @@ import { createHmac } from "node:crypto";
 import { todaySpendPln } from "@/lib/admin/stats";
 import type { ResultRow } from "@/lib/db";
 import { getEnv } from "@/lib/env";
-import type { QuizAnswers } from "@/lib/quiz/schema";
+import { normalizeDescription, type QuizAnswers } from "@/lib/quiz/schema";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { hashIp } from "@/lib/request";
 import { getRepos } from "@/lib/services/db";
@@ -28,6 +28,8 @@ export function quizHash(answers: QuizAnswers, photoTags: readonly string[] | nu
     l: answers.lifestyle,
     g: answers.giftType,
     w: collapse(answers.ownedItems ?? ""),
+    // The description changes what is searched for, so it is part of the key (lowercase, no punctuation).
+    d: normalizeDescription(answers.description ?? ""),
     t: photoTags ? [...photoTags].sort() : null,
   };
   return createHmac("sha256", getEnv().IP_HASH_SALT).update(`quiz:${JSON.stringify(normalized)}`).digest("hex");
