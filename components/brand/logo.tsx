@@ -38,15 +38,12 @@ export function LogoMark({ className }: { className?: string }) {
   );
 }
 
-/** Full logo: mark + "Prezentownik" + "AI" badge. */
+/** Full logo: mark + "Prezentoskop". */
 export function Logo({ className }: { className?: string }) {
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
       <LogoMark className="logo-mark size-9" />
-      <span className="font-display text-xl font-extrabold tracking-tight">Prezentownik</span>
-      <span className="rounded-md border-2 border-ink bg-ribbon px-1.5 py-px font-display text-xs font-extrabold leading-tight text-white">
-        AI
-      </span>
+      <span className="font-display text-xl font-extrabold tracking-tight">Prezentoskop</span>
     </span>
   );
 }

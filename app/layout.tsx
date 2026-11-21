@@ -22,7 +22,7 @@ const bricolage = Bricolage_Grotesque({
 export const metadata: Metadata = {
   // Absolute base for Open Graph images and canonical URLs.
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
-  title: "Prezentownik AI – trafione prezenty w 60 sekund",
+  title: "Prezentoskop – trafione prezenty w 60 sekund",
   description:
     "Wrzuć zdjęcie, odpowiedz na 6 pytań i dostań 5 trafionych prezentów z polskich sklepów.",
 };

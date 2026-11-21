@@ -69,7 +69,7 @@ const DEMO_DEFAULTS = {
   IP_HASH_SALT: "demo-ip-hash-salt-demo-ip-hash-salt",
   EMAIL_TOKEN_SECRET: "demo-email-token-secret-demo-email-token",
   ADMIN_PASSWORD: "demo-admin-pass",
-  EMAIL_FROM: "Prezentownik AI (demo) <demo@example.pl>",
+  EMAIL_FROM: "Prezentoskop <demo@example.pl>",
 };
 
 export type ServiceEnv = z.infer<typeof serviceSchema>;

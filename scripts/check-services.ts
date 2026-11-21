@@ -113,7 +113,7 @@ const ENV_RULES: EnvRule[] = [
   { name: "NEXT_PUBLIC_TURNSTILE_SITE_KEY", hint: "Cloudflare → Turnstile → site key (klucz testowy: 1x00000000000000000000AA)", valid: minLength(1) },
   { name: "TURNSTILE_SECRET_KEY", hint: "Cloudflare → Turnstile → secret key", valid: minLength(1) },
   { name: "RESEND_API_KEY", hint: "resend.com → API Keys (zaczyna się od re_)", valid: (v) => startsWith("re_")(v) && v.length > 5 },
-  { name: "EMAIL_FROM", hint: 'Nadawca z domeny zweryfikowanej w Resend, np. "Prezentownik AI <prezenty@twojadomena.pl>"', valid: minLength(3) },
+  { name: "EMAIL_FROM", hint: 'Nadawca z domeny zweryfikowanej w Resend, np. "Prezentoskop <prezenty@twojadomena.pl>"', valid: minLength(3) },
   { name: "NEXT_PUBLIC_POSTHOG_KEY", hint: "PostHog → Project settings → Project API key (phc_…)", valid: minLength(4) },
   { name: "CRON_SECRET", hint: "Losowy ciąg, min. 32 znaki (np. `openssl rand -hex 32`)", valid: minLength(32) },
   { name: "IP_HASH_SALT", hint: "Losowy ciąg, min. 32 znaki", valid: minLength(32) },
@@ -375,7 +375,7 @@ async function main() {
   await checkSupabase();
   await checkStripe();
 
-  console.log("Prezentownik AI – sprawdzenie usług\n");
+  console.log("Prezentoskop – sprawdzenie usług\n");
   for (const result of results) {
     if (result.ok) {
       console.log(`[OK]    ${result.name} – ${result.detail}`);

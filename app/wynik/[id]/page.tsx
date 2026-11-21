@@ -18,6 +18,7 @@ import { CARD_HEIGHT, CARD_WIDTH, cardUrl } from "@/lib/og/card";
 import { isMockMode } from "@/lib/mode";
 import { getOffersQuote } from "@/lib/offers-server";
 import { getPackFromCookies } from "@/lib/packs";
+import { canUsePayments } from "@/lib/payments-gate";
 import { getResultView } from "@/lib/results";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -31,7 +32,7 @@ type PageProps = {
 export async function generateMetadata({ params }: Pick<PageProps, "params">): Promise<Metadata> {
   const { id } = await params;
   const base: Metadata = {
-    title: "Twoje prezenty – Prezentownik AI",
+    title: "Twoje prezenty – Prezentoskop",
     // Results are personal: keep them out of search engines.
     robots: { index: false, follow: false },
   };
@@ -44,14 +45,14 @@ export async function generateMetadata({ params }: Pick<PageProps, "params">): P
     description,
     openGraph: {
       type: "website",
-      title: "AI dobrało prezenty – Prezentownik AI",
+      title: "AI dobrało prezenty – Prezentoskop",
       description,
       url: `/wynik/${id}`,
       images: [image],
       locale: "pl_PL",
-      siteName: "Prezentownik AI",
+      siteName: "Prezentoskop",
     },
-    twitter: { card: "summary_large_image", title: "AI dobrało prezenty – Prezentownik AI", description, images: [image] },
+    twitter: { card: "summary_large_image", title: "AI dobrało prezenty – Prezentoskop", description, images: [image] },
   };
 }
 
@@ -77,6 +78,7 @@ async function ResultContent({ params, searchParams }: PageProps) {
   // Read after the dynamic data above: the promo deadline and the visitor's pack depend on "now" and cookies.
   const quote = getOffersQuote();
   const pack = await getPackFromCookies();
+  const paymentsOpen = await canUsePayments();
   // A search from a pack that found too few products goes back into the pack and the result is "none" again.
   const creditRestored = pack !== null && result.paid_status === "none" && (justPaid || query.pakiet === "zwrot");
 
@@ -147,6 +149,7 @@ async function ResultContent({ params, searchParams }: PageProps) {
         resultId={result.id}
         status={result.paid_status}
         quote={quote}
+        paymentsOpen={paymentsOpen}
         pack={pack ? { searchesLeft: pack.searchesLeft, searchesTotal: pack.searchesTotal } : null}
         creditRestored={creditRestored}
         webPicks={result.webPicks}

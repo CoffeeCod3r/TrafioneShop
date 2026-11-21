@@ -34,7 +34,7 @@ export const MOCK_MODE_IN_PRODUCTION_ERROR =
 
 /** Production deployment on Vercel or Netlify. Same rule is inlined in next.config.ts. */
 export function isProductionDeploy(): boolean {
-  return process.env.VERCEL_ENV === "production" || (process.env.NETLIFY === "true" && process.env.CONTEXT === "production");
+  return process.env.VERCEL_ENV === "production" || process.env.CONTEXT === "production";
 }
 
 /** Throws when demo mode would run on the production deployment. */

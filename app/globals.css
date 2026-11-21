@@ -37,7 +37,7 @@
 }
 
 :root {
-  /* Prezentownik palette: wrapping paper and gift tags */
+  /* Prezentoskop palette: wrapping paper and gift tags */
   --ink: #1c1b3a; /* text, primary buttons */
   --ribbon: #e8336d; /* ribbons, selection, highlights (decorative / large text only) */
   --paper: #fff6f9; /* page background, blush wrapping paper */

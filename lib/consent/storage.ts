@@ -1,9 +1,9 @@
 /** Analytics consent, stored only in the browser (localStorage). */
 export type AnalyticsConsent = "granted" | "denied";
 
-const KEY = "prezentownik:analytics-consent";
-export const CONSENT_EVENT = "prezentownik:consent-change";
-export const OPEN_SETTINGS_EVENT = "prezentownik:open-cookie-settings";
+const KEY = "prezentoskop:analytics-consent";
+export const CONSENT_EVENT = "prezentoskop:consent-change";
+export const OPEN_SETTINGS_EVENT = "prezentoskop:open-cookie-settings";
 
 export function readConsent(): AnalyticsConsent | null {
   try {

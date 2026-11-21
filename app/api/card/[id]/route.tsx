@@ -69,7 +69,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             >
               P
             </div>
-            Prezentownik AI
+            Prezentoskop
           </div>
 
           <div style={{ display: "flex", marginTop: 72, fontSize: 88, lineHeight: 1.08, letterSpacing: -2 }}>

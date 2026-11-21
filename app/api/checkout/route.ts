@@ -4,6 +4,7 @@ import { getEnv } from "@/lib/env";
 import { describeError, logEvent } from "@/lib/log";
 import { OFFERS } from "@/lib/offers";
 import { getOffersQuote } from "@/lib/offers-server";
+import { canUsePayments } from "@/lib/payments-gate";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { getClientIp, hashIp } from "@/lib/request";
 import { getRepos } from "@/lib/services/db";
@@ -23,6 +24,10 @@ export async function POST(request: Request) {
   try {
     const parsed = bodySchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) return Response.json({ error: "Zaznacz zgodę, aby przejść do płatności." }, { status: 400 });
+
+    if (!(await canUsePayments())) {
+      return Response.json({ error: "Płatności będą dostępne już wkrótce." }, { status: 403 });
+    }
 
     const allowed = await consumeRateLimit("checkout", hashIp(getClientIp(request), getEnv().IP_HASH_SALT));
     if (!allowed) return Response.json({ error: "Zbyt wiele prób płatności. Spróbuj jutro." }, { status: 429 });

@@ -1,4 +1,4 @@
--- Initial schema for Prezentownik AI.
+-- Initial schema for Prezentoskop.
 -- All tables have RLS enabled and NO policies: anon/authenticated roles get nothing.
 -- The app talks to the database only from the server with the service role key.
 

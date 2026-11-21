@@ -3,15 +3,15 @@ import Link from "next/link";
 
 import { Fill, LegalPage, OwnerData } from "@/components/legal/legal";
 
-export const metadata: Metadata = { title: "Regulamin – Prezentownik AI" };
+export const metadata: Metadata = { title: "Regulamin – Prezentoskop" };
 
 /** DRAFT – to be verified by the owner (and ideally a lawyer) before launch. */
 export default function TermsPage() {
   return (
-    <LegalPage title="Regulamin serwisu Prezentownik AI" updated="14 listopada 2026 r.">
+    <LegalPage title="Regulamin serwisu Prezentoskop" updated="14 listopada 2026 r.">
       <section>
         <h2>§ 1. Usługodawca i kontakt</h2>
-        <p>Serwis Prezentownik AI, dostępny pod adresem <Fill>[ADRES STRONY]</Fill>, prowadzi:</p>
+        <p>Serwis Prezentoskop, dostępny pod adresem <strong>https://prezentoskop.pl</strong>, prowadzi:</p>
         <OwnerData />
         <p>
           Kontakt w każdej sprawie, w tym reklamacje: <Fill>[E-MAIL]</Fill>.

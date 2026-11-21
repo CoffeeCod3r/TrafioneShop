@@ -7,7 +7,7 @@ export const FEED_MAX_BYTES = 300 * 1024 * 1024;
 export async function fetchFeed(url: string): Promise<string> {
   const response = await fetch(url, {
     signal: AbortSignal.timeout(FEED_FETCH_TIMEOUT_MS),
-    headers: { "user-agent": "PrezentownikAI-FeedImporter/1.0" },
+    headers: { "user-agent": "Prezentoskop-FeedImporter/1.0" },
     redirect: "follow",
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);

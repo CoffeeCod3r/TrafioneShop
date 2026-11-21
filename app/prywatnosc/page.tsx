@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { Fill, LegalPage, OwnerData } from "@/components/legal/legal";
 
-export const metadata: Metadata = { title: "Polityka prywatności – Prezentownik AI" };
+export const metadata: Metadata = { title: "Polityka prywatności – Prezentoskop" };
 
 /** DRAFT – to be verified by the owner (and ideally a lawyer) before launch. */
 export default function PrivacyPolicyPage() {
@@ -11,7 +11,7 @@ export default function PrivacyPolicyPage() {
     <LegalPage title="Polityka prywatności" updated="14 listopada 2026 r.">
       <section>
         <h2>1. Kto jest administratorem danych</h2>
-        <p>Administratorem danych osobowych użytkowników serwisu Prezentownik AI jest:</p>
+        <p>Administratorem danych osobowych użytkowników serwisu Prezentoskop jest:</p>
         <OwnerData />
         <p>
           W sprawach danych osobowych możesz pisać na adres <Fill>[E-MAIL]</Fill>.

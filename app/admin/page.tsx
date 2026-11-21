@@ -8,7 +8,7 @@ import { ADMIN_COOKIE, isValidAdminSession } from "@/lib/admin/auth";
 import { AI_PRICES, getAdminStats, PERIODS, type AdminStats, type Period } from "@/lib/admin/stats";
 import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Admin – Prezentownik AI", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "Admin – Prezentoskop", robots: { index: false, follow: false } };
 
 type PageProps = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
@@ -80,7 +80,7 @@ function Dashboard({ stats, period }: { stats: AdminStats; period: Period }) {
         />
       </section>
 
-      <Section title="Test cen">
+      <Section title="Sprawdzenie cen">
         <Table
           head={["Wariant", "Wyniki", "Płatności", "Konwersja", "Przychód / 100 wyników", "Zwroty"]}
           rows={stats.priceTest.map((row) => [

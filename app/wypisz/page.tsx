@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 
 import { TokenAction } from "@/components/subscribe/token-action";
 
-export const metadata: Metadata = { title: "Wypisz się – Prezentownik AI", robots: { index: false } };
+export const metadata: Metadata = { title: "Wypisz się – Prezentoskop", robots: { index: false } };
 
 type PageProps = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 

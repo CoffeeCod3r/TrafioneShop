@@ -79,7 +79,7 @@ export function ShareButton({ resultId, refCode }: ShareButtonProps) {
 
     const data: ShareData = {
       files: [file],
-      title: "Prezentownik AI",
+      title: "Prezentoskop",
       // Many apps drop `url` when files are shared, so the link goes into the text too.
       text: `AI dobrało prezenty w 60 sekund. Zobacz: ${shareUrl()}`,
     };

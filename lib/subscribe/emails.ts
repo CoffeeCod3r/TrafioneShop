@@ -46,7 +46,7 @@ export function confirmationEmail(email: string, occasions: SubscribeOccasion[])
     text: [
       "Cześć!",
       "",
-      `Ktoś (mamy nadzieję, że Ty) zapisał ten adres do przypomnień Prezentownika AI o okazjach: ${labels}.`,
+      `Ktoś (mamy nadzieję, że Ty) zapisał ten adres do przypomnień Prezentoskopu o okazjach: ${labels}.`,
       "",
       `Aby potwierdzić zapis, otwórz link (ważny ${CONFIRM_TOKEN_TTL_DAYS} dni):`,
       confirmUrl,
@@ -55,7 +55,7 @@ export function confirmationEmail(email: string, occasions: SubscribeOccasion[])
     ].join("\n"),
     html: `<div style="font-family:system-ui,sans-serif;font-size:16px;line-height:1.5;color:#1f2937;max-width:520px">
 <p>Cześć!</p>
-<p>Ktoś (mamy nadzieję, że Ty) zapisał ten adres do przypomnień Prezentownika AI o okazjach: <strong>${escapeHtml(labels)}</strong>.</p>
+<p>Ktoś (mamy nadzieję, że Ty) zapisał ten adres do przypomnień Prezentoskopu o okazjach: <strong>${escapeHtml(labels)}</strong>.</p>
 <p><a href="${escapeHtml(confirmUrl)}" style="display:inline-block;background:#1f2937;color:#fff;padding:12px 20px;border-radius:10px;text-decoration:none">Potwierdzam zapis</a></p>
 <p style="font-size:14px;color:#6b7280">Link jest ważny ${CONFIRM_TOKEN_TTL_DAYS} dni. Jeśli to nie Ty, zignoruj tę wiadomość. Bez potwierdzenia nie wyślemy nic więcej.</p>
 </div>`,

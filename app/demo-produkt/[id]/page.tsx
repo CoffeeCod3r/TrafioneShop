@@ -7,7 +7,7 @@ import demoWebPicks from "@/data/demo-web-picks.json";
 import { isMockMode } from "@/lib/mode";
 import { getRepos } from "@/lib/services/db";
 
-export const metadata: Metadata = { title: "Produkt demo – Prezentownik AI", robots: { index: false } };
+export const metadata: Metadata = { title: "Produkt demo – Prezentoskop", robots: { index: false } };
 
 const pln = new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" });
 

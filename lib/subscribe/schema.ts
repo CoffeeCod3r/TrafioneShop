@@ -16,7 +16,7 @@ const occasionValues = SUBSCRIBE_OCCASIONS.map((occasion) => occasion.value) as 
 ];
 
 export const MARKETING_CONSENT_TEXT =
-  "Zgadzam się na otrzymywanie od Prezentownika AI wiadomości marketingowych e-mailem (przypomnienia o okazjach i pomysły na prezenty). Zgodę mogę wycofać w każdej chwili, klikając link w każdej wiadomości.";
+  "Zgadzam się na otrzymywanie od Prezentoskopu wiadomości marketingowych e-mailem (przypomnienia o okazjach i pomysły na prezenty). Zgodę mogę wycofać w każdej chwili, klikając link w każdej wiadomości.";
 
 export const occasionsSchema = z
   .array(z.enum(occasionValues, { error: () => "Nieznana okazja." }))

@@ -1,4 +1,4 @@
-# Prezentownik AI (TrafioneShop)
+# Prezentoskop (TrafioneShop)
 
 Polish, mobile-first website that picks gifts in 60 seconds. The user answers 6 questions
 about the recipient and can optionally add a photo of them.
@@ -14,6 +14,9 @@ about the recipient and can optionally add a photo of them.
   looks through trusted Polish shops outside our catalog, checks price and availability on each
   product page, and returns 5–10 suggestions plus 3 gift-card dedications.
   If it finds fewer than 5 verified products, the payment is refunded automatically.
+
+- `PAYMENTS_ENABLED` (default false): when false, paid offers are replaced by "Więcej propozycji z całego
+  internetu – już wkrótce" and `/api/checkout` returns 403. An admin logged in at /admin can still pay (for tests).
 
 ## Stack
 - Next.js (App Router) + TypeScript + Tailwind + shadcn/ui

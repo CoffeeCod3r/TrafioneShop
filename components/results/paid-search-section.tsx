@@ -28,6 +28,8 @@ type PaidSearchSectionProps = {
   status: PaidStatus;
   /** Prices and promo deadline, decided on the server for this page view. */
   quote: OffersQuote;
+  /** False while PAYMENTS_ENABLED=false (unless an admin is logged in): show "coming soon" instead of buy buttons. */
+  paymentsOpen: boolean;
   /** The visitor's pack of 8 (from the cookie), if any. */
   pack: { searchesLeft: number; searchesTotal: number } | null;
   /** True when a search from a pack just failed and was given back to the pack. */
@@ -56,6 +58,7 @@ export function PaidSearchSection({
   resultId,
   status,
   quote,
+  paymentsOpen,
   pack,
   creditRestored,
   webPicks,
@@ -127,6 +130,15 @@ export function PaidSearchSection({
 
   if (pack && pack.searchesLeft > 0) {
     return <PackRedeem resultId={resultId} pack={pack} creditRestored={creditRestored} />;
+  }
+  if (!paymentsOpen) {
+    return (
+      <Section>
+        <p className="rounded-2xl border-[3px] border-ink bg-lilac/60 p-5 text-center font-semibold shadow-[5px_5px_0_var(--ink)]">
+          Więcej propozycji z całego internetu – już wkrótce
+        </p>
+      </Section>
+    );
   }
   return <OfferPicker resultId={resultId} quote={quote} packUsedUp={pack !== null} />;
 }
