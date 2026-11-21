@@ -44,6 +44,6 @@ export async function getPackFromCookies(): Promise<PackInfo | null> {
   const code = (await cookies()).get(PACK_COOKIE)?.value;
   if (!code || !isValidPackCode(code)) return null;
   const purchase = await getRepos().purchases.getByPackCode(code);
-  if (!purchase || purchase.status !== "paid" || purchase.offer !== "pack8") return null;
+  if (!purchase || purchase.status !== "paid" || purchase.offer === "single") return null;
   return { code, purchaseId: purchase.id, searchesLeft: purchase.searches_left, searchesTotal: purchase.searches_total };
 }

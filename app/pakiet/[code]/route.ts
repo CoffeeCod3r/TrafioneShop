@@ -12,7 +12,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
   const origin = new URL(request.url).origin;
 
   const purchase = isValidPackCode(code) ? await getRepos().purchases.getByPackCode(code) : null;
-  if (!purchase || purchase.status !== "paid" || purchase.offer !== "pack8") {
+  if (!purchase || purchase.status !== "paid" || purchase.offer === "single") {
     return NextResponse.redirect(new URL("/quiz", origin));
   }
   const response = NextResponse.redirect(new URL("/quiz?pakiet=ok", origin));

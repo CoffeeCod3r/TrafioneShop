@@ -8,6 +8,7 @@ import type {
   AiUsageRow,
   AllowedShopRow,
   ClickRow,
+  GuideProductRow,
   Insert,
   ProductRow,
   PurchaseRow,
@@ -126,7 +127,23 @@ export type RateLimitsRepo = {
   deleteOlderThan(isoDate: string): Promise<number>;
 };
 
+/** A product of a gift guide with the reason written for that guide. */
+export type GuideProduct = {
+  position: number;
+  reason: string;
+  refreshedAt: string;
+  product: ProductRow;
+};
+
+export type GuidesRepo = {
+  /** In-stock products of one guide in display order (empty when the guide was never refreshed). */
+  listProducts(slug: string): Promise<GuideProduct[]>;
+  /** Replaces all products of a guide at once (the weekly refresh). */
+  replaceProducts(slug: string, rows: Pick<GuideProductRow, "product_id" | "position" | "reason">[]): Promise<void>;
+};
+
 export type Repos = {
+  guides: GuidesRepo;
   results: ResultsRepo;
   products: ProductsRepo;
   clicks: ClicksRepo;

@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { describeError, logEvent } from "@/lib/log";
 import { isMockMode } from "@/lib/mode";
+import { isPackOffer } from "@/lib/offers";
 import { getOffersQuote } from "@/lib/offers-server";
 import { handlePaymentEvent } from "@/lib/paid/handle-payment";
 import type { PaymentEvent } from "@/lib/services/payments";
@@ -14,7 +15,7 @@ export const maxDuration = 300;
 const bodySchema = z.object({
   session: z.string().startsWith("demo_cs_").max(100),
   resultId: z.uuid(),
-  offer: z.enum(["single", "pack8"]),
+  offer: z.enum(["single", "pack10"]),
   amount: z.number().int().positive(),
 });
 
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
     if (status === "ignored") return Response.json({ error: "Nie znaleziono wyniku." }, { status: 404 });
     // Packs set their cookie on the way back, exactly like the real Stripe return URL.
     const redirect =
-      offer === "pack8"
+      isPackOffer(offer)
         ? `/api/pack/claim?session_id=${encodeURIComponent(session)}&result=${resultId}`
         : `/wynik/${resultId}?platnosc=ok`;
     return Response.json({ redirect });

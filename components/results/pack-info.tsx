@@ -24,7 +24,7 @@ export function PackInfo({ code, searchesLeft, searchesTotal }: { code: string; 
     <section aria-label="Twój pakiet" className="flex flex-col gap-3 rounded-2xl border-[3px] border-ink bg-mint p-5">
       <p className="flex items-center gap-2 text-lg font-semibold">
         <PackageOpen className="size-5" aria-hidden />
-        Pakiet na 8 osób: zostało {searchesLeft} z {searchesTotal}
+        Pakiet: zostało {searchesLeft} z {searchesTotal}
       </p>
       {searchesLeft > 0 ? (
         <p className="text-sm">

@@ -11,6 +11,7 @@
     "import:feed": "node --experimental-strip-types --no-warnings --env-file-if-exists=.env.local scripts/import-feed.ts",
     "check:services": "node --experimental-strip-types --no-warnings --env-file-if-exists=.env.local scripts/check-services.ts",
     "test:ai": "node --experimental-strip-types --no-warnings --env-file-if-exists=.env.local scripts/test-ai.ts",
+    "guides:refresh": "node --experimental-strip-types --no-warnings --env-file-if-exists=.env.local scripts/refresh-guides.ts",
     "edge:sync": "node scripts/sync-edge.mjs",
     "edge:deploy": "node scripts/sync-edge.mjs && supabase functions deploy run-search --no-verify-jwt",
     "seed":"node --experimental-strip-types --no-warnings --env-file-if-exists=.env.local scripts/seed.ts"

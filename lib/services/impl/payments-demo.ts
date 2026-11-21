@@ -11,7 +11,7 @@ const demoEventSchema = z.object({
   sessionId: z.string().startsWith("demo_cs_"),
   paymentIntentId: z.string().nullable(),
   resultId: z.uuid(),
-  offer: z.enum(["single", "pack8"]),
+  offer: z.enum(["single", "pack10"]),
   amountGrosze: z.number().int().positive(),
 });
 

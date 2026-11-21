@@ -8,6 +8,7 @@ import type {
   AiUsageRow,
   AllowedShopRow,
   ClickRow,
+  GuideProductRow,
   ProductRow,
   PurchaseRow,
   QuizStartRow,
@@ -33,6 +34,7 @@ type DemoData = {
   ai_usage: AiUsageRow[];
   rate_limits: RateLimitRow[];
   quiz_starts: QuizStartRow[];
+  guide_products: GuideProductRow[];
 };
 
 export function demoDbPath(): string {
@@ -52,6 +54,7 @@ function emptyData(): DemoData {
     ai_usage: [],
     rate_limits: [],
     quiz_starts: [],
+    guide_products: [],
   };
 }
 
@@ -110,6 +113,29 @@ function byCommissionDesc(a: ProductRow, b: ProductRow): number {
 
 export function createDemoRepos(): Repos {
   return {
+    guides: {
+      listProducts: (slug) =>
+        read((data) =>
+          data.guide_products
+            .filter((link) => link.guide_slug === slug)
+            .sort((a, b) => a.position - b.position)
+            .flatMap((link) => {
+              const product = data.products.find((item) => item.id === link.product_id);
+              return product?.in_stock
+                ? [{ position: link.position, reason: link.reason, refreshedAt: link.refreshed_at, product }]
+                : [];
+            }),
+        ),
+      replaceProducts: (slug, rows) =>
+        write((data) => {
+          data.guide_products = data.guide_products.filter((link) => link.guide_slug !== slug);
+          const refreshedAt = now();
+          for (const row of rows) {
+            data.guide_products.push({ ...row, guide_slug: slug, refreshed_at: refreshedAt });
+          }
+        }),
+    },
+
     products: {
       upsertMany: (rows) =>
         write((data) => {

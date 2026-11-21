@@ -9,6 +9,11 @@ export function SiteHeader() {
         <Link href="/" aria-label="Prezentoskop – strona główna" className="logo-link flex min-h-11 items-center">
           <Logo />
         </Link>
+        <nav aria-label="Menu główne" className="ml-auto">
+          <Link href="/poradniki" className="inline-flex min-h-11 items-center px-3 font-semibold underline-offset-4 hover:underline">
+            Poradniki
+          </Link>
+        </nav>
       </div>
     </header>
   );

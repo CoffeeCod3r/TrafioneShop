@@ -18,8 +18,9 @@ about the recipient and can optionally add a photo of them.
     Label: "Z naszych sklepów partnerskich".
   All outbound links go through `/go` with a click source: `free-web`, `paid-web`, `catalog` (or `share`).
 - PAID: "Więcej propozycji" (10 gifts instead of 5, from the whole web, plus 3 dedications), two offers (lib/offers.ts): one search for 4.99 PLN, or a pack of
-  8 searches for 8 recipients (12.99 PLN promo until `PROMO_ENDS_AT`, default 2026-11-27 23:59 Warsaw, then
-  19.99 PLN). The server decides the price and rejects a checkout whose expected price changed. Stripe prices
+  10 searches for 10 recipients (14.99 PLN; offer id `pack10`; the old pack of 8 is legacy and only kept for
+  purchases already made; an offer may get a promo price via `promoGrosze` + `PROMO_ENDS_AT`, today none has).
+  The server decides the price and rejects a checkout whose expected price changed. Stripe prices
   are inline (`price_data`), there are no Stripe Price IDs. The pack is held by a cookie / pack link, no accounts.
   Description of the search itself: The AI with web search
   looks through trusted Polish shops, checks price and availability on each product page, and returns

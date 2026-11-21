@@ -94,8 +94,8 @@ export default function TermsPage() {
           </li>
           <li>
             Dostępne są dwie oferty: <strong>jedno wyszukiwanie</strong> (4,99 zł brutto) oraz{" "}
-            <strong>pakiet na 8 osób</strong>, czyli 8 wyszukiwań dla 8 różnych wyników. Pakiet kosztuje 12,99 zł brutto
-            w promocji do 27 listopada 2026 r., do godz. 23:59, a po jej zakończeniu 19,99 zł brutto. Cena widoczna
+            <strong>pakiet na 10 osób</strong>, czyli 10 wyszukiwań dla 10 różnych wyników. Pakiet kosztuje 14,99 zł
+            brutto. Cena widoczna
             przy przycisku płatności jest ceną, którą zapłacisz. Płatność jest jednorazowa, przez Stripe (BLIK lub
             karta). Jeden wynik można opłacić tylko raz.
           </li>

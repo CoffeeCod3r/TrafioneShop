@@ -8,7 +8,7 @@ export { normalizeUrl, toOutboundUrl, verifyWebPicks } from "@/lib/search/core";
 
 async function refund(purchase: PurchaseRow, reason: string): Promise<void> {
   const repos = getRepos();
-  if (purchase.offer === "pack8") {
+  if (purchase.offer !== "single") {
     // A pack is not refunded per search: the failed search goes back into the pack and the
     // result can be searched again. (`purchase.result_id` is the result of this very search.)
     try {

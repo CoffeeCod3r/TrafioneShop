@@ -1,5 +1,5 @@
 import { getEnv } from "@/lib/env";
-import { DEFAULT_PROMO_ENDS_AT, isPromoActive, OFFERS, priceFor } from "@/lib/offers";
+import { CHECKOUT_OFFERS, DEFAULT_PROMO_ENDS_AT, isPromoActive, OFFERS, priceFor } from "@/lib/offers";
 
 /** What the offer picker and the checkout agree on at one moment in time. */
 export type OffersQuote = {
@@ -8,7 +8,7 @@ export type OffersQuote = {
   promoActive: boolean;
   /** Server clock, so the browser countdown is not skewed by a wrong device clock. */
   serverNow: number;
-  prices: { single: number; pack8: number };
+  prices: { single: number; pack10: number };
 };
 
 /** Promo deadline: PROMO_ENDS_AT (ISO 8601) or the built-in Black Friday date. */
@@ -20,11 +20,12 @@ export function getPromoEndsAt(): Date | null {
 
 export function getOffersQuote(now: Date = new Date()): OffersQuote {
   const endsAt = getPromoEndsAt();
-  const promoActive = isPromoActive(endsAt, now);
+  // A promotion exists only while some offer has a promo price (today none has).
+  const promoActive = isPromoActive(endsAt, now) && CHECKOUT_OFFERS.some((id) => OFFERS[id].promoGrosze !== null);
   return {
     promoEndsAt: endsAt ? endsAt.toISOString() : null,
     promoActive,
     serverNow: now.getTime(),
-    prices: { single: priceFor(OFFERS.single, promoActive), pack8: priceFor(OFFERS.pack8, promoActive) },
+    prices: { single: priceFor(OFFERS.single, promoActive), pack10: priceFor(OFFERS.pack10, promoActive) },
   };
 }

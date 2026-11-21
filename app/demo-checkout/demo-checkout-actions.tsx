@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-type Props = { session: string; resultId: string; offer: "single" | "pack8"; amount: number; cancelUrl: string };
+type Props = { session: string; resultId: string; offer: "single" | "pack10"; amount: number; cancelUrl: string };
 
 export function DemoCheckoutActions({ session, resultId, offer, amount, cancelUrl }: Props) {
   const router = useRouter();

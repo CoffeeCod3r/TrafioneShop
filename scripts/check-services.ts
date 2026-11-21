@@ -146,7 +146,7 @@ function checkEnv() {
     leaked.length ? "Zmień nazwę zmiennych, usuwając prefiks NEXT_PUBLIC_ – inaczej trafią do kodu w przeglądarce." : undefined,
   );
 
-  // Promo deadline of the pack of 8 (optional; the built-in default is Black Friday 2026).
+  // Promo deadline (optional; only used when an offer in lib/offers.ts has a promo price: today none has).
   const promoRaw = process.env.PROMO_ENDS_AT?.trim();
   const promoEnd = new Date(promoRaw || "2026-11-27T23:59:59+01:00");
   if (Number.isNaN(promoEnd.getTime())) {
@@ -154,9 +154,9 @@ function checkEnv() {
   } else {
     const active = promoEnd.getTime() > Date.now();
     record(
-      "Promocja: koniec ceny promocyjnej pakietu",
+      "Promocja: data końca (obecnie żadna oferta nie ma ceny promocyjnej)",
       true,
-      `${promoEnd.toLocaleString("pl-PL", { timeZone: "Europe/Warsaw" })} (${active ? "trwa" : "zakończona, pakiet kosztuje 19,99 zł"})`,
+      `${promoEnd.toLocaleString("pl-PL", { timeZone: "Europe/Warsaw" })} (${active ? "w przyszłości" : "minęła"}; pakiet kosztuje 14,99 zł)`,
     );
   }
 

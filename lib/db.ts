@@ -19,8 +19,8 @@ export type Json =
 
 /** Price in grosze (499 = 4.99 PLN). On purchases: the amount actually charged. */
 export type PriceVariant = number;
-/** Paid offers: one web search, or a pack of 8 searches (for 8 different recipients). */
-export type PurchaseOffer = "single" | "pack8";
+/** Paid offers: one web search, a pack of 10 searches (10 recipients), or the legacy pack of 8. */
+export type PurchaseOffer = "single" | "pack10" | "pack8";
 export type PaidStatus = "none" | "pending" | "searching" | "ready" | "refunded";
 /** Outbound click sources. "free"/"web" are legacy values; new clicks use free-web, paid-web, catalog (or share). */
 export type ClickSource = "free" | "web" | "share" | "free-web" | "paid-web" | "catalog";
@@ -124,8 +124,17 @@ export type PurchaseRow = {
   searches_total: number;
   /** Searches still available to use on other results (the first one is used at purchase). */
   searches_left: number;
-  /** Secret pack code (pack8 only), derived from the Stripe session. */
+  /** Secret pack code (packs only), derived from the Stripe session. */
   pack_code: string | null;
+};
+
+export type GuideProductRow = {
+  guide_slug: string;
+  product_id: string;
+  position: number;
+  /** Short "why this is a good choice", written for this guide. */
+  reason: string;
+  refreshed_at: string;
 };
 
 export type SubscriberRow = {
@@ -186,6 +195,7 @@ export type Database = {
       clicks: TableDef<ClickRow, "id" | "created_at">;
       purchases: TableDef<PurchaseRow, "id" | "created_at" | "status" | "offer" | "searches_total" | "searches_left">;
       subscribers: TableDef<SubscriberRow, "id" | "consent_at" | "occasions">;
+      guide_products: TableDef<GuideProductRow, "refreshed_at">;
       rate_limits: TableDef<RateLimitRow, "count">;
       ai_usage: TableDef<
         AiUsageRow,

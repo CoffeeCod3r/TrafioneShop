@@ -31,6 +31,48 @@ export function createRealRepos(): Repos {
   const db = () => getSupabase();
 
   return {
+    guides: {
+      async listProducts(slug) {
+        const { data: links, error } = await db()
+          .from("guide_products")
+          .select("*")
+          .eq("guide_slug", slug)
+          .order("position");
+        if (error) fail("Loading guide products", error);
+        if (links.length === 0) return [];
+        const { data: products, error: productsError } = await db()
+          .from("products")
+          .select("*")
+          .in("id", links.map((link) => link.product_id));
+        if (productsError) fail("Loading guide products", productsError);
+        const byId = new Map(products.map((product) => [product.id, product]));
+        return links.flatMap((link) => {
+          const product = byId.get(link.product_id);
+          return product?.in_stock
+            ? [{ position: link.position, reason: link.reason, refreshedAt: link.refreshed_at, product }]
+            : [];
+        });
+      },
+      async replaceProducts(slug, rows) {
+        const refreshedAt = new Date().toISOString();
+        // Insert first, then drop the rows that are not part of the new list: a failure in between never leaves a guide empty.
+        if (rows.length > 0) {
+          const { error } = await db()
+            .from("guide_products")
+            .upsert(
+              rows.map((row) => ({ ...row, guide_slug: slug, refreshed_at: refreshedAt })),
+              { onConflict: "guide_slug,product_id" },
+            );
+          if (error) fail("Saving guide products", error);
+        }
+        const keep = rows.map((row) => row.product_id);
+        let remove = db().from("guide_products").delete().eq("guide_slug", slug);
+        if (keep.length > 0) remove = remove.not("product_id", "in", `(${keep.join(",")})`);
+        const { error: deleteError } = await remove;
+        if (deleteError) fail("Cleaning guide products", deleteError);
+      },
+    },
+
     products: {
       async upsertMany(rows) {
         for (let i = 0; i < rows.length; i += UPSERT_CHUNK) {

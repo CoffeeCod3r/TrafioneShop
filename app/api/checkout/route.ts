@@ -14,7 +14,7 @@ const bodySchema = z.object({
   resultId: z.uuid(),
   /** Consent to immediate performance and loss of the right of withdrawal (required by law). */
   consent: z.literal(true),
-  offer: z.enum(["single", "pack8"]),
+  offer: z.enum(["single", "pack10"]),
   /** The price the customer saw, in grosze. The server charges only this exact price. */
   expectedAmountGrosze: z.number().int().positive(),
 });

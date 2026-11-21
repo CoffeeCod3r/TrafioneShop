@@ -19,8 +19,8 @@ import {
 import { CategoryIcon } from "@/components/results/category-icon";
 import { Button } from "@/components/ui/button";
 import { track } from "@/lib/analytics/client";
-import type { PaidStatus, PurchaseOffer } from "@/lib/db";
-import { OFFERS, singlesTotal } from "@/lib/offers";
+import type { PaidStatus } from "@/lib/db";
+import { type CheckoutOffer, OFFERS, singlesTotal } from "@/lib/offers";
 import type { OffersQuote } from "@/lib/offers-server";
 import type { Dedications, WebPick } from "@/lib/paid/schema";
 
@@ -276,21 +276,21 @@ const grosze = (value: number) => pln.format(value / 100);
 function OfferPicker({ resultId, quote, packUsedUp }: { resultId: string; quote: OffersQuote; packUsedUp: boolean }) {
   const router = useRouter();
   // The pack is pre-selected; the single search is one tap away.
-  const [offer, setOffer] = useState<PurchaseOffer>("pack8");
+  const [offer, setOffer] = useState<CheckoutOffer>("pack10");
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const amount = quote.prices[offer];
 
-  const packPrice = quote.prices.pack8;
-  const perPerson = packPrice / OFFERS.pack8.searches;
-  const savings = singlesTotal(OFFERS.pack8.searches) - packPrice;
+  const packPrice = quote.prices.pack10;
+  const perPerson = packPrice / OFFERS.pack10.searches;
+  const savings = singlesTotal(OFFERS.pack10.searches) - packPrice;
 
   useEffect(() => {
     track("web_search_viewed", { promo_active: quote.promoActive });
   }, [quote.promoActive]);
 
-  function choose(next: PurchaseOffer) {
+  function choose(next: CheckoutOffer) {
     setOffer(next);
     track("offer_selected", { offer: next, promo_active: quote.promoActive });
   }
@@ -333,9 +333,9 @@ function OfferPicker({ resultId, quote, packUsedUp }: { resultId: string; quote:
 
         <div role="radiogroup" aria-label="Wybierz ofertę" className="flex flex-col gap-3">
           <OfferOption
-            selected={offer === "pack8"}
-            onSelect={() => choose("pack8")}
-            title="Pakiet na 8 osób"
+            selected={offer === "pack10"}
+            onSelect={() => choose("pack10")}
+            title="Pakiet na 10 osób"
             price={grosze(packPrice)}
             badge={
               quote.promoActive && quote.promoEndsAt ? (
@@ -345,13 +345,13 @@ function OfferPicker({ resultId, quote, packUsedUp }: { resultId: string; quote:
               ) : null
             }
           >
-            <span>8 wyszukiwań dla 8 różnych osób, wykorzystasz je kiedy chcesz (to {grosze(Math.round(perPerson))} za osobę).</span>
+            <span>10 wyszukiwań dla 10 różnych osób, wykorzystasz je kiedy chcesz (to {grosze(Math.round(perPerson))} za osobę).</span>
             <span>
-              Osobno 8 wyszukiwań kosztuje {grosze(singlesTotal(OFFERS.pack8.searches))}: oszczędzasz {grosze(savings)}.
+              Osobno 10 wyszukiwań kosztuje {grosze(singlesTotal(OFFERS.pack10.searches))}: oszczędzasz {grosze(savings)}.
             </span>
             {quote.promoActive && quote.promoEndsAt && (
               <span className="font-medium">
-                Cena promocyjna do {promoDate.format(new Date(quote.promoEndsAt))}, potem {grosze(OFFERS.pack8.regularGrosze)}.
+                Cena promocyjna do {promoDate.format(new Date(quote.promoEndsAt))}, potem {grosze(OFFERS.pack10.regularGrosze)}.
               </span>
             )}
           </OfferOption>
@@ -377,7 +377,7 @@ function OfferPicker({ resultId, quote, packUsedUp }: { resultId: string; quote:
         </label>
         <Button type="button" size="xl" onClick={buy} disabled={!consent || busy}>
           {busy ? <Loader2 className="animate-spin" aria-hidden /> : <Globe aria-hidden />}
-          {offer === "pack8" ? `Kup pakiet za ${grosze(amount)}` : `Szukaj za ${grosze(amount)}`}
+          {offer === "pack10" ? `Kup pakiet za ${grosze(amount)}` : `Szukaj za ${grosze(amount)}`}
         </Button>
         <p className="text-center text-xs text-muted-foreground">
           Płatność jednorazowa: BLIK lub karta (Stripe). Jeśli nie znajdziemy co najmniej 5 prezentów, przy jednym
@@ -477,7 +477,7 @@ function PackRedeem({
           </p>
         )}
         <p className="text-lg font-semibold">
-          Masz pakiet na 8 osób: zostało {pack.searchesLeft} z {pack.searchesTotal} wyszukiwań
+          Masz pakiet: zostało {pack.searchesLeft} z {pack.searchesTotal} wyszukiwań
         </p>
         <p className="text-sm text-muted-foreground">
           Użyj jednego wyszukiwania dla tej osoby, bez ponownej płatności.

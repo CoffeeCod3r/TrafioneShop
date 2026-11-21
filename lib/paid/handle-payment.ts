@@ -1,5 +1,5 @@
 import { logEvent } from "@/lib/log";
-import { OFFERS } from "@/lib/offers";
+import { isPackOffer, OFFERS } from "@/lib/offers";
 import { packCodeForSession } from "@/lib/packs";
 import { getRepos } from "@/lib/services/db";
 import type { PaymentEvent } from "@/lib/services/payments";
@@ -30,7 +30,7 @@ export async function handlePaymentEvent(
   }
 
   const total = OFFERS[event.offer].searches;
-  const isPack = event.offer === "pack8";
+  const isPack = isPackOffer(event.offer);
   const { purchase, created } = await repos.purchases.createIfNew({
     result_id: event.resultId,
     stripe_session_id: event.sessionId,
