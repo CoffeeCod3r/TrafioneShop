@@ -91,9 +91,33 @@ export function createRealRepos(): Repos {
         if (error) fail("Loading product", error);
         return data as ProductRow | null;
       },
+      async saveDirect(rows) {
+        if (rows.length === 0) return [];
+        const { data, error } = await db()
+          .from("products")
+          .upsert(
+            rows.map((row) => ({ ...row, network: "direct", commission_rate: 0, in_stock: true })),
+            { onConflict: "network,external_id" },
+          )
+          .select("*");
+        if (error) fail("Saving web products", error);
+        return data;
+      },
     },
 
     results: {
+      async findCachedByHash(hash, since) {
+        const { data, error } = await db()
+          .from("results")
+          .select("*")
+          .eq("quiz_hash", hash)
+          .eq("search_status", "ready")
+          .gte("created_at", since)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (error) fail("Result memory lookup", error);
+        return data[0] ?? null;
+      },
       async create(row) {
         const { data, error } = await db().from("results").insert(row).select("*").single();
         if (error) {
@@ -127,7 +151,7 @@ export function createRealRepos(): Repos {
           (from, to) =>
             db()
               .from("results")
-              .select("id, created_at, price_variant, paid_status, source")
+              .select("id, created_at, price_variant, paid_status, source, free_source")
               .gte("created_at", since)
               .order("created_at")
               .range(from, to),
@@ -161,6 +185,11 @@ export function createRealRepos(): Repos {
         const existing = await this.getBySessionId(row.stripe_session_id);
         if (!existing) fail("Loading purchase", null);
         return { purchase: existing, created: false };
+      },
+      async getById(id) {
+        const { data, error } = await db().from("purchases").select("*").eq("id", id).maybeSingle();
+        if (error) fail("Loading purchase", error);
+        return data;
       },
       async getBySessionId(stripeSessionId) {
         const { data, error } = await db()

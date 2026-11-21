@@ -29,6 +29,20 @@ export function isRealService(service: OverridableService): boolean {
   return parseBool(process.env[`REAL_${service.toUpperCase()}`], false);
 }
 
+/**
+ * Where the free results come from:
+ * - "web": the AI searches trusted Polish shops (lib/search), products are saved to the catalog;
+ * - "catalog": the AI picks from our partner catalog (after the affiliate networks accept the site).
+ */
+export type SourceMode = "web" | "catalog";
+
+export function getSourceMode(): SourceMode {
+  const value = (process.env.SOURCE_MODE ?? "").trim().toLowerCase();
+  if (value === "") return "web";
+  if (value === "web" || value === "catalog") return value;
+  throw new Error(`Invalid SOURCE_MODE: "${value}" (expected "web" or "catalog")`);
+}
+
 export const MOCK_MODE_IN_PRODUCTION_ERROR =
   "MOCK_MODE=true is not allowed in production (VERCEL_ENV=production or Netlify CONTEXT=production). Set MOCK_MODE=false and configure all service keys.";
 

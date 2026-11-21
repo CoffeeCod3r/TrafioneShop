@@ -1,11 +1,11 @@
-import type { AiUsageRow, ClickRow, PriceVariant, PurchaseRow } from "@/lib/db";
+import type { ClickRow, FreeSource, PriceVariant, PurchaseRow } from "@/lib/db";
+import { AI_PRICES, usageCostUsd } from "@/lib/ai/cost";
 import { getEnv } from "@/lib/env";
 import type { ResultStatsRow } from "@/lib/services/db";
 import { getRepos } from "@/lib/services/db";
 
-/** AI prices (USD): claude-haiku-5-5 tokens and web search requests. Web fetch has no extra fee. */
-export const AI_PRICES = { inputPerMTok: 0.1, outputPerMTok: 0.5, perWebSearch: 0.01 };
-const FREE_STEPS = new Set(["profile", "picks"]);
+export { AI_PRICES, usageCostUsd };
+const FREE_STEPS = new Set(["profile", "picks", "free_web_search"]);
 const PAID_STEPS = new Set(["web_search", "dedications"]);
 
 export type Period = "dzis" | "7d" | "calosc";
@@ -39,14 +39,6 @@ export function periodStart(period: Period, now = new Date()): string {
   return new Date(Date.UTC(+parts.year, +parts.month - 1, +parts.day) - offset).toISOString();
 }
 
-export function usageCostUsd(row: Pick<AiUsageRow, "input_tokens" | "output_tokens" | "web_searches">): number {
-  return (
-    (row.input_tokens / 1e6) * AI_PRICES.inputPerMTok +
-    (row.output_tokens / 1e6) * AI_PRICES.outputPerMTok +
-    row.web_searches * AI_PRICES.perWebSearch
-  );
-}
-
 const ratio = (a: number, b: number) => (b > 0 ? a / b : null);
 const netRevenue = (purchases: PurchaseRow[]) =>
   purchases.filter((p) => p.status === "paid").reduce((sum, p) => sum + Number(p.amount_pln), 0);
@@ -71,6 +63,14 @@ export type SourceRow = {
   revenuePerResult: number | null;
 };
 
+/** AI spending since midnight (Warsaw), in PLN, from ai_usage (free and paid together). */
+export async function todaySpendPln(): Promise<number> {
+  const rows = await getRepos().aiUsage.listSince(periodStart("dzis"));
+  return rows.reduce((sum, row) => sum + usageCostUsd(row), 0) * getEnv().USD_PLN_RATE;
+}
+
+export type FreeSourceCounts = Record<FreeSource | "unknown", number>;
+
 export type AdminStats = {
   since: string;
   quizStarts: number;
@@ -81,6 +81,12 @@ export type AdminStats = {
   clicksPerResult: number | null;
   topProducts: { productId: string; name: string; merchant: string; clicks: number }[];
   priceTest: PriceTestRow[];
+  /** Where the free picks of the period's results came from. */
+  freeSources: FreeSourceCounts;
+  /** Result memory hits among results that needed picks (cache / (cache + fresh web search)). */
+  cacheHitRate: number | null;
+  /** Daily AI budget (DAILY_AI_BUDGET_PLN) and today's spending. */
+  dailyBudget: { limitPln: number; spentPln: number; share: number };
   payments: number;
   refunds: number;
   revenue: number;
@@ -93,6 +99,10 @@ export type AdminStats = {
     paidPln: number;
     paidSearches: number;
     avgPaidSearchPln: number | null;
+    /** Free web searches (SOURCE_MODE=web): count, cost and average cost. */
+    freeWebSearches: number;
+    freeWebPln: number;
+    avgFreeWebSearchPln: number | null;
     freeCostPerResultPln: number | null;
     tokens: { input: number; output: number };
     webSearches: number;
@@ -113,7 +123,7 @@ export async function getAdminStats(period: Period): Promise<AdminStats> {
   ]);
 
   // Funnel
-  const clicksBySource = { free: 0, share: 0, web: 0 } as Record<ClickRow["source"], number>;
+  const clicksBySource = { free: 0, share: 0, web: 0, "free-web": 0, "paid-web": 0, catalog: 0 } as Record<ClickRow["source"], number>;
   for (const click of clicks) clicksBySource[click.source]++;
 
   // Top 20 products by clicks
@@ -153,13 +163,23 @@ export async function getAdminStats(period: Period): Promise<AdminStats> {
   const rate = getEnv().USD_PLN_RATE;
   let freeUsd = 0;
   let paidUsd = 0;
+  let freeWebUsd = 0;
   const paidSearchResults = new Set<string>();
+  const freeWebResults = new Set<string>();
   for (const row of usage) {
     const cost = usageCostUsd(row);
     if (FREE_STEPS.has(row.step)) freeUsd += cost;
     if (PAID_STEPS.has(row.step)) paidUsd += cost;
     if (row.step === "web_search" && row.result_id) paidSearchResults.add(row.result_id);
+    if (row.step === "free_web_search") {
+      freeWebUsd += cost;
+      if (row.result_id) freeWebResults.add(row.result_id);
+    }
   }
+  const freeSources = { web: 0, cache: 0, catalog: 0, catalog_budget: 0, catalog_device: 0, catalog_fallback: 0, unknown: 0 } as FreeSourceCounts;
+  for (const result of results) freeSources[result.free_source ?? "unknown"]++;
+  const spentPln = await todaySpendPln();
+  const limitPln = getEnv().DAILY_AI_BUDGET_PLN;
   const revenue = netRevenue(purchases);
 
   return {
@@ -172,6 +192,9 @@ export async function getAdminStats(period: Period): Promise<AdminStats> {
     clicksPerResult: ratio(clicks.length, results.length),
     topProducts,
     priceTest,
+    freeSources,
+    cacheHitRate: ratio(freeSources.cache, freeSources.cache + freeSources.web),
+    dailyBudget: { limitPln, spentPln, share: spentPln / limitPln },
     payments: purchases.length,
     refunds: purchases.filter((p) => p.status === "refunded").length,
     revenue,
@@ -184,6 +207,9 @@ export async function getAdminStats(period: Period): Promise<AdminStats> {
       paidPln: paidUsd * rate,
       paidSearches: paidSearchResults.size,
       avgPaidSearchPln: paidSearchResults.size > 0 ? (paidUsd * rate) / paidSearchResults.size : null,
+      freeWebSearches: freeWebResults.size,
+      freeWebPln: freeWebUsd * rate,
+      avgFreeWebSearchPln: freeWebResults.size > 0 ? (freeWebUsd * rate) / freeWebResults.size : null,
       freeCostPerResultPln: results.length > 0 ? (freeUsd * rate) / results.length : null,
       tokens: {
         input: usage.reduce((sum, row) => sum + row.input_tokens, 0),

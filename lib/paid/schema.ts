@@ -7,6 +7,8 @@ export const rawWebPickSchema = z.object({
   shop: z.string().trim().max(200),
   url: z.string().trim().min(1).max(2000),
   reason: z.string().trim().min(3).max(300),
+  /** One of WEB_PICK_CATEGORIES; anything else is stored as "inne". */
+  category: z.string().trim().max(40).optional(),
 });
 export type RawWebPick = z.infer<typeof rawWebPickSchema>;
 
@@ -27,6 +29,8 @@ export const webPickSchema = z.object({
   reason: z.string().trim().min(3).max(200),
   /** ISO time when price and availability were checked. */
   checkedAt: z.string(),
+  /** Gift category (icon on the card). Optional: picks saved before categories existed have none. */
+  category: z.string().max(40).nullish(),
 });
 export type WebPick = z.infer<typeof webPickSchema>;
 

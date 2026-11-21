@@ -25,7 +25,7 @@ const baseSchema = z.object({
   NEXT_PUBLIC_SITE_URL: z.url().default("http://localhost:3000"),
   ANTHROPIC_MODEL: z.string().min(1).default("claude-haiku-5-5"),
   AI_MAX_TOKENS: z.coerce.number().int().positive().max(8192).default(1024),
-  PAID_SEARCH_MAX_SEARCHES: z.coerce.number().int().positive().max(20).default(5),
+  PAID_SEARCH_MAX_SEARCHES: z.coerce.number().int().positive().max(20).default(10),
   PAID_SEARCH_MAX_FETCHES: z.coerce.number().int().positive().max(30).default(15),
   NEXT_PUBLIC_POSTHOG_HOST: z.url().default("https://eu.i.posthog.com"),
   /** End of the pack promotion (ISO 8601, e.g. 2026-11-27T23:59:59+01:00). Empty = built-in default. */
@@ -34,6 +34,10 @@ const baseSchema = z.object({
     .trim()
     .refine((value) => value === "" || !Number.isNaN(Date.parse(value)), "Expected an ISO 8601 date")
     .optional(),
+  /** "web" (AI searches the shops) or "catalog" (AI picks from the partner catalog). */
+  SOURCE_MODE: z.enum(["web", "catalog"]).default("web"),
+  /** Daily AI spending cap (PLN, from ai_usage). When reached, free results use the catalog; paid searches go on. */
+  DAILY_AI_BUDGET_PLN: z.coerce.number().positive().max(100_000).default(30),
   /** PLN per 1 USD, for AI costs in /admin. */
   USD_PLN_RATE: z.coerce.number().positive().max(100).default(4),
 });

@@ -1,4 +1,5 @@
 import { describeError, logEvent } from "@/lib/log";
+import { toOutboundUrl } from "@/lib/search/core";
 import { getRepos } from "@/lib/services/db";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -6,9 +7,20 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /**
  * GET /go/[productId]?r=[resultId][&src=share]
  * Records the click and redirects (302) to the product's affiliate_url.
- * source = "share" when the result page was opened from a shared link (?ref=), otherwise "free".
+ * Click source: "share" when the page was opened from a shared link (?src=share); otherwise "free-web" for
+ * products found by the web search (network "direct") and "catalog" for partner catalog products.
+ * Web products in a shop that has an affiliate deeplink (allowed_shops.has_affiliate + deeplink_template)
+ * lead through that deeplink; today none has one, so they lead straight to the shop.
  * Only redirects to URLs stored in our catalog, so it cannot be used as an open redirect.
  */
+function hostOf(url: string): string {
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
 export async function GET(request: Request, { params }: { params: Promise<{ productId: string }> }) {
   const { productId } = await params;
   const home = new URL("/", request.url);
@@ -20,8 +32,16 @@ export async function GET(request: Request, { params }: { params: Promise<{ prod
 
   const query = new URL(request.url).searchParams;
   const resultId = query.get("r");
-  const source = query.get("src") === "share" ? "share" : "free";
-  const target = new URL(product.affiliate_url, request.url);
+  const direct = product.network === "direct";
+  const source = query.get("src") === "share" ? "share" : direct ? "free-web" : "catalog";
+  let destination = product.affiliate_url;
+  if (direct && product.url) {
+    const shops = await repos.allowedShops.listActive().catch(() => []);
+    const host = hostOf(product.url);
+    const shop = shops.find((item) => host === item.domain || host.endsWith(`.${item.domain}`));
+    destination = shop ? toOutboundUrl(product.url, shop) : product.url;
+  }
+  const target = new URL(destination, request.url);
 
   try {
     await repos.clicks.create({

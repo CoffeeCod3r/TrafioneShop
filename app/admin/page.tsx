@@ -68,7 +68,7 @@ function Dashboard({ stats, period }: { stats: AdminStats; period: Period }) {
         <Tile
           label="Kliknięcia"
           value={num.format(stats.clicks)}
-          hint={`darmowe ${stats.clicksBySource.free} · udost. ${stats.clicksBySource.share} · internet ${stats.clicksBySource.web}`}
+          hint={`darmowe z sieci ${stats.clicksBySource["free-web"]} · katalog ${stats.clicksBySource.catalog + stats.clicksBySource.free} · udost. ${stats.clicksBySource.share} · płatne ${stats.clicksBySource["paid-web"] + stats.clicksBySource.web}`}
         />
         <Tile label="Kliknięcia na wynik" value={dec(stats.clicksPerResult)} />
         <Tile label="Płatności / zwroty" value={`${stats.payments} / ${stats.refunds}`} />
@@ -94,18 +94,50 @@ function Dashboard({ stats, period }: { stats: AdminStats; period: Period }) {
         />
       </Section>
 
+      <Section title="Darmowe wyniki: źródło i limit dzienny">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <Tile
+            label="Dzienny limit AI"
+            value={`${pln.format(stats.dailyBudget.spentPln)} / ${pln.format(stats.dailyBudget.limitPln)}`}
+            hint={`wykorzystano ${pct(stats.dailyBudget.share)} (DAILY_AI_BUDGET_PLN, dziś od północy)`}
+          />
+          <Tile
+            label="Trafienia z pamięci wyników"
+            value={num.format(stats.freeSources.cache)}
+            hint={`${pct(stats.cacheHitRate)} wyników z pamięci (24 h)`}
+          />
+          <Tile
+            label="Wyszukiwania w sieci (darmowe)"
+            value={num.format(stats.ai.freeWebSearches)}
+            hint={`${stats.ai.avgFreeWebSearchPln === null ? "–" : plnPrecise.format(stats.ai.avgFreeWebSearchPln)} / wyszukiwanie · razem ${pln.format(stats.ai.freeWebPln)}`}
+          />
+        </div>
+        <Table
+          head={["Źródło darmowych propozycji", "Wyniki"]}
+          rows={[
+            ["Nowe wyszukiwanie w sieci", num.format(stats.freeSources.web)],
+            ["Pamięć wyników (24 h)", num.format(stats.freeSources.cache)],
+            ["Katalog (SOURCE_MODE=catalog)", num.format(stats.freeSources.catalog)],
+            ["Katalog: przekroczony dzienny limit AI", num.format(stats.freeSources.catalog_budget)],
+            ["Katalog: limit 3 wyszukiwań na urządzenie", num.format(stats.freeSources.catalog_device)],
+            ["Katalog: wyszukiwanie w sieci nie wyszło", num.format(stats.freeSources.catalog_fallback)],
+            ["Wyniki sprzed zmiany (bez danych)", num.format(stats.freeSources.unknown)],
+          ]}
+        />
+      </Section>
+
       <Section title="Koszt AI">
         <Table
           head={["Część", "Koszt (USD)", "Koszt (PLN)", "Na jednostkę"]}
           rows={[
             [
-              "Darmowa (profil + wybór)",
+              "Darmowa (profil, wybór z katalogu lub wyszukiwanie w sieci)",
               usd.format(stats.ai.freeUsd),
               pln.format(stats.ai.freePln),
               `${stats.ai.freeCostPerResultPln === null ? "–" : plnPrecise.format(stats.ai.freeCostPerResultPln)} / wynik`,
             ],
             [
-              "Płatna (wyszukiwanie + dedykacje)",
+              "Płatna (Więcej propozycji: wyszukiwanie + dedykacje)",
               usd.format(stats.ai.paidUsd),
               pln.format(stats.ai.paidPln),
               `${stats.ai.avgPaidSearchPln === null ? "–" : plnPrecise.format(stats.ai.avgPaidSearchPln)} / płatne wyszukiwanie (${stats.ai.paidSearches})`,

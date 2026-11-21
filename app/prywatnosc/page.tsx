@@ -47,11 +47,17 @@ export default function PrivacyPolicyPage() {
       </section>
 
       <section>
-        <h2>3. Płatne wyszukiwanie „Szukaj w całym internecie”</h2>
+        <h2>3. Wyszukiwanie w sklepach (wynik darmowy i płatne „Więcej propozycji”)</h2>
         <p>
-          Przy płatnym wyszukiwaniu do AI (Anthropic) przekazujemy wyłącznie zapisany profil stylu, tagi i odpowiedzi z
-          quizu oraz nazwy produktów z darmowych wyników. <strong>Zdjęcie nie jest przekazywane</strong>, bo go nie
-          przechowujemy. AI przegląda strony zaufanych polskich sklepów, żeby sprawdzić ceny i dostępność.
+          Zarówno przy wyniku darmowym, jak i przy płatnych „Więcej propozycji” do AI (Anthropic) przekazujemy
+          wyłącznie zapisany profil stylu, tagi i odpowiedzi z quizu (przy płatnych dodatkowo nazwy produktów z wyniku
+          darmowego). <strong>Zdjęcie nie jest przekazywane</strong>, bo go nie przechowujemy. AI przegląda strony
+          zaufanych polskich sklepów, żeby sprawdzić ceny i dostępność. Wyszukiwanie działa w tle na naszym koncie w
+          Supabase (funkcja brzegowa), a jego postęp pokazujemy na stronie wyniku.
+        </p>
+        <p>
+          Sprawdzone produkty (nazwa, cena, sklep, adres strony, kategoria, data sprawdzenia) zapisujemy w naszej
+          bazie produktów, bez zdjęć produktów ze sklepów. To dane o produktach, nie o Tobie.
         </p>
       </section>
 
@@ -63,6 +69,12 @@ export default function PrivacyPolicyPage() {
             prezentu, „co już ma”, profil stylu, wybrane produkty): żeby pokazać wynik pod stałym linkiem i umożliwić
             jego udostępnienie. Podstawa: wykonanie usługi (art. 6 ust. 1 lit. b RODO). Nie zawierają Twojego imienia
             ani e-maila. Przechowujemy je przez <Fill>[OKRES, np. 12 miesięcy]</Fill>.
+          </li>
+          <li>
+            <strong>Pamięć wyników</strong>: skrót (hash) Twoich odpowiedzi z quizu, policzony z tajną solą. Nie zawiera
+            zdjęcia (przy zdjęciu do skrótu trafiają tylko tagi z profilu stylu) i nie da się z niego odczytać
+            odpowiedzi. Dzięki niemu ten sam quiz w ciągu 24 godzin dostaje gotowe, sprawdzone produkty bez nowego
+            wyszukiwania, co ogranicza koszty. Podstawa: prawnie uzasadniony interes (art. 6 ust. 1 lit. f RODO).
           </li>
           <li>
             <strong>Kliknięcia w produkty</strong> (który wynik, który produkt, czas, źródło: wynik darmowy, płatny lub
@@ -81,8 +93,9 @@ export default function PrivacyPolicyPage() {
             Okres: <Fill>[OKRES wynikający z przepisów podatkowych, zwykle 5 lat od końca roku]</Fill>.
           </li>
           <li>
-            <strong>Zabezpieczenia</strong>: skrót (hash) adresu IP z tajną solą, żeby ograniczać liczbę analiz i
-            zapisów dziennie. Nie przechowujemy samego adresu IP. Skróty usuwamy po 2 dniach. Podstawa: prawnie
+            <strong>Zabezpieczenia</strong>: skrót (hash) adresu IP z tajną solą oraz losowy identyfikator urządzenia w
+            pliku cookie (niezbędny, bez danych osobowych), żeby ograniczać liczbę analiz, zapisów i darmowych
+            wyszukiwań w sieci (3 na dobę) dziennie. Nie przechowujemy samego adresu IP. Skróty usuwamy po 2 dniach. Podstawa: prawnie
             uzasadniony interes w ochronie serwisu przed nadużyciami (art. 6 ust. 1 lit. f RODO).
           </li>
           <li>
@@ -95,7 +108,7 @@ export default function PrivacyPolicyPage() {
       <section>
         <h2>5. Linki partnerskie</h2>
         <p>
-          Darmowe wyniki (oraz część wyników płatnych) zawierają linki partnerskie. Gdy klikniesz „Zobacz w sklepie”,
+          Niektóre linki w wynikach (darmowych i płatnych) mogą być linkami partnerskimi. Gdy klikniesz „Zobacz w sklepie”,
           zapisujemy kliknięcie i przekierowujemy Cię do sklepu albo sieci afiliacyjnej. Jeśli coś kupisz, możemy
           dostać prowizję, a cena dla Ciebie się nie zmienia. Sklep i sieć afiliacyjna przetwarzają Twoje dane na
           własnych zasadach (np. mogą zapisać własne pliki cookies), opisanych w ich politykach prywatności.
@@ -126,9 +139,9 @@ export default function PrivacyPolicyPage() {
         <h2>7. Komu przekazujemy dane</h2>
         <p>Korzystamy z dostawców, którzy przetwarzają dane w naszym imieniu (podmioty przetwarzające):</p>
         <ul>
-          <li>Anthropic (analiza AI: profil stylu, dobór prezentów, wyszukiwanie, dedykacje),</li>
+          <li>Anthropic (analiza AI: profil stylu, dobór prezentów, wyszukiwanie w sklepach, dedykacje),</li>
           <li>
-            Supabase (baza danych, region: <Fill>[REGION, np. UE – Frankfurt]</Fill>),
+            Supabase (baza danych i funkcja brzegowa uruchamiająca wyszukiwanie, region: <Fill>[REGION, np. UE – Frankfurt]</Fill>),
           </li>
           <li>Vercel (hosting strony),</li>
           <li>Stripe (płatności i zwroty),</li>

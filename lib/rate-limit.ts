@@ -5,6 +5,8 @@ export const RATE_LIMITS = {
   analyzeWithPhoto: { key: "analyze:photo", limitPerDay: 3 },
   analyzeWithoutPhoto: { key: "analyze:text", limitPerDay: 20 },
   checkout: { key: "checkout", limitPerDay: 20 },
+  /** Free web searches (SOURCE_MODE=web) per device and per IP; above it the result comes from the catalog. */
+  freeWeb: { key: "free_web", limitPerDay: 3 },
   /** Using a search from a pack of 8. */
   redeem: { key: "redeem", limitPerDay: 40 },
   quizStart: { key: "quiz_start", limitPerDay: 40 },

@@ -5,8 +5,8 @@ import { GiftStack } from "@/components/illustrations/gift-stack";
 
 const MESSAGES = [
   "AI analizuje styl…",
-  "Przeglądamy sklepy partnerskie…",
-  "Wybieramy 5 najlepszych prezentów…",
+  "Dobieramy pomysły na prezent…",
+  "Szykujemy 5 najlepszych propozycji…",
   "Jeszcze chwilka, pakujemy pomysły…",
 ];
 

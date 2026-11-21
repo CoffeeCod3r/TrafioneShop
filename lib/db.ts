@@ -22,9 +22,14 @@ export type PriceVariant = number;
 /** Paid offers: one web search, or a pack of 8 searches (for 8 different recipients). */
 export type PurchaseOffer = "single" | "pack8";
 export type PaidStatus = "none" | "pending" | "searching" | "ready" | "refunded";
-export type ClickSource = "free" | "web" | "share";
+/** Outbound click sources. "free"/"web" are legacy values; new clicks use free-web, paid-web, catalog (or share). */
+export type ClickSource = "free" | "web" | "share" | "free-web" | "paid-web" | "catalog";
+/** Free result state: "searching" while the web search runs in the background. */
+export type SearchStatus = "searching" | "ready";
+/** Where the free picks came from. */
+export type FreeSource = "web" | "cache" | "catalog" | "catalog_budget" | "catalog_device" | "catalog_fallback";
 export type PurchaseStatus = "paid" | "refunded";
-export type AiUsageStep = "profile" | "picks" | "web_search" | "dedications";
+export type AiUsageStep = "profile" | "picks" | "web_search" | "dedications" | "free_web_search";
 
 // ---------------------------------------------------------------------------
 // Row types
@@ -46,6 +51,10 @@ export type ProductRow = {
   commission_rate: number | null;
   in_stock: boolean;
   updated_at: string;
+  /** Plain product page address (products found on the web). affiliate_url is where /go leads. */
+  url: string | null;
+  /** When price and availability were last checked on the shop's page (web products). */
+  checked_at: string | null;
 };
 
 export type ResultRow = {
@@ -69,6 +78,11 @@ export type ResultRow = {
   source: string | null;
   /** 2–3 sentences: which pick fits best and why. */
   pick_summary: string | null;
+  search_status: SearchStatus;
+  free_source: FreeSource | null;
+  /** Salted hash of the quiz answers (no photo). Set on results that came from a web search. */
+  quiz_hash: string | null;
+  search_started_at: string | null;
 };
 
 export type QuizStartRow = {
@@ -165,7 +179,7 @@ export type Database = {
       products: TableDef<ProductRow, "id" | "tags" | "in_stock" | "updated_at">;
       results: TableDef<
         ResultRow,
-        "id" | "created_at" | "answers" | "tags" | "avoid" | "product_ids" | "reasons" | "paid_status"
+        "id" | "created_at" | "answers" | "tags" | "avoid" | "product_ids" | "reasons" | "paid_status" | "search_status"
       >;
       quiz_starts: TableDef<QuizStartRow, "id" | "created_at">;
       allowed_shops: TableDef<AllowedShopRow, "id" | "active" | "has_affiliate">;

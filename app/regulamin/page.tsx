@@ -48,16 +48,24 @@ export default function TermsPage() {
         <h2>§ 3. Usługa darmowa</h2>
         <ul>
           <li>
-            Obejmuje quiz (6 pytań), opcjonalną analizę zdjęcia, profil stylu i 5 propozycji prezentów z katalogu
-            sklepów partnerskich, a także możliwość udostępnienia wyniku.
+            Obejmuje quiz (6 pytań), opcjonalną analizę zdjęcia, profil stylu i 5 propozycji prezentów wybranych przez
+            AI z polskich sklepów, a także możliwość udostępnienia wyniku.
           </li>
           <li>
-            Darmowe wyniki zawierają <strong>linki partnerskie</strong>: jeśli kupisz coś po kliknięciu, możemy dostać
-            prowizję od sklepu. Cena dla Ciebie się nie zmienia.
+            Darmowe propozycje AI znajduje, przeszukując strony zaufanych polskich sklepów i sprawdzając na stronie
+            każdego produktu cenę i dostępność (podajemy datę sprawdzenia). Wyszukiwanie trwa zwykle 1–2 minuty, a
+            wynik pojawia się na stronie sam. Jeśli wyszukiwanie w sieci jest chwilowo niedostępne (np. dzienny limit
+            kosztów albo dzienny limit wyszukiwań na urządzenie, obecnie 3), propozycje pochodzą z naszej bazy
+            produktów. Ten sam quiz może przez 24 godziny dostać te same, już sprawdzone propozycje.
           </li>
           <li>
-            Ceny i dostępność w darmowych wynikach pochodzą z danych przekazywanych przez sklepy (aktualizowanych raz na
-            dobę) i mogą się różnić od aktualnych. Wiążąca jest cena w sklepie.
+            Niektóre linki mogą być <strong>linkami partnerskimi</strong>: jeśli kupisz coś po kliknięciu, możemy
+            dostać prowizję od sklepu. Cena dla Ciebie się nie zmienia.
+          </li>
+          <li>
+            Ceny i dostępność są aktualne na chwilę sprawdzenia albo, dla produktów z naszej bazy, pochodzą z danych
+            przekazywanych przez sklepy (aktualizowanych raz na dobę), i mogą się różnić od aktualnych. Wiążąca jest
+            cena w sklepie.
           </li>
           <li>Umowa o usługę darmową zawierana jest z chwilą rozpoczęcia quizu i kończy się po wyświetleniu wyniku.</li>
         </ul>
@@ -77,12 +85,12 @@ export default function TermsPage() {
       </section>
 
       <section>
-        <h2>§ 5. Płatne wyszukiwanie „Szukaj w całym internecie”</h2>
+        <h2>§ 5. Płatne „Więcej propozycji”</h2>
         <ul>
           <li>
-            To usługa cyfrowa. Obejmuje: przeszukanie przez AI zaufanych polskich sklepów spoza naszego katalogu,
-            sprawdzenie na stronie każdego produktu ceny i dostępności, przedstawienie 5–10 propozycji oraz 3 dedykacji
-            na bilecik.
+            To usługa cyfrowa. Obejmuje: przeszukanie przez AI zaufanych polskich sklepów w całym internecie,
+            sprawdzenie na stronie każdego produktu ceny i dostępności, przedstawienie do 10 propozycji (zamiast 5
+            z wyniku darmowego, bez powtórzeń z niego) oraz 3 dedykacji na bilecik.
           </li>
           <li>
             Dostępne są dwie oferty: <strong>jedno wyszukiwanie</strong> (4,99 zł brutto) oraz{" "}
@@ -97,7 +105,7 @@ export default function TermsPage() {
             najmniej 5 sprawdzonych produktów, wraca do pakietu. <Fill>[do weryfikacji przez prawnika: zwrot za
             niewykorzystane wyszukiwania z pakietu i prawo odstąpienia]</Fill>
           </li>
-          <li>Umowa zostaje zawarta z chwilą potwierdzenia płatności. Wyniki pojawiają się zwykle w ciągu kilku minut.</li>
+          <li>Umowa zostaje zawarta z chwilą potwierdzenia płatności. Wyniki pojawiają się zwykle w ciągu 1–3 minut.</li>
           <li>
             <strong>Ceny i dostępność są aktualne na chwilę sprawdzenia</strong> (godzina sprawdzenia jest podana przy
             każdym produkcie). Mogą się później zmienić, a wiążąca jest cena w sklepie w chwili zakupu.

@@ -67,19 +67,28 @@ export function createDemoAi(): AiService {
       };
     },
 
-    async webSearch() {
+    async webSearch(input) {
       await demoDelay();
       const retrievedAt = new Date().toISOString();
+      const picks = demoWebPicks.slice(0, input.count + 9);
       return {
-        picks: demoWebPicks.map((pick) => ({
+        picks: picks.map((pick) => ({
           name: pick.title,
           price_pln: pick.price_pln,
           shop: pick.shop_name,
           url: pick.url,
           reason: pick.reason,
+          category: "inne",
         })),
-        fetchedPages: demoWebPicks.map((pick) => ({ url: pick.url, retrievedAt })),
-        usage: [fakeUsage("web_search", { webSearches: 3, webFetches: 6, inputTokens: randomInt(8000, 15000) })],
+        fetchedPages: picks.map((pick) => ({ url: pick.url, retrievedAt })),
+        summary: null,
+        usage: [
+          fakeUsage(input.kind === "paid" ? "web_search" : "free_web_search", {
+            webSearches: input.kind === "paid" ? 3 : 2,
+            webFetches: input.kind === "paid" ? 6 : 4,
+            inputTokens: randomInt(5000, 12000),
+          }),
+        ],
       };
     },
 

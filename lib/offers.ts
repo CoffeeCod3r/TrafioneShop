@@ -21,10 +21,10 @@ export type Offer = {
 };
 
 export const OFFERS: Record<PurchaseOffer, Offer> = {
-  single: { id: "single", checkoutName: "Szukaj w całym internecie", searches: 1, regularGrosze: 499, promoGrosze: null },
+  single: { id: "single", checkoutName: "Więcej propozycji: 10 prezentów z całego internetu", searches: 1, regularGrosze: 499, promoGrosze: null },
   pack8: {
     id: "pack8",
-    checkoutName: "Szukaj w całym internecie: pakiet na 8 osób",
+    checkoutName: "Więcej propozycji: pakiet na 8 osób",
     searches: 8,
     regularGrosze: 1999,
     promoGrosze: 1299,

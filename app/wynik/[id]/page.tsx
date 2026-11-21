@@ -7,6 +7,7 @@ import { Info, RotateCcw, Sparkles } from "lucide-react";
 import { ResultTracker } from "@/components/analytics/result-tracker";
 import { GiftStack } from "@/components/illustrations/gift-stack";
 import { BestMatch } from "@/components/results/best-match";
+import { FreeSearchProgress } from "@/components/results/free-search-progress";
 import { PackInfo } from "@/components/results/pack-info";
 import { PaidSearchSection } from "@/components/results/paid-search-section";
 import { ProductCard } from "@/components/results/product-card";
@@ -15,7 +16,7 @@ import { SubscribeForm } from "@/components/subscribe/subscribe-form";
 import { Button } from "@/components/ui/button";
 import { CHILD_PHOTO_NOTICE } from "@/lib/analyze/schema";
 import { CARD_HEIGHT, CARD_WIDTH, cardUrl } from "@/lib/og/card";
-import { isMockMode } from "@/lib/mode";
+import { getSourceMode, isMockMode } from "@/lib/mode";
 import { getOffersQuote } from "@/lib/offers-server";
 import { getPackFromCookies } from "@/lib/packs";
 import { canUsePayments } from "@/lib/payments-gate";
@@ -82,6 +83,12 @@ async function ResultContent({ params, searchParams }: PageProps) {
   // A search from a pack that found too few products goes back into the pack and the result is "none" again.
   const creditRestored = pack !== null && result.paid_status === "none" && (justPaid || query.pakiet === "zwrot");
 
+  // The free web search is still running in the background: show progress, the page refreshes itself.
+  if (result.search_status === "searching") return <FreeSearchProgress resultId={result.id} />;
+
+  const webSource = getSourceMode() === "web";
+  const hasAffiliate = products.some((product) => product.affiliate);
+
   return (
     <div className="flex flex-col gap-8 py-6">
       <ResultTracker
@@ -114,11 +121,13 @@ async function ResultContent({ params, searchParams }: PageProps) {
 
       <section aria-labelledby="partner-picks" className="flex flex-col gap-3">
         <h2 id="partner-picks" className="text-2xl font-bold">
-          Z naszych sklepów partnerskich
+          {webSource ? "Wybrane przez AI z polskich sklepów" : "Z naszych sklepów partnerskich"}
         </h2>
-        <p className="text-xs text-muted-foreground">
-          Linki partnerskie: przy zakupie dostajemy prowizję, cena się dla Ciebie nie zmienia.
-        </p>
+        {(!webSource || hasAffiliate) && (
+          <p className="text-xs text-muted-foreground">
+            Linki partnerskie: przy zakupie dostajemy prowizję, cena się dla Ciebie nie zmienia.
+          </p>
+        )}
 
         {products.length === 0 ? (
           <p className="rounded-xl border p-4">

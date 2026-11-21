@@ -127,6 +127,8 @@ export function createDemoRepos(): Repos {
                 image_url: null,
                 commission_rate: null,
                 in_stock: true,
+                url: null,
+                checked_at: null,
                 ...row,
                 updated_at: now(),
               });
@@ -160,6 +162,29 @@ export function createDemoRepos(): Repos {
             .sort(byCommissionDesc)
             .slice(0, limit),
         ),
+      saveDirect: (rows) =>
+        write((data) => {
+          const saved: ProductRow[] = [];
+          for (const row of rows) {
+            const existing = data.products.find((p) => p.network === "direct" && p.external_id === row.external_id);
+            if (existing) {
+              Object.assign(existing, row, { commission_rate: 0, in_stock: true, updated_at: now() });
+              saved.push(existing);
+              continue;
+            }
+            const product: ProductRow = {
+              id: randomUUID(),
+              ...row,
+              network: "direct",
+              commission_rate: 0,
+              in_stock: true,
+              updated_at: now(),
+            };
+            data.products.push(product);
+            saved.push(product);
+          }
+          return saved;
+        }),
       getByIds: (ids) => read((data) => data.products.filter((p) => ids.includes(p.id))),
       getById: (id) => read((data) => data.products.find((p) => p.id === id) ?? null),
     },
@@ -189,6 +214,10 @@ export function createDemoRepos(): Repos {
             dedications: null,
             source: null,
             pick_summary: null,
+            search_status: "ready",
+            free_source: null,
+            quiz_hash: null,
+            search_started_at: null,
             ...row,
           };
           data.results.push(result);
@@ -208,16 +237,24 @@ export function createDemoRepos(): Repos {
           result.paid_status = "pending";
           return true;
         }),
+      findCachedByHash: (hash, since) =>
+        read(
+          (data) =>
+            data.results
+              .filter((r) => r.quiz_hash === hash && r.search_status === "ready" && r.created_at >= since)
+              .sort((a, b) => b.created_at.localeCompare(a.created_at))[0] ?? null,
+        ),
       listForStats: (since) =>
         read((data) =>
           data.results
             .filter((result) => result.created_at >= since)
-            .map(({ id, created_at, price_variant, paid_status, source }) => ({
+            .map(({ id, created_at, price_variant, paid_status, source, free_source }) => ({
               id,
               created_at,
               price_variant,
               paid_status,
               source: source ?? null,
+              free_source: free_source ?? null,
             })),
         ),
     },
@@ -252,6 +289,7 @@ export function createDemoRepos(): Repos {
           data.purchases.push(purchase);
           return { purchase, created: true };
         }),
+      getById: (id) => read((data) => data.purchases.find((p) => p.id === id) ?? null),
       getBySessionId: (sessionId) =>
         read((data) => data.purchases.find((p) => p.stripe_session_id === sessionId) ?? null),
       getByPackCode: (code) => read((data) => data.purchases.find((p) => p.pack_code === code) ?? null),

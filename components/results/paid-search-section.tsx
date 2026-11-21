@@ -16,6 +16,7 @@ import {
   SearchCheck,
 } from "lucide-react";
 
+import { CategoryIcon } from "@/components/results/category-icon";
 import { Button } from "@/components/ui/button";
 import { track } from "@/lib/analytics/client";
 import type { PaidStatus, PurchaseOffer } from "@/lib/db";
@@ -88,11 +89,13 @@ export function PaidSearchSection({
           {webPicks.map((pick, index) => (
             <li key={pick.url} className="overflow-hidden rounded-xl border bg-card">
               <div className="flex gap-4 p-4">
-                {pick.imageUrl && (
-                  <div className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-muted">
+                <div className="relative flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-mint/50">
+                  {pick.imageUrl ? (
                     <Image src={pick.imageUrl} alt={pick.title} fill sizes="80px" unoptimized className="object-cover" />
-                  </div>
-                )}
+                  ) : (
+                    <CategoryIcon category={pick.category ?? null} className="size-9" />
+                  )}
+                </div>
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <h3 className="line-clamp-2 font-semibold leading-snug">{pick.title}</h3>
                   <p className="text-lg font-bold">{pln.format(pick.pricePln)}</p>
@@ -148,7 +151,7 @@ function Section({ children }: { children: React.ReactNode }) {
     <section aria-labelledby="web-picks" className="flex flex-col gap-4">
       <h2 id="web-picks" className="flex items-center gap-2 text-2xl font-bold">
         <Globe className="size-6 text-ribbon" aria-hidden />
-        Z całego internetu
+        Więcej propozycji
       </h2>
       {children}
     </section>
@@ -217,9 +220,9 @@ function SearchProgress({ resultId, status }: { resultId: string; status: PaidSt
 }
 
 const BENEFITS = [
-  { icon: Gift, text: "5–10 prezentów z innych zaufanych polskich sklepów" },
+  { icon: Gift, text: "10 prezentów zamiast 5, z całego internetu" },
   { icon: BadgeCheck, text: "Sprawdzona cena i dostępność każdego produktu" },
-  { icon: PenLine, text: "3 dedykacje na bilecik do wyboru" },
+  { icon: PenLine, text: "Do tego 3 dedykacje na bilecik do wyboru" },
   { icon: RotateCcw, text: "Zwrot pieniędzy, jeśli znajdziemy mniej niż 5 prezentów" },
 ];
 
@@ -315,7 +318,8 @@ function OfferPicker({ resultId, quote, packUsedUp }: { resultId: string; quote:
     <Section>
       <div className="flex flex-col gap-4 rounded-2xl border-[3px] border-ink bg-lilac/60 p-5 shadow-[5px_5px_0_var(--ink)]">
         <p className="text-sm text-muted-foreground">
-          AI przeszuka zaufane polskie sklepy spoza naszego katalogu, dopasowując prezenty do tego samego profilu.
+          AI przeszuka zaufane polskie sklepy w całym internecie i dobierze 10 kolejnych prezentów do tego samego profilu,
+          bez powtórzeń z darmowego wyniku.
           {packUsedUp && " Wykorzystałeś już wszystkie wyszukiwania z poprzedniego pakietu."}
         </p>
         <ul className="flex flex-col gap-2 text-sm">

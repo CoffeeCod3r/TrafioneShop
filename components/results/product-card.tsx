@@ -1,11 +1,18 @@
 import Image from "next/image";
-import { ExternalLink, Repeat } from "lucide-react";
+import { BadgeCheck, ExternalLink, Repeat } from "lucide-react";
 
 import { TrackedLink } from "@/components/analytics/tracked-link";
+import { CategoryIcon } from "@/components/results/category-icon";
 import { Button } from "@/components/ui/button";
 import type { ResultProduct } from "@/lib/results";
 
 const pln = new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" });
+const checkedFormat = new Intl.DateTimeFormat("pl-PL", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "Europe/Warsaw",
+});
 
 type ProductCardProps = {
   product: ResultProduct;
@@ -34,8 +41,13 @@ export function ProductCard({ product, position, resultId, shared = false }: Pro
       )}
       <div className="flex gap-4 p-4">
         <div className="relative size-24 shrink-0 overflow-hidden rounded-lg bg-muted">
-          {product.image_url && (
+          {product.image_url ? (
             <Image src={product.image_url} alt={product.name} fill sizes="96px" unoptimized className="object-cover" />
+          ) : (
+            // Products found on the web: shop photos are never stored, a category icon is shown instead.
+            <span className="absolute inset-0 flex items-center justify-center bg-mint/50">
+              <CategoryIcon category={product.category} />
+            </span>
           )}
           <span className="absolute left-1 top-1 flex size-6 items-center justify-center rounded-full bg-ink font-display text-xs font-bold text-white">
             {position}
@@ -45,6 +57,12 @@ export function ProductCard({ product, position, resultId, shared = false }: Pro
           <h3 className="line-clamp-2 font-semibold leading-snug">{product.name}</h3>
           <p className="text-lg font-bold">{pln.format(product.price_pln)}</p>
           <p className="text-sm text-muted-foreground">{product.merchant}</p>
+          {product.checked_at && (
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
+              <BadgeCheck className="size-3.5" aria-hidden />
+              cena sprawdzona {checkedFormat.format(new Date(product.checked_at))}
+            </p>
+          )}
         </div>
       </div>
       {product.reason && (

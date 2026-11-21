@@ -58,5 +58,105 @@
     "url": "/demo-produkt/w6",
     "image_url": "/demo/web-6.svg",
     "reason": "Codzienna mała niespodzianka aż do świąt."
+  },
+  {
+    "id": "w7",
+    "title": "Zestaw do domowej kawy z dripperem",
+    "price_pln": 59,
+    "shop_domain": "sklep-z-pasja.example",
+    "shop_name": "Sklep z Pasją",
+    "url": "/demo-produkt/w7",
+    "image_url": "/demo/web-1.svg",
+    "reason": "Dla domowego baristy, który lubi parzyć po swojemu."
+  },
+  {
+    "id": "w8",
+    "title": "Gra planszowa dla dwóch osób",
+    "price_pln": 49,
+    "shop_domain": "gadzetownia.example",
+    "shop_name": "Gadżetownia",
+    "url": "/demo-produkt/w8",
+    "image_url": "/demo/web-2.svg",
+    "reason": "Świetna na wieczór we dwoje, bez ekranów."
+  },
+  {
+    "id": "w9",
+    "title": "Książka kucharska z przepisami na cały rok",
+    "price_pln": 45,
+    "shop_domain": "ksiegarnia-pod-chmurka.example",
+    "shop_name": "Księgarnia pod Chmurką",
+    "url": "/demo-produkt/w9",
+    "image_url": "/demo/web-3.svg",
+    "reason": "Inspiracja na obiady i na prezent od serca."
+  },
+  {
+    "id": "w10",
+    "title": "Zestaw roślin do uprawy na parapecie",
+    "price_pln": 35,
+    "shop_domain": "eko-dom.example",
+    "shop_name": "Eko Dom",
+    "url": "/demo-produkt/w10",
+    "image_url": "/demo/web-4.svg",
+    "reason": "Mały ogródek, który ucieszy kogoś z zielonym kciukiem."
+  },
+  {
+    "id": "w11",
+    "title": "Opaska sportowa z pomiarem tętna",
+    "price_pln": 99,
+    "shop_domain": "sportowy-swiat.example",
+    "shop_name": "Sportowy Świat",
+    "url": "/demo-produkt/w11",
+    "image_url": "/demo/web-5.svg",
+    "reason": "Pomoże trzymać formę i pilnować treningów."
+  },
+  {
+    "id": "w12",
+    "title": "Głośnik bluetooth w drewnianej obudowie",
+    "price_pln": 89,
+    "shop_domain": "gadzetownia.example",
+    "shop_name": "Gadżetownia",
+    "url": "/demo-produkt/w12",
+    "image_url": "/demo/web-6.svg",
+    "reason": "Dobry dźwięk do kuchni, na balkon i na wycieczkę."
+  },
+  {
+    "id": "w13",
+    "title": "Kocyk z miękkiego polaru",
+    "price_pln": 55,
+    "shop_domain": "eko-dom.example",
+    "shop_name": "Eko Dom",
+    "url": "/demo-produkt/w13",
+    "image_url": "/demo/web-1.svg",
+    "reason": "Na chłodne wieczory z ulubioną książką lub serialem."
+  },
+  {
+    "id": "w14",
+    "title": "Notes ze szkicownikiem i zestawem kredek",
+    "price_pln": 42,
+    "shop_domain": "ksiegarnia-pod-chmurka.example",
+    "shop_name": "Księgarnia pod Chmurką",
+    "url": "/demo-produkt/w14",
+    "image_url": "/demo/web-2.svg",
+    "reason": "Dla kogoś, kto lubi zapisywać i rysować pomysły."
+  },
+  {
+    "id": "w15",
+    "title": "Zestaw herbat z całego świata",
+    "price_pln": 38,
+    "shop_domain": "sklep-z-pasja.example",
+    "shop_name": "Sklep z Pasją",
+    "url": "/demo-produkt/w15",
+    "image_url": "/demo/web-3.svg",
+    "reason": "Degustacja smaków na spokojne popołudnia."
+  },
+  {
+    "id": "w16",
+    "title": "Mata do jogi z paskiem do noszenia",
+    "price_pln": 79,
+    "shop_domain": "sportowy-swiat.example",
+    "shop_name": "Sportowy Świat",
+    "url": "/demo-produkt/w16",
+    "image_url": "/demo/web-4.svg",
+    "reason": "Praktyczna, lekka i łatwa do spakowania."
   }
 ]

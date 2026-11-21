@@ -6,7 +6,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * GET /go/w/[resultId]/[index] – outbound link for a paid web pick.
- * Records the click (source "web", no product_id) and redirects (302) to the stored
+ * Records the click (source "paid-web", no product_id) and redirects (302) to the stored
  * outbound URL (affiliate deeplink when the shop has one). Only stored, verified URLs are used.
  */
 export async function GET(
@@ -28,7 +28,7 @@ export async function GET(
 
   const target = new URL(pick.data.outboundUrl, request.url);
   try {
-    await repos.clicks.create({ result_id: resultId, product_id: null, url: target.toString(), source: "web" });
+    await repos.clicks.create({ result_id: resultId, product_id: null, url: target.toString(), source: "paid-web" });
   } catch (error) {
     logEvent("click.save_failed", describeError(error));
   }

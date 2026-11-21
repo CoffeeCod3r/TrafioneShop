@@ -17,6 +17,7 @@ import type {
   Update,
 } from "../db.ts";
 import type { ProductUpsert } from "../feeds/normalize.ts";
+import type { DirectProductRow } from "../search/core.ts";
 import { isRealService } from "../mode.ts";
 import { createDemoRepos } from "./impl/db-demo.ts";
 import { createRealRepos } from "./impl/db-real.ts";
@@ -43,9 +44,16 @@ export type ProductsRepo = {
   findCandidates(query: ProductCandidateQuery): Promise<ProductRow[]>;
   getByIds(ids: readonly string[]): Promise<ProductRow[]>;
   getById(id: string): Promise<ProductRow | null>;
+  /**
+   * Saves products found by the web search (network "direct", commission_rate 0). One row per product
+   * address: the same address updates price, check time and stock instead of creating a duplicate.
+   */
+  saveDirect(rows: DirectProductInput[]): Promise<ProductRow[]>;
 };
 
-export type ResultStatsRow = Pick<ResultRow, "id" | "created_at" | "price_variant" | "paid_status" | "source">;
+export type DirectProductInput = DirectProductRow;
+
+export type ResultStatsRow = Pick<ResultRow, "id" | "created_at" | "price_variant" | "paid_status" | "source" | "free_source">;
 
 export type ResultsRepo = {
   create(row: Insert<"results">): Promise<ResultRow>;
@@ -56,6 +64,8 @@ export type ResultsRepo = {
    * was already paid (or is being paid), so one result can never be paid twice.
    */
   claimPayment(id: string): Promise<boolean>;
+  /** A ready web-search result with this quiz hash created at or after `since` (result memory). */
+  findCachedByHash(hash: string, since: string): Promise<ResultRow | null>;
   /** Admin stats: results created at or after `since`. */
   listForStats(since: string): Promise<ResultStatsRow[]>;
 };
@@ -75,6 +85,7 @@ export type QuizStartsRepo = {
 export type PurchasesRepo = {
   /** Inserts unless a purchase with the same stripe_session_id exists (idempotent webhooks). */
   createIfNew(row: Insert<"purchases">): Promise<{ purchase: PurchaseRow; created: boolean }>;
+  getById(id: string): Promise<PurchaseRow | null>;
   getBySessionId(stripeSessionId: string): Promise<PurchaseRow | null>;
   /** Pack lookup by its secret code (cookie / pack link). */
   getByPackCode(code: string): Promise<PurchaseRow | null>;
