@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { ContactEmail, Fill, LegalPage, OwnerData } from "@/components/legal/legal";
+import { ContactEmail, LegalPage, OwnerData, Val } from "@/components/legal/legal";
+import { LEGAL } from "@/lib/legal-config";
 
-export const metadata: Metadata = { title: "Polityka prywatności – Prezentoskop" };
+export const metadata: Metadata = {
+  title: "Polityka prywatności – Prezentoskop",
+  description: "Jakie dane zbiera Prezentoskop, po co, jak długo i jakie masz prawa. Zdjęcia nigdy nie są zapisywane.",
+  alternates: { canonical: "/prywatnosc" },
+};
 
 /** DRAFT – to be verified by the owner (and ideally a lawyer) before launch. */
 export default function PrivacyPolicyPage() {
@@ -88,13 +93,13 @@ export default function PrivacyPolicyPage() {
             <strong>Odpowiedzi z quizu i wynik</strong> (dla kogo, budżet, okazja, zainteresowania, styl życia, typ
             prezentu, „co już ma”, opis osoby, profil stylu, wybrane produkty): żeby pokazać wynik pod stałym linkiem i umożliwić
             jego udostępnienie. Podstawa: wykonanie usługi (art. 6 ust. 1 lit. b RODO). Nie zawierają Twojego imienia
-            ani e-maila. Przechowujemy je przez <Fill>[OKRES, np. 12 miesięcy]</Fill>.
+            ani e-maila. Przechowujemy je przez <Val v={LEGAL.retentionResults} ph="[OKRES, np. 12 miesięcy]" />.
           </li>
           <li>
             <strong>Formularz kontaktowy</strong> (adres e-mail, opcjonalnie imię i treść wiadomości): żeby odpowiedzieć
             na pytanie lub zgłoszenie. Wiadomość trafia na naszą skrzynkę e-mail i nie jest zapisywana w bazie serwisu.
             Podstawa: nasz prawnie uzasadniony interes w obsłudze zapytań (art. 6 ust. 1 lit. f RODO), a przy
-            reklamacjach wykonanie umowy. Przechowujemy ją przez <Fill>[OKRES, np. 12 miesięcy po zakończeniu korespondencji]</Fill>.
+            reklamacjach wykonanie umowy. Przechowujemy ją przez <Val v={LEGAL.retentionContact} ph="[OKRES, np. 12 miesięcy po zakończeniu korespondencji]" />.
           </li>
           <li>
             <strong>Pamięć wyników</strong>: skrót (hash) Twoich odpowiedzi z quizu (także opisu osoby), policzony z tajną solą. Nie zawiera
@@ -105,7 +110,7 @@ export default function PrivacyPolicyPage() {
           <li>
             <strong>Kliknięcia w produkty</strong> (który wynik, który produkt, czas, źródło: wynik darmowy, płatny lub
             udostępniony): do rozliczeń z programami partnerskimi i statystyk. Podstawa: nasz prawnie uzasadniony
-            interes (art. 6 ust. 1 lit. f RODO). Okres: <Fill>[OKRES, np. 24 miesiące]</Fill>.
+            interes (art. 6 ust. 1 lit. f RODO). Okres: <Val v={LEGAL.retentionClicks} ph="[OKRES, np. 24 miesiące]" />.
           </li>
           <li>
             <strong>Adres e-mail i wybrane okazje</strong> (tylko jeśli zapiszesz się na przypomnienia): do wysyłania
@@ -116,7 +121,7 @@ export default function PrivacyPolicyPage() {
             <strong>Dane płatności</strong>: płatności obsługuje Stripe. Dane karty lub kodu BLIK wpisujesz na stronie
             Stripe i nie trafiają one do nas. Zapisujemy identyfikator płatności, kwotę, datę i status (opłacona /
             zwrócona). Podstawa: wykonanie umowy oraz obowiązki księgowe i podatkowe (art. 6 ust. 1 lit. b i c RODO).
-            Okres: <Fill>[OKRES wynikający z przepisów podatkowych, zwykle 5 lat od końca roku]</Fill>.
+            Okres: <Val v={LEGAL.retentionPayments} ph="[OKRES wynikający z przepisów podatkowych, zwykle 5 lat od końca roku]" />.
           </li>
           <li>
             <strong>Zabezpieczenia</strong>: skrót (hash) adresu IP z tajną solą oraz losowy identyfikator urządzenia w
@@ -177,8 +182,7 @@ export default function PrivacyPolicyPage() {
         </ul>
         <p>
           Część dostawców ma siedzibę w USA. Przekazanie danych poza Europejski Obszar Gospodarczy odbywa się na
-          podstawie <Fill>[sprawdź: decyzji Komisji Europejskiej (EU-US Data Privacy Framework) lub standardowych
-          klauzul umownych – osobno dla każdego dostawcy]</Fill>.
+          podstawie <Val v={LEGAL.transferBasis} ph="[sprawdź: decyzji Komisji Europejskiej (EU-US Data Privacy Framework) lub standardowych klauzul umownych – osobno dla każdego dostawcy]" />.
         </p>
       </section>
 

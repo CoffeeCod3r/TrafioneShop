@@ -44,7 +44,7 @@ export function CookieBanner() {
         </p>
         <p className="text-xs text-muted-foreground">
           Niezbędne pliki cookies działają zawsze. Analityka PostHog tylko za Twoją zgodą.{" "}
-          <Link href="/prywatnosc#cookies" className="underline underline-offset-4">
+          <Link href="/prywatnosc#cookies" className="-my-3 inline-block py-3 underline underline-offset-4">
             Szczegóły
           </Link>
           .

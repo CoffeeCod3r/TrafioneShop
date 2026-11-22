@@ -1,10 +1,21 @@
 import type { ReactNode } from "react";
 
+import { isLegalComplete, LEGAL } from "@/lib/legal-config";
 import { CONTACT_EMAIL } from "@/lib/site";
 
 /** Highlighted placeholder for the owner's data or a decision to make. */
 export function Fill({ children }: { children: ReactNode }) {
   return <mark className="rounded bg-yellow-200 px-1 font-semibold text-black">{children}</mark>;
+}
+
+/** A value from lib/legal-config.ts, or a yellow placeholder while it is still missing. */
+export function Val({ v, ph }: { v: string | number | null; ph: string }) {
+  return v === null ? <Fill>{ph}</Fill> : <>{v}</>;
+}
+
+/** A text that a lawyer still has to confirm: highlighted until `lawyerReviewed` is set. */
+export function Review({ children }: { children: ReactNode }) {
+  return LEGAL.lawyerReviewed ? null : <Fill>[{children}]</Fill>;
 }
 
 /** The public contact address as a mailto link. */
@@ -17,6 +28,7 @@ export function ContactEmail() {
 }
 
 export function DraftNotice() {
+  if (isLegalComplete()) return null;
   return (
     <p className="rounded-xl border-2 border-yellow-400 bg-yellow-50 p-4 text-sm text-yellow-950">
       <strong>SZKIC DO WERYFIKACJI.</strong> Ten dokument nie jest jeszcze obowiązujący. Żółte pola trzeba uzupełnić
@@ -43,14 +55,16 @@ export function OwnerData() {
   return (
     <ul>
       <li>
-        Imię i nazwisko / firma: Michał <Fill>[NAZWISKO albo nazwa firmy]</Fill>
+        Imię i nazwisko / firma: <Val v={LEGAL.ownerName} ph="[IMIĘ I NAZWISKO albo nazwa firmy]" />
       </li>
       <li>
-        Adres: <Fill>[ULICA I NUMER, KOD POCZTOWY]</Fill> Opole
+        Adres: <Val v={LEGAL.address} ph="[ULICA I NUMER, KOD POCZTOWY, MIASTO]" />
       </li>
-      <li>
-        NIP / REGON (jeśli działalność): <Fill>[NIP / REGON albo usuń, jeśli działalność nierejestrowana]</Fill>
-      </li>
+      {LEGAL.taxId !== "" && (
+        <li>
+          NIP / REGON: <Val v={LEGAL.taxId} ph="[NIP / REGON albo ustaw pusty tekst, jeśli działalność nierejestrowana]" />
+        </li>
+      )}
       <li>
         E-mail kontaktowy: <ContactEmail />
       </li>

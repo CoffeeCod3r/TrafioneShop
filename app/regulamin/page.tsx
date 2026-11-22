@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { ContactEmail, Fill, LegalPage, OwnerData } from "@/components/legal/legal";
+import { ContactEmail, LegalPage, OwnerData, Review, Val } from "@/components/legal/legal";
+import { LEGAL } from "@/lib/legal-config";
 
-export const metadata: Metadata = { title: "Regulamin – Prezentoskop" };
+export const metadata: Metadata = {
+  title: "Regulamin – Prezentoskop",
+  description: "Regulamin serwisu Prezentoskop: zakres usługi, płatne „Więcej propozycji”, zwroty, reklamacje i kontakt.",
+  alternates: { canonical: "/regulamin" },
+};
 
 /** DRAFT – to be verified by the owner (and ideally a lawyer) before launch. */
 export default function TermsPage() {
@@ -38,7 +43,7 @@ export default function TermsPage() {
             konto w serwisie ani w Stripe nie jest wymagane.
           </li>
           <li>
-            Z serwisu mogą korzystać osoby, które ukończyły <Fill>[16]</Fill> lat. Płatne wyszukiwanie mogą zamawiać
+            Z serwisu mogą korzystać osoby, które ukończyły <Val v={LEGAL.minAge} ph="[WIEK, np. 16]" /> lat. Płatne wyszukiwanie mogą zamawiać
             wyłącznie osoby pełnoletnie.
           </li>
         </ul>
@@ -48,7 +53,7 @@ export default function TermsPage() {
         <h2>§ 3. Usługa darmowa</h2>
         <ul>
           <li>
-            Obejmuje quiz (6 pytań), opcjonalną analizę zdjęcia, profil stylu i 5 propozycji prezentów wybranych przez
+            Obejmuje quiz (kilka pytań, ok. minuty), opcjonalną analizę zdjęcia, profil stylu i 5 propozycji prezentów wybranych przez
             AI z polskich sklepów, a także możliwość udostępnienia wyniku.
           </li>
           <li>
@@ -102,8 +107,8 @@ export default function TermsPage() {
           <li>
             Pakiet nie ma terminu ważności ani konta: dostęp do niego daje przeglądarka, w której go kupiono, oraz link
             do pakietu pokazywany po zakupie (nie udostępniaj go). Wyszukiwanie z pakietu, które nie znajdzie co
-            najmniej 5 sprawdzonych produktów, wraca do pakietu. <Fill>[do weryfikacji przez prawnika: zwrot za
-            niewykorzystane wyszukiwania z pakietu i prawo odstąpienia]</Fill>
+            najmniej 5 sprawdzonych produktów, wraca do pakietu. <Review>do weryfikacji przez prawnika: zwrot za
+            niewykorzystane wyszukiwania z pakietu i prawo odstąpienia</Review>
           </li>
           <li>Umowa zostaje zawarta z chwilą potwierdzenia płatności. Wyniki pojawiają się zwykle w ciągu 1–3 minut.</li>
           <li>
@@ -117,7 +122,7 @@ export default function TermsPage() {
             <strong>Automatyczny zwrot</strong>: jeśli przy pojedynczym wyszukiwaniu nie znajdziemy co najmniej 5
             sprawdzonych produktów albo wystąpi błąd, automatycznie zwracamy całą zapłaconą kwotę tą samą metodą
             płatności. Nie musisz o to prosić.
-            Zwrot zlecamy od razu, a jego zaksięgowanie zależy od banku (zwykle do <Fill>[10]</Fill> dni roboczych).
+            Zwrot zlecamy od razu, a jego zaksięgowanie zależy od banku (zwykle do <Val v={LEGAL.refundDays} ph="[LICZBA]" /> dni roboczych).
             Darmowe wyniki pozostają dostępne.
           </li>
         </ul>
@@ -129,7 +134,7 @@ export default function TermsPage() {
           Konsumentowi co do zasady przysługuje prawo odstąpienia od umowy zawartej na odległość w ciągu 14 dni. Przed
           płatnością prosimy o wyraźną zgodę na rozpoczęcie usługi i dostarczenie treści cyfrowej przed upływem tego
           terminu. Po jej wyrażeniu i wykonaniu usługi prawo odstąpienia nie przysługuje (art. 38 ust. 1 pkt 1 i 13
-          ustawy o prawach konsumenta – <Fill>[do weryfikacji przez prawnika]</Fill>). Nie wpływa to na automatyczny
+          ustawy o prawach konsumenta – <Review>do weryfikacji przez prawnika</Review>). Nie wpływa to na automatyczny
           zwrot z § 5 ani na prawa z tytułu niezgodności usługi z umową.
         </p>
       </section>
