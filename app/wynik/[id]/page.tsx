@@ -10,7 +10,8 @@ import { BestMatch } from "@/components/results/best-match";
 import { FreeSearchProgress } from "@/components/results/free-search-progress";
 import { PackInfo } from "@/components/results/pack-info";
 import { PaidSearchSection } from "@/components/results/paid-search-section";
-import { ProductCard } from "@/components/results/product-card";
+import { fromResultProduct } from "@/components/products/adapters";
+import { ProductCard } from "@/components/products/product-card";
 import { ShareButton } from "@/components/results/share-button";
 import { SubscribeForm } from "@/components/subscribe/subscribe-form";
 import { Button } from "@/components/ui/button";
@@ -136,13 +137,7 @@ async function ResultContent({ params, searchParams }: PageProps) {
         ) : (
           <ol className="flex flex-col gap-4">
             {products.map((product, index) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                position={index + 1}
-                resultId={result.id}
-                shared={shared}
-              />
+              <ProductCard key={product.id} card={fromResultProduct(product, index + 1, result.id, shared)} />
             ))}
           </ol>
         )}

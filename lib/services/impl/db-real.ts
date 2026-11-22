@@ -1,4 +1,4 @@
-import type { ProductRow } from "../../db.ts";
+import type { CatalogCheckRunRow, ProductRow } from "../../db.ts";
 import type { Repos } from "../db.ts";
 import { getSupabase } from "./supabase.ts";
 
@@ -31,6 +31,59 @@ export function createRealRepos(): Repos {
   const db = () => getSupabase();
 
   return {
+    catalog: {
+      async listCheckable() {
+        const columns = "id, name, url, affiliate_url, price_pln, network, category, failed_checks, in_stock";
+        const { data: direct, error } = await db().from("products").select(columns).eq("in_stock", true).eq("network", "direct");
+        if (error) fail("Loading products to check", error);
+        const { data: links, error: linksError } = await db().from("guide_products").select("product_id");
+        if (linksError) fail("Loading guide products", linksError);
+        const known = new Set(direct.map((product) => product.id));
+        const extraIds = [...new Set(links.map((link) => link.product_id))].filter((id) => !known.has(id));
+        let extra: typeof direct = [];
+        if (extraIds.length > 0) {
+          const { data, error: extraError } = await db().from("products").select(columns).eq("in_stock", true).in("id", extraIds);
+          if (extraError) fail("Loading guide products", extraError);
+          extra = data;
+        }
+        return [...direct, ...extra].sort((a, b) => a.id.localeCompare(b.id));
+      },
+      async applyCheck(productId, patch, history) {
+        const { error } = await db().from("products").update(patch).eq("id", productId);
+        if (error) fail("Saving product check", error);
+        if (history) {
+          const { error: historyError } = await db().from("price_history").insert({ product_id: productId, ...history });
+          if (historyError) fail("Saving price history", historyError);
+        }
+      },
+      async createRun(startedBy) {
+        const { data, error } = await db().from("catalog_check_runs").insert({ started_by: startedBy }).select("*").single();
+        if (error) fail("Creating check run", error);
+        return data as CatalogCheckRunRow;
+      },
+      async getRun(id) {
+        const { data, error } = await db().from("catalog_check_runs").select("*").eq("id", id).maybeSingle();
+        if (error) fail("Loading check run", error);
+        return data as CatalogCheckRunRow | null;
+      },
+      async updateRun(id, patch) {
+        const { error } = await db().from("catalog_check_runs").update(patch).eq("id", id);
+        if (error) fail("Updating check run", error);
+      },
+      async recentRuns(limit) {
+        const { data, error } = await db().from("catalog_check_runs").select("*").order("started_at", { ascending: false }).limit(limit);
+        if (error) fail("Loading check runs", error);
+        return data as CatalogCheckRunRow[];
+      },
+      async countProducts() {
+        const available = await db().from("products").select("id", { count: "exact", head: true }).eq("in_stock", true);
+        const unavailable = await db().from("products").select("id", { count: "exact", head: true }).eq("in_stock", false);
+        if (available.error) fail("Counting products", available.error);
+        if (unavailable.error) fail("Counting products", unavailable.error);
+        return { available: available.count ?? 0, unavailable: unavailable.count ?? 0 };
+      },
+    },
+
     guides: {
       async listProducts(slug) {
         const { data: links, error } = await db()

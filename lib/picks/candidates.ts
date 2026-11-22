@@ -12,7 +12,7 @@ const FETCH_LIMIT = 300;
 
 export type Candidate = Pick<
   ProductRow,
-  "id" | "name" | "description" | "price_pln" | "merchant" | "category" | "tags" | "image_url" | "affiliate_url" | "commission_rate"
+  "id" | "name" | "description" | "price_pln" | "merchant" | "category" | "tags" | "image_url" | "affiliate_url" | "commission_rate" | "network"
 > & { sharedTags: AllowedTag[] };
 
 type CandidateRow = Omit<Candidate, "sharedTags">;
@@ -82,6 +82,7 @@ export async function selectCandidates(options: {
       image_url: row.image_url,
       affiliate_url: row.affiliate_url,
       commission_rate: row.commission_rate,
+      network: row.network,
     }));
   }
 

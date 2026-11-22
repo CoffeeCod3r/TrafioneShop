@@ -14,6 +14,9 @@ export type GuideProductView = {
   price_pln: number;
   merchant: string;
   category: string | null;
+  /** Source network; a photo is shown only for partner feeds, never for web ("direct") products. */
+  network: string;
+  image_url: string | null;
   /** When price and availability were checked on the shop's page (web products); null for catalog products. */
   checked_at: string | null;
   /** "Why this is a good choice". */
@@ -30,6 +33,28 @@ export type GuideProducts = {
 };
 
 const MAX_SHOWN = 8;
+/** A guide with fewer available products than this is topped up from the catalog pool (no AI, no web search). */
+export const MIN_GUIDE_PRODUCTS = 6;
+
+type CandidateLike = Awaited<ReturnType<typeof selectCandidates>>["candidates"][number];
+
+function fromCandidate(candidate: CandidateLike): GuideProductView {
+  return {
+    id: candidate.id,
+    name: candidate.name,
+    price_pln: candidate.price_pln,
+    merchant: candidate.merchant,
+    category: candidate.category,
+    network: candidate.network,
+    image_url: candidate.image_url,
+    checked_at: null,
+    reason:
+      candidate.sharedTags.length > 0
+        ? `Pasuje do zainteresowań: ${candidate.sharedTags.slice(0, 3).join(", ")}.`
+        : "Mieści się w budżecie i pasuje do tego poradnika.",
+    affiliate: (candidate.commission_rate ?? 0) > 0,
+  };
+}
 
 /**
  * Products of a guide, read once and cached for a week (the pages are static; no search ever runs on a visit).
@@ -47,46 +72,45 @@ export async function getGuideProducts(slug: string): Promise<GuideProducts> {
   }
 
   try {
-    const stored = await getRepos().guides.listProducts(slug);
+    const { answers, tags, avoid } = guide.search;
+    // Unavailable products (and ones that now cost more than the guide's budget) are never shown.
+    const stored = (await getRepos().guides.listProducts(slug)).filter(
+      ({ product }) => product.in_stock && product.price_pln <= answers.budget,
+    );
     if (stored.length > 0) {
+      const shown: GuideProductView[] = stored.slice(0, MAX_SHOWN).map(({ product, reason }) => ({
+        id: product.id,
+        name: product.name,
+        price_pln: product.price_pln,
+        merchant: product.merchant,
+        category: product.category,
+        network: product.network,
+        image_url: product.image_url,
+        checked_at: product.checked_at,
+        reason,
+        affiliate: (product.commission_rate ?? 0) > 0,
+      }));
+      if (shown.length < MIN_GUIDE_PRODUCTS) {
+        // Top up from the same budget/tag pool: plain database selection, no search and no AI.
+        const { candidates } = await selectCandidates({ budget: answers.budget, tags, avoid });
+        const have = new Set(shown.map((product) => product.id));
+        for (const candidate of candidates) {
+          if (shown.length >= MIN_GUIDE_PRODUCTS) break;
+          if (!have.has(candidate.id)) shown.push(fromCandidate(candidate));
+        }
+      }
       cacheLife("weeks");
       return {
-        products: stored.slice(0, MAX_SHOWN).map(({ product, reason }) => ({
-          id: product.id,
-          name: product.name,
-          price_pln: product.price_pln,
-          merchant: product.merchant,
-          category: product.category,
-          checked_at: product.checked_at,
-          reason,
-          affiliate: (product.commission_rate ?? 0) > 0,
-        })),
+        products: shown,
         refreshedAt: stored.map((item) => item.refreshedAt).sort().at(-1) ?? null,
         source: "stored",
       };
     }
 
-    const { answers, tags, avoid } = guide.search;
     const { candidates } = await selectCandidates({ budget: answers.budget, tags, avoid });
     // Not refreshed yet: the catalog fallback is shown, and checked again soon.
     cacheLife("hours");
-    return {
-      products: candidates.slice(0, MAX_SHOWN).map((candidate) => ({
-        id: candidate.id,
-        name: candidate.name,
-        price_pln: candidate.price_pln,
-        merchant: candidate.merchant,
-        category: candidate.category,
-        checked_at: null,
-        reason:
-          candidate.sharedTags.length > 0
-            ? `Pasuje do zainteresowań: ${candidate.sharedTags.slice(0, 3).join(", ")}.`
-            : "Mieści się w budżecie i pasuje do tego poradnika.",
-        affiliate: (candidate.commission_rate ?? 0) > 0,
-      })),
-      refreshedAt: null,
-      source: "catalog",
-    };
+    return { products: candidates.slice(0, MAX_SHOWN).map(fromCandidate), refreshedAt: null, source: "catalog" };
   } catch (error) {
     logEvent("guides.products_failed", { slug, ...describeError(error) });
     cacheLife("minutes");

@@ -3,8 +3,11 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
 
+import { CheckLinksButton } from "@/components/admin/check-links-button";
 import { AdminLoginForm, AdminLogoutButton } from "@/components/admin/login-form";
 import { ADMIN_COOKIE, isValidAdminSession } from "@/lib/admin/auth";
+import { ERROR_LABELS, getCatalogHealth, type CatalogHealth } from "@/lib/admin/health";
+import { MIN_GUIDE_PRODUCTS } from "@/lib/guides/products";
 import { AI_PRICES, getAdminStats, PERIODS, type AdminStats, type Period } from "@/lib/admin/stats";
 import { cn } from "@/lib/utils";
 
@@ -33,11 +36,69 @@ async function AdminGate({ searchParams }: PageProps) {
 
   const query = await searchParams;
   const period: Period = PERIODS.some((p) => p.value === query.okres) ? (query.okres as Period) : "7d";
-  const stats = await getAdminStats(period);
-  return <Dashboard stats={stats} period={period} />;
+  const [stats, health] = await Promise.all([getAdminStats(period), getCatalogHealth()]);
+  return <Dashboard stats={stats} health={health} period={period} />;
 }
 
-function Dashboard({ stats, period }: { stats: AdminStats; period: Period }) {
+const dateTime = new Intl.DateTimeFormat("pl-PL", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Warsaw" });
+const RUN_STATUS: Record<string, string> = { running: "trwa", completed: "zakończone", partial: "przerwane po 20 min (reszta w przyszłym tygodniu)", failed: "błąd" };
+
+function duration(seconds: number | null): string {
+  if (seconds === null) return "–";
+  return seconds < 90 ? `${seconds} s` : `${Math.round(seconds / 60)} min`;
+}
+
+function CatalogHealthSection({ health }: { health: CatalogHealth }) {
+  const run = health.lastRun;
+  return (
+    <Section title="Zdrowie katalogu">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <Tile label="Produkty dostępne" value={num.format(health.available)} />
+        <Tile label="Produkty niedostępne" value={num.format(health.unavailable)} hint="nie pokazujemy ich na kartach" />
+        <Tile
+          label="Ostatnie sprawdzenie"
+          value={run ? dateTime.format(new Date(run.started_at)) : "jeszcze nie było"}
+          hint={run ? `${RUN_STATUS[run.status] ?? run.status} · ${run.started_by === "cron" ? "automat (niedziela 3:00)" : "ręcznie"} · czas ${duration(health.durationSec)}` : "automat: co niedzielę o 3:00"}
+        />
+        <Tile
+          label="Zmiany cen (ostatnie sprawdzenie)"
+          value={run ? num.format(run.price_changes) : "–"}
+          hint={run ? `sprawdzono ${num.format(run.processed)} z ${num.format(run.total)} · w porządku: ${num.format(run.ok)} · nowo niedostępne: ${num.format(run.became_unavailable)}` : undefined}
+        />
+        <Tile
+          label="Pominięte (robots.txt / brak danych)"
+          value={run ? `${num.format(run.skipped_robots)} / ${num.format(run.unverified)}` : "–"}
+          hint="to nie błędy: strony bez ceny w kodzie zostają bez zmian"
+        />
+        <Tile label="Błędy sieci (ostatnie sprawdzenie)" value={run ? num.format(run.errors) : "–"} hint="niedostępny dopiero po 2 błędach z rzędu" />
+      </div>
+
+      <CheckLinksButton running={health.running} />
+
+      <h3 className="mt-2 font-semibold">Najczęstsze błędy według sklepu</h3>
+      <Table
+        head={["Sklep", "Błąd", "Liczba"]}
+        rows={health.errors.map((row) => [row.shop, ERROR_LABELS[row.kind] ?? row.kind, num.format(row.count)])}
+        empty="Brak błędów w ostatnim sprawdzeniu."
+      />
+
+      <h3 className="mt-2 font-semibold">Poradniki do uzupełnienia</h3>
+      <Table
+        head={["Poradnik", "Produktów"]}
+        rows={health.guidesToComplete.map((guide) => [guide.title, `${guide.count} (min. ${MIN_GUIDE_PRODUCTS})`])}
+        empty="Każdy poradnik ma co najmniej 6 dostępnych produktów."
+      />
+      {health.guidesToComplete.length > 0 && (
+        <p className="text-xs text-muted-foreground">
+          Poradnik jest uzupełniany z katalogu (ta sama kategoria i budżet) bez wyszukiwania w sieci. Jeśli to za mało,
+          trzeba odświeżyć go ręcznie: <code>npm run guides:refresh</code>.
+        </p>
+      )}
+    </Section>
+  );
+}
+
+function Dashboard({ stats, health, period }: { stats: AdminStats; health: CatalogHealth; period: Period }) {
   return (
     <div className="flex flex-col gap-8 py-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
@@ -172,6 +233,8 @@ function Dashboard({ stats, period }: { stats: AdminStats; period: Period }) {
           „ref:kod”.
         </p>
       </Section>
+
+      <CatalogHealthSection health={health} />
 
       <Section title="Top 20 produktów po kliknięciach">
         <Table

@@ -55,6 +55,39 @@ export type ProductRow = {
   url: string | null;
   /** When price and availability were last checked on the shop's page (web products). */
   checked_at: string | null;
+  /** Consecutive failed checks (timeout, 5xx, block); 2 in a row take the product out of stock. */
+  failed_checks: number;
+  last_check_at: string | null;
+  /** Result of the last weekly check (see supabase/migrations/20261126000000_catalog_check.sql). */
+  last_check_result: string | null;
+};
+
+export type PriceHistoryRow = {
+  id: string;
+  product_id: string;
+  old_price: number;
+  new_price: number;
+  checked_at: string;
+};
+
+export type CatalogCheckRunRow = {
+  id: string;
+  started_by: "cron" | "manual";
+  started_at: string;
+  finished_at: string | null;
+  status: "running" | "completed" | "partial" | "failed";
+  total: number;
+  processed: number;
+  cursor: string | null;
+  ok: number;
+  price_changes: number;
+  became_unavailable: number;
+  skipped_robots: number;
+  unverified: number;
+  errors: number;
+  /** { "shop.pl": { "timeout": 2 } } */
+  failures: Record<string, Record<string, number>>;
+  guides_incomplete: string[];
 };
 
 export type ResultRow = {
@@ -185,7 +218,25 @@ type TableDef<Row, DefaultKeys extends keyof Row> = {
 export type Database = {
   public: {
     Tables: {
-      products: TableDef<ProductRow, "id" | "tags" | "in_stock" | "updated_at">;
+      products: TableDef<ProductRow, "id" | "tags" | "in_stock" | "updated_at" | "failed_checks">;
+      price_history: TableDef<PriceHistoryRow, "id" | "checked_at">;
+      catalog_check_runs: TableDef<
+        CatalogCheckRunRow,
+        | "id"
+        | "started_by"
+        | "started_at"
+        | "status"
+        | "total"
+        | "processed"
+        | "ok"
+        | "price_changes"
+        | "became_unavailable"
+        | "skipped_robots"
+        | "unverified"
+        | "errors"
+        | "failures"
+        | "guides_incomplete"
+      >;
       results: TableDef<
         ResultRow,
         "id" | "created_at" | "answers" | "tags" | "avoid" | "product_ids" | "reasons" | "paid_status" | "search_status"

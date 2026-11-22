@@ -7,8 +7,10 @@ import sampleProducts from "../../../data/sample-products.json" with { type: "js
 import type {
   AiUsageRow,
   AllowedShopRow,
+  CatalogCheckRunRow,
   ClickRow,
   GuideProductRow,
+  PriceHistoryRow,
   ProductRow,
   PurchaseRow,
   QuizStartRow,
@@ -35,6 +37,8 @@ type DemoData = {
   rate_limits: RateLimitRow[];
   quiz_starts: QuizStartRow[];
   guide_products: GuideProductRow[];
+  catalog_check_runs: CatalogCheckRunRow[];
+  price_history: PriceHistoryRow[];
 };
 
 export function demoDbPath(): string {
@@ -55,6 +59,8 @@ function emptyData(): DemoData {
     rate_limits: [],
     quiz_starts: [],
     guide_products: [],
+    catalog_check_runs: [],
+    price_history: [],
   };
 }
 
@@ -113,6 +119,70 @@ function byPriceDesc(a: ProductRow, b: ProductRow): number {
 
 export function createDemoRepos(): Repos {
   return {
+    catalog: {
+      listCheckable: () =>
+        read((data) => {
+          const guideIds = new Set(data.guide_products.map((link) => link.product_id));
+          return data.products
+            .filter((product) => product.in_stock && (product.network === "direct" || guideIds.has(product.id)))
+            .map(({ id, name, url, affiliate_url, price_pln, network, category, failed_checks, in_stock }) => ({
+              id,
+              name,
+              url: url ?? null,
+              affiliate_url,
+              price_pln,
+              network,
+              category,
+              failed_checks: failed_checks ?? 0,
+              in_stock,
+            }))
+            .sort((a, b) => a.id.localeCompare(b.id));
+        }),
+      applyCheck: (productId, patch, history) =>
+        write((data) => {
+          const product = data.products.find((item) => item.id === productId);
+          if (!product) throw new Error("Saving product check failed (not found)");
+          Object.assign(product, patch);
+          if (history) data.price_history.push({ id: randomUUID(), product_id: productId, checked_at: now(), ...history });
+        }),
+      createRun: (startedBy) =>
+        write((data) => {
+          const run: CatalogCheckRunRow = {
+            id: randomUUID(),
+            started_by: startedBy,
+            started_at: now(),
+            finished_at: null,
+            status: "running",
+            total: 0,
+            processed: 0,
+            cursor: null,
+            ok: 0,
+            price_changes: 0,
+            became_unavailable: 0,
+            skipped_robots: 0,
+            unverified: 0,
+            errors: 0,
+            failures: {},
+            guides_incomplete: [],
+          };
+          data.catalog_check_runs.push(run);
+          return run;
+        }),
+      getRun: (id) => read((data) => data.catalog_check_runs.find((run) => run.id === id) ?? null),
+      updateRun: (id, patch) =>
+        write((data) => {
+          const run = data.catalog_check_runs.find((item) => item.id === id);
+          if (!run) throw new Error("Updating check run failed (not found)");
+          Object.assign(run, patch);
+        }),
+      recentRuns: (limit) =>
+        read((data) => [...data.catalog_check_runs].sort((a, b) => b.started_at.localeCompare(a.started_at)).slice(0, limit)),
+      countProducts: () =>
+        read((data) => ({
+          available: data.products.filter((product) => product.in_stock).length,
+          unavailable: data.products.filter((product) => !product.in_stock).length,
+        })),
+    },
     guides: {
       listProducts: (slug) =>
         read((data) =>
@@ -155,6 +225,9 @@ export function createDemoRepos(): Repos {
                 in_stock: true,
                 url: null,
                 checked_at: null,
+                failed_checks: 0,
+                last_check_at: null,
+                last_check_result: null,
                 ...row,
                 updated_at: now(),
               });
@@ -200,6 +273,9 @@ export function createDemoRepos(): Repos {
             }
             const product: ProductRow = {
               id: randomUUID(),
+              failed_checks: 0,
+              last_check_at: null,
+              last_check_result: null,
               ...row,
               network: "direct",
               commission_rate: 0,

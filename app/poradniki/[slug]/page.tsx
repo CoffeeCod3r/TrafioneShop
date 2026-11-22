@@ -4,7 +4,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Gift, Info } from "lucide-react";
 
-import { GuideProductCard } from "@/components/guides/guide-product-card";
+import { fromGuideProduct } from "@/components/products/adapters";
+import { ProductCard } from "@/components/products/product-card";
 import { GuideCards } from "@/components/guides/guide-links";
 import { Button } from "@/components/ui/button";
 import { getGuide, GUIDES, GUIDES_PUBLISHED, type Guide } from "@/lib/guides/data";
@@ -96,7 +97,7 @@ async function GuideContent({ guide }: { guide: Guide }) {
         {products.length > 0 ? (
           <ol className="flex flex-col gap-4">
             {products.map((product) => (
-              <GuideProductCard key={product.id} product={product} />
+              <ProductCard key={product.id} card={fromGuideProduct(product)} />
             ))}
           </ol>
         ) : (

@@ -118,9 +118,10 @@ export const SAVE_PICKS_TOOL = {
   },
 };
 
-/** Gift categories for web products (shown as an icon, the shop's photo is never stored). */
+/** Gift categories for web products: the 12 category illustrations (lib/illustrations.ts) plus "inne" (generic). */
 export const WEB_PICK_CATEGORIES = [
   "dom",
+  "ogrod",
   "kuchnia",
   "jedzenie",
   "ksiazki",

@@ -96,7 +96,7 @@ export async function copyRememberedResult(
 
 export type ResultProduct = Pick<
   ProductRow,
-  "id" | "name" | "price_pln" | "merchant" | "image_url" | "affiliate_url" | "in_stock" | "category" | "checked_at"
+  "id" | "name" | "price_pln" | "merchant" | "image_url" | "affiliate_url" | "in_stock" | "category" | "checked_at" | "network"
 > & {
   /** Partner catalog product that earns a commission (needs the affiliate disclosure). */
   affiliate: boolean;
@@ -135,34 +135,56 @@ function toCard(product: ProductRow, reason: string, replaces: string | null = n
     in_stock: product.in_stock,
     category: product.category,
     checked_at: product.checked_at ?? null,
+    network: product.network,
     affiliate: (product.commission_rate ?? 0) > 0,
     reason,
     replaces,
   };
 }
 
+/** Shown only when it is in stock and, when the result has a budget, not above it. */
+export function isDisplayable(product: Pick<ProductRow, "in_stock" | "price_pln">, budget: number | null): boolean {
+  return product.in_stock && (budget === null || product.price_pln <= budget);
+}
+
 /**
- * Same-category, in-stock replacement within the result's budget, not already on the list.
- * Prefers products sharing more tags with the result, then the higher price. The commission never decides.
+ * In-stock replacement within the result's budget, not already on the list: first from the same category, then from
+ * any category that shares a tag with the result. Prefers more shared tags, then the higher price. The commission
+ * never decides. null = no replacement, the card is simply left out.
  */
 async function findReplacement(
   original: ProductRow,
   context: { budget: number | null; tags: string[]; avoid: string[]; excludeIds: string[] },
 ): Promise<ProductRow | null> {
-  if (!original.category) return null;
-  const candidates = await getRepos().products.findCandidates({
-    minPrice: 0,
-    maxPrice: context.budget ?? Math.max(original.price_pln * 1.5, original.price_pln + 50),
-    category: original.category,
-    noneOfTags: context.avoid,
-    excludeIds: context.excludeIds,
-    limit: 50,
-  });
+  const repos = getRepos();
+  const maxPrice = context.budget ?? Math.max(original.price_pln * 1.5, original.price_pln + 50);
   const score = (product: ProductRow) => product.tags.filter((tag) => context.tags.includes(tag)).length;
-  return (
-    candidates.sort(
-      (a, b) => score(b) - score(a) || b.price_pln - a.price_pln,
-    )[0] ?? null
+  const best = (candidates: ProductRow[]) =>
+    candidates.filter((product) => isDisplayable(product, context.budget)).sort((a, b) => score(b) - score(a) || b.price_pln - a.price_pln)[0] ?? null;
+
+  if (original.category) {
+    const sameCategory = best(
+      await repos.products.findCandidates({
+        minPrice: 0,
+        maxPrice,
+        category: original.category,
+        noneOfTags: context.avoid,
+        excludeIds: context.excludeIds,
+        limit: 50,
+      }),
+    );
+    if (sameCategory) return sameCategory;
+  }
+  if (context.tags.length === 0) return null;
+  return best(
+    await repos.products.findCandidates({
+      minPrice: 0,
+      maxPrice,
+      anyOfTags: context.tags,
+      noneOfTags: context.avoid,
+      excludeIds: context.excludeIds,
+      limit: 50,
+    }),
   );
 }
 
@@ -183,10 +205,11 @@ export async function getResultView(id: string): Promise<ResultView | null> {
   const products: ResultProduct[] = [];
   for (const product of picked) {
     const reason = reasons[product.id] ?? "";
-    if (product.in_stock) {
+    if (isDisplayable(product, result.budget_pln)) {
       products.push(toCard(product, reason));
       continue;
     }
+    // Unavailable (or above the budget after a price change): never shown, replaced when possible, else left out.
     const replacement = await findReplacement(product, {
       budget: result.budget_pln,
       tags: result.tags,
@@ -196,8 +219,6 @@ export async function getResultView(id: string): Promise<ResultView | null> {
     if (replacement) {
       usedIds.add(replacement.id);
       products.push(toCard(replacement, reason, product.name));
-    } else {
-      products.push(toCard(product, reason));
     }
   }
 

@@ -31,6 +31,17 @@ about the recipient and can optionally add a photo of them.
 - `PAYMENTS_ENABLED` (default false): when false, paid offers are replaced by "Więcej propozycji z całego
   internetu – już wkrótce" and `/api/checkout` returns 403. An admin logged in at /admin can still pay (for tests).
 
+## Product cards and catalog check
+- ONE product card (`components/products/product-card.tsx`) for free results, paid results and guides; data comes
+  through the adapters in `components/products/adapters.ts`. A feed photo is shown only for network ≠ `direct`
+  (and not `demo`); everything found on the web shows the category illustration (`lib/illustrations.ts`, the only
+  category → picture mapping, files in `public/illustrations`). Shop photos are never fetched, stored or shown.
+  Unavailable products (or ones now above the result's budget) are never shown: replaced, else left out.
+- Weekly catalog check (Supabase Cron → Edge Function `check-links`, code in `lib/catalog-check/*`, NO AI, never
+  writes to `ai_usage`): polite (own User-Agent, robots.txt, 1 request/s per domain, 20 min cap, cursor resume).
+  Manual run: `npm run catalog:check` or the button in /admin ("Zdrowie katalogu"). Tests: `npm run test:catalog`,
+  `npm run test:cards`. After changing shared files run `npm run edge:deploy`.
+
 ## Stack
 - Next.js (App Router) + TypeScript + Tailwind + shadcn/ui
 - Supabase (Postgres)

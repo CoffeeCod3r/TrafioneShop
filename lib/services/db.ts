@@ -7,6 +7,7 @@
 import type {
   AiUsageRow,
   AllowedShopRow,
+  CatalogCheckRunRow,
   ClickRow,
   GuideProductRow,
   Insert,
@@ -142,7 +143,36 @@ export type GuidesRepo = {
   replaceProducts(slug: string, rows: Pick<GuideProductRow, "product_id" | "position" | "reason">[]): Promise<void>;
 };
 
+/** A product the weekly check looks at: in stock, and found by the web search (direct) or used in a guide. */
+export type CheckableProduct = Pick<
+  ProductRow,
+  "id" | "name" | "url" | "affiliate_url" | "price_pln" | "network" | "category" | "failed_checks" | "in_stock"
+>;
+
+export type ProductCheckPatch = {
+  price_pln?: number;
+  checked_at?: string;
+  in_stock?: boolean;
+  failed_checks: number;
+  last_check_at: string;
+  last_check_result: string;
+};
+
+/** Weekly check of links and prices (lib/catalog-check). Never touches ai_usage. */
+export type CatalogRepo = {
+  listCheckable(): Promise<CheckableProduct[]>;
+  /** Writes the outcome of one check; `history` (old and new price) is stored when the price moved by more than 20 %. */
+  applyCheck(productId: string, patch: ProductCheckPatch, history?: { old_price: number; new_price: number }): Promise<void>;
+  createRun(startedBy: CatalogCheckRunRow["started_by"]): Promise<CatalogCheckRunRow>;
+  getRun(id: string): Promise<CatalogCheckRunRow | null>;
+  updateRun(id: string, patch: Partial<CatalogCheckRunRow>): Promise<void>;
+  recentRuns(limit: number): Promise<CatalogCheckRunRow[]>;
+  /** Admin: products in stock and not in stock. */
+  countProducts(): Promise<{ available: number; unavailable: number }>;
+};
+
 export type Repos = {
+  catalog: CatalogRepo;
   guides: GuidesRepo;
   results: ResultsRepo;
   products: ProductsRepo;

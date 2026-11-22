@@ -2,12 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import {
   BadgeCheck,
   Check,
   Copy,
-  ExternalLink,
   Gift,
   Globe,
   Loader2,
@@ -16,7 +14,8 @@ import {
   SearchCheck,
 } from "lucide-react";
 
-import { CategoryIcon } from "@/components/results/category-icon";
+import { fromWebPick } from "@/components/products/adapters";
+import { ProductCard } from "@/components/products/product-card";
 import { Button } from "@/components/ui/button";
 import { track } from "@/lib/analytics/client";
 import type { PaidStatus } from "@/lib/db";
@@ -40,14 +39,6 @@ type PaidSearchSectionProps = {
 };
 
 const pln = new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" });
-const checkedFormat = new Intl.DateTimeFormat("pl-PL", {
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-  timeZone: "Europe/Warsaw",
-});
 
 const POLL_MS = 3000;
 const IN_PROGRESS: PaidStatus[] = ["pending", "searching"];
@@ -87,43 +78,7 @@ export function PaidSearchSection({
       <Section>
         <ol className="flex flex-col gap-4">
           {webPicks.map((pick, index) => (
-            <li key={pick.url} className="overflow-hidden rounded-xl border bg-card">
-              <div className="flex gap-4 p-4">
-                <div className="relative flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-mint/50">
-                  {pick.imageUrl ? (
-                    <Image src={pick.imageUrl} alt={pick.title} fill sizes="80px" unoptimized className="object-cover" />
-                  ) : (
-                    <CategoryIcon category={pick.category ?? null} className="size-9" />
-                  )}
-                </div>
-                <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <h3 className="line-clamp-2 font-semibold leading-snug">{pick.title}</h3>
-                  <p className="text-lg font-bold">{pln.format(pick.pricePln)}</p>
-                  <p className="text-sm text-muted-foreground">{pick.shopName ?? pick.shopDomain}</p>
-                  <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <BadgeCheck className="size-3.5" aria-hidden />
-                    cena sprawdzona {checkedFormat.format(new Date(pick.checkedAt))}
-                  </p>
-                </div>
-              </div>
-              <p className="px-4 pb-3 text-sm">
-                <span className="font-medium">Dlaczego to: </span>
-                {pick.reason}
-              </p>
-              <div className="px-4 pb-4">
-                <Button asChild size="xl" className="w-full">
-                  <a
-                    href={`/go/w/${resultId}/${index}`}
-                    target="_blank"
-                    rel="sponsored nofollow noopener"
-                    onClick={() => track("product_clicked", { source: "web", position: index + 1 })}
-                  >
-                    Zobacz w sklepie
-                    <ExternalLink aria-hidden />
-                  </a>
-                </Button>
-              </div>
-            </li>
+            <ProductCard key={pick.url} card={fromWebPick(pick, index, resultId)} />
           ))}
         </ol>
         {dedications && <DedicationList dedications={dedications} />}
