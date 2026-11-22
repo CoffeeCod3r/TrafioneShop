@@ -84,6 +84,8 @@ export type WebSearchInput = {
   count: number;
   maxSearches: number;
   maxFetches: number;
+  /** Output token limit of one request; defaults to SEARCH_LIMITS[kind].maxTokens. */
+  maxTokens?: number;
 };
 
 export type WebSearchOutput = {
@@ -94,6 +96,8 @@ export type WebSearchOutput = {
   /** Free search only: the model's 2–3 sentence explanation of the best pick. */
   summary: string | null;
   usage: UsageEntry[];
+  /** Why the last request stopped ("end_turn", "max_tokens", "pause_turn", ...): diagnostics only. */
+  stopReason?: string | null;
 };
 
 /** Row written to products for a verified web product (network "direct", commission_rate 0). */
@@ -329,9 +333,11 @@ function buildUserMessage(input: WebSearchInput): string {
     formatAnswers(input.answers, false).replace(/\nZdjęcie: .*$/, ""),
     "",
   ];
-  if (input.kind === "paid") {
+  if (input.kind === "paid" || input.freeProductNames.length > 0) {
     lines.push(
-      "Prezenty, które klient już dostał za darmo (nie powtarzaj ich):",
+      input.kind === "paid"
+        ? "Prezenty, które klient już dostał za darmo (nie powtarzaj ich):"
+        : "Produkty, które już mamy (nie powtarzaj ich, znajdź inne):",
       "<darmowe>",
       ...input.freeProductNames.map((name) => `- ${name.replace(/[<>{}]/g, "")}`),
       "</darmowe>",
@@ -366,11 +372,14 @@ export async function searchWebWithClaude(
   if (domains.length === 0) throw new Error("No active allowed shops");
   const paid = input.kind === "paid";
 
-  const tools: Anthropic.ToolUnion[] = [
+  // max_uses applies to ONE request, and every pause_turn continuation is a new request. So the tools are built
+  // per request from what is left of the run's budget (never below 1: the tools must stay declared because the
+  // earlier turns in the conversation used them), otherwise a run could use several times the limit.
+  const buildTools = (searchesLeft: number, fetchesLeft: number): Anthropic.ToolUnion[] => [
     {
       type: "web_search_20260318",
       name: "web_search",
-      max_uses: input.maxSearches,
+      max_uses: Math.max(1, searchesLeft),
       allowed_domains: domains,
       // Direct calls only (no dynamic filtering through code execution): every use counts
       // against max_uses and every fetch result stays visible for verification.
@@ -380,7 +389,7 @@ export async function searchWebWithClaude(
     {
       type: "web_fetch_20260318",
       name: "web_fetch",
-      max_uses: input.maxFetches,
+      max_uses: Math.max(1, fetchesLeft),
       allowed_domains: domains,
       allowed_callers: ["direct"],
       max_content_tokens: 12_000,
@@ -402,10 +411,17 @@ export async function searchWebWithClaude(
   const usage: UsageEntry = { step, model, inputTokens: 0, outputTokens: 0, webSearches: 0, webFetches: 0 };
   let picks: RawWebPick[] = [];
   let summary: string | null = null;
+  let stopReason: string | null = null;
 
   for (let request = 0; request <= MAX_CONTINUATIONS; request++) {
     const message = await client.messages.create(
-      { model, max_tokens: SEARCH_LIMITS[input.kind].maxTokens, system, tools, messages },
+      {
+        model,
+        max_tokens: input.maxTokens ?? SEARCH_LIMITS[input.kind].maxTokens,
+        system,
+        tools: buildTools(input.maxSearches - (usage.webSearches ?? 0), input.maxFetches - (usage.webFetches ?? 0)),
+        messages,
+      },
       { timeout: REQUEST_TIMEOUT_MS },
     );
 
@@ -416,6 +432,7 @@ export async function searchWebWithClaude(
     usage.webFetches = (usage.webFetches ?? 0) + (message.usage.server_tool_use?.web_fetch_requests ?? 0);
     collectFetchedPages(message.content, fetchedPages);
 
+    stopReason = message.stop_reason ?? null;
     if (message.stop_reason === "pause_turn") {
       messages.push({ role: "assistant", content: message.content as Anthropic.ContentBlockParam[] });
       continue;
@@ -436,7 +453,7 @@ export async function searchWebWithClaude(
     break;
   }
 
-  return { picks, fetchedPages, summary, usage: [usage] };
+  return { picks, fetchedPages, summary, usage: [usage], stopReason };
 }
 
 const dedicationsOutputSchema = z.object({ dedications: dedicationsSchema });
