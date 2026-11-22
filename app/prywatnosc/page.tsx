@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { Fill, LegalPage, OwnerData } from "@/components/legal/legal";
+import { ContactEmail, Fill, LegalPage, OwnerData } from "@/components/legal/legal";
 
 export const metadata: Metadata = { title: "Polityka prywatności – Prezentoskop" };
 
@@ -14,7 +14,7 @@ export default function PrivacyPolicyPage() {
         <p>Administratorem danych osobowych użytkowników serwisu Prezentoskop jest:</p>
         <OwnerData />
         <p>
-          W sprawach danych osobowych możesz pisać na adres <Fill>[E-MAIL]</Fill>.
+          W sprawach danych osobowych możesz pisać na adres <ContactEmail />.
         </p>
       </section>
 
@@ -91,6 +91,12 @@ export default function PrivacyPolicyPage() {
             ani e-maila. Przechowujemy je przez <Fill>[OKRES, np. 12 miesięcy]</Fill>.
           </li>
           <li>
+            <strong>Formularz kontaktowy</strong> (adres e-mail, opcjonalnie imię i treść wiadomości): żeby odpowiedzieć
+            na pytanie lub zgłoszenie. Wiadomość trafia na naszą skrzynkę e-mail i nie jest zapisywana w bazie serwisu.
+            Podstawa: nasz prawnie uzasadniony interes w obsłudze zapytań (art. 6 ust. 1 lit. f RODO), a przy
+            reklamacjach wykonanie umowy. Przechowujemy ją przez <Fill>[OKRES, np. 12 miesięcy po zakończeniu korespondencji]</Fill>.
+          </li>
+          <li>
             <strong>Pamięć wyników</strong>: skrót (hash) Twoich odpowiedzi z quizu (także opisu osoby), policzony z tajną solą. Nie zawiera
             zdjęcia (przy zdjęciu do skrótu trafiają tylko tagi z profilu stylu) i nie da się z niego odczytać
             odpowiedzi. Dzięki niemu ten sam quiz w ciągu 24 godzin dostaje gotowe, sprawdzone produkty bez nowego
@@ -146,7 +152,7 @@ export default function PrivacyPolicyPage() {
             <strong>Analityczne (PostHog)</strong>: <strong>tylko po Twojej zgodzie</strong> wyrażonej w banerze. Bez
             zgody skrypt PostHog w ogóle się nie ładuje. Zbieramy odsłony stron (bez parametrów z adresu), bez nagrań
             sesji i bez automatycznego zbierania kliknięć i treści formularzy. Dane trafiają na serwery PostHog w{" "}
-            <Fill>[UE – sprawdź region projektu PostHog]</Fill>.
+            Unii Europejskiej (PostHog Cloud EU).
           </li>
           <li>
             Zgodę możesz w każdej chwili zmienić w stopce strony („Ustawienia cookies”). Wycofanie zgody nie wpływa na
@@ -161,9 +167,9 @@ export default function PrivacyPolicyPage() {
         <ul>
           <li>Anthropic (analiza AI: profil stylu, dobór prezentów, wyszukiwanie w sklepach, dedykacje),</li>
           <li>
-            Supabase (baza danych i funkcja brzegowa uruchamiająca wyszukiwanie, region: <Fill>[REGION, np. UE – Frankfurt]</Fill>),
+            Supabase (baza danych i funkcja brzegowa uruchamiająca wyszukiwanie, region: UE – Irlandia),
           </li>
-          <li>Vercel (hosting strony),</li>
+          <li>Netlify (hosting strony),</li>
           <li>Stripe (płatności i zwroty),</li>
           <li>Resend (wysyłka e-maili),</li>
           <li>Cloudflare (ochrona przed botami – Turnstile),</li>
@@ -181,7 +187,7 @@ export default function PrivacyPolicyPage() {
         <p>
           Masz prawo dostępu do danych, ich sprostowania, usunięcia, ograniczenia przetwarzania, przenoszenia danych,
           sprzeciwu wobec przetwarzania opartego na prawnie uzasadnionym interesie oraz wycofania zgody w dowolnym
-          momencie. Napisz na <Fill>[E-MAIL]</Fill>. Masz też prawo złożyć skargę do Prezesa Urzędu Ochrony Danych
+          momencie. Napisz na <ContactEmail />. Masz też prawo złożyć skargę do Prezesa Urzędu Ochrony Danych
           Osobowych (ul. Stawki 2, 00-193 Warszawa).
         </p>
       </section>

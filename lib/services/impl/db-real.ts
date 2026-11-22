@@ -118,7 +118,7 @@ export function createRealRepos(): Repos {
         if (noneOfTags && noneOfTags.length > 0) query = query.not("tags", "ov", pgArray(noneOfTags));
         if (category) query = query.eq("category", category);
         if (excludeIds && excludeIds.length > 0) query = query.not("id", "in", `(${excludeIds.join(",")})`);
-        const { data, error } = await query.order("commission_rate", { ascending: false, nullsFirst: false }).limit(limit);
+        const { data, error } = await query.order("price_pln", { ascending: false }).limit(limit);
         if (error) fail("Candidate query", error);
         return data;
       },

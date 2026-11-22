@@ -61,6 +61,8 @@ about the recipient and can optionally add a photo of them.
 - Mobile-first: vertical layout, large tap targets, fast loading.
 - After every change run typecheck and lint; at the end briefly describe what was done
   and how to test it.
+- The commission never influences which products are picked or in what order (we state this on /jak-zarabiamy):
+  not in the AI prompts, not in candidate ranking, not in replacements. Do not add it back.
 - Do not add libraries outside the stack without asking first.
 - Every external service (AI, payments, database, captcha, email) has an interface in
   `lib/services/<name>.ts` and two implementations in `lib/services/impl/`: a real one and

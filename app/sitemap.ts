@@ -16,6 +16,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly" as const,
       priority: 0.7,
     })),
+    { url: `${SITE_URL}/o-nas`, changeFrequency: "yearly", priority: 0.4 },
+    { url: `${SITE_URL}/jak-zarabiamy`, changeFrequency: "yearly", priority: 0.4 },
+    { url: `${SITE_URL}/kontakt`, changeFrequency: "yearly", priority: 0.4 },
     { url: `${SITE_URL}/regulamin`, changeFrequency: "yearly", priority: 0.2 },
     { url: `${SITE_URL}/prywatnosc`, changeFrequency: "yearly", priority: 0.2 },
   ];

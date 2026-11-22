@@ -11,6 +11,8 @@ export const RATE_LIMITS = {
   redeem: { key: "redeem", limitPerDay: 40 },
   quizStart: { key: "quiz_start", limitPerDay: 40 },
   subscribe: { key: "subscribe", limitPerDay: 5 },
+  /** Contact form messages per IP. */
+  contact: { key: "contact", limitPerDay: 5 },
   /** Confirmation emails to one address, so nobody can flood someone else's inbox. */
   subscribeEmail: { key: "subscribe_email", limitPerDay: 2 },
   adminLogin: { key: "admin_login", limitPerDay: 10 },

@@ -1,8 +1,19 @@
 import type { ReactNode } from "react";
 
+import { CONTACT_EMAIL } from "@/lib/site";
+
 /** Highlighted placeholder for the owner's data or a decision to make. */
 export function Fill({ children }: { children: ReactNode }) {
   return <mark className="rounded bg-yellow-200 px-1 font-semibold text-black">{children}</mark>;
+}
+
+/** The public contact address as a mailto link. */
+export function ContactEmail() {
+  return (
+    <a href={`mailto:${CONTACT_EMAIL}`} className="underline underline-offset-4">
+      {CONTACT_EMAIL}
+    </a>
+  );
 }
 
 export function DraftNotice() {
@@ -32,16 +43,16 @@ export function OwnerData() {
   return (
     <ul>
       <li>
-        Imię i nazwisko / firma: <Fill>[IMIĘ I NAZWISKO / NAZWA FIRMY]</Fill>
+        Imię i nazwisko / firma: Michał <Fill>[NAZWISKO albo nazwa firmy]</Fill>
       </li>
       <li>
-        Adres: <Fill>[ADRES]</Fill>
+        Adres: <Fill>[ULICA I NUMER, KOD POCZTOWY]</Fill> Opole
       </li>
       <li>
         NIP / REGON (jeśli działalność): <Fill>[NIP / REGON albo usuń, jeśli działalność nierejestrowana]</Fill>
       </li>
       <li>
-        E-mail kontaktowy: <Fill>[E-MAIL]</Fill>
+        E-mail kontaktowy: <ContactEmail />
       </li>
     </ul>
   );

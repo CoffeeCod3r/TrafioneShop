@@ -107,8 +107,8 @@ function withData<T>(fn: (data: DemoData) => T, options: { write: boolean }): Pr
 const read = <T>(fn: (data: DemoData) => T) => withData(fn, { write: false });
 const write = <T>(fn: (data: DemoData) => T) => withData(fn, { write: true });
 
-function byCommissionDesc(a: ProductRow, b: ProductRow): number {
-  return (b.commission_rate ?? -1) - (a.commission_rate ?? -1);
+function byPriceDesc(a: ProductRow, b: ProductRow): number {
+  return b.price_pln - a.price_pln;
 }
 
 export function createDemoRepos(): Repos {
@@ -185,7 +185,7 @@ export function createDemoRepos(): Repos {
                 (!category || p.category === category) &&
                 !excludeIds?.includes(p.id),
             )
-            .sort(byCommissionDesc)
+            .sort(byPriceDesc)
             .slice(0, limit),
         ),
       saveDirect: (rows) =>

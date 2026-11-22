@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { Fill, LegalPage, OwnerData } from "@/components/legal/legal";
+import { ContactEmail, Fill, LegalPage, OwnerData } from "@/components/legal/legal";
 
 export const metadata: Metadata = { title: "Regulamin – Prezentoskop" };
 
@@ -14,7 +14,7 @@ export default function TermsPage() {
         <p>Serwis Prezentoskop, dostępny pod adresem <strong>https://prezentoskop.pl</strong>, prowadzi:</p>
         <OwnerData />
         <p>
-          Kontakt w każdej sprawie, w tym reklamacje: <Fill>[E-MAIL]</Fill>.
+          Kontakt w każdej sprawie, w tym reklamacje: <ContactEmail />.
         </p>
       </section>
 
@@ -138,7 +138,7 @@ export default function TermsPage() {
         <h2>§ 7. Reklamacje</h2>
         <ul>
           <li>
-            Jeśli usługa nie działa tak, jak opisano, napisz na <Fill>[E-MAIL]</Fill>. Podaj adres wyniku (link) lub kod
+            Jeśli usługa nie działa tak, jak opisano, napisz na <ContactEmail />. Podaj adres wyniku (link) lub kod
             z karty wyniku oraz opis problemu.
           </li>
           <li>Odpowiemy w ciągu 14 dni od otrzymania reklamacji.</li>

@@ -143,7 +143,7 @@ function toCard(product: ProductRow, reason: string, replaces: string | null = n
 
 /**
  * Same-category, in-stock replacement within the result's budget, not already on the list.
- * Prefers products sharing more tags with the result, then higher commission.
+ * Prefers products sharing more tags with the result, then the higher price. The commission never decides.
  */
 async function findReplacement(
   original: ProductRow,
@@ -161,7 +161,7 @@ async function findReplacement(
   const score = (product: ProductRow) => product.tags.filter((tag) => context.tags.includes(tag)).length;
   return (
     candidates.sort(
-      (a, b) => score(b) - score(a) || (b.commission_rate ?? -1) - (a.commission_rate ?? -1),
+      (a, b) => score(b) - score(a) || b.price_pln - a.price_pln,
     )[0] ?? null
   );
 }

@@ -17,7 +17,7 @@ export type Candidate = Pick<
 
 type CandidateRow = Omit<Candidate, "sharedTags">;
 
-/** Sorts by number of shared tags, then commission_rate (desc, nulls last), then price (desc). */
+/** Sorts by number of shared tags, then price (desc). The commission never influences the order. */
 export function rankCandidates(rows: CandidateRow[], tags: readonly AllowedTag[], avoid: readonly AllowedTag[]): Candidate[] {
   const wanted = new Set<string>(tags);
   const avoided = new Set<string>(avoid);
@@ -27,7 +27,6 @@ export function rankCandidates(rows: CandidateRow[], tags: readonly AllowedTag[]
     .sort(
       (a, b) =>
         b.sharedTags.length - a.sharedTags.length ||
-        (b.commission_rate ?? -1) - (a.commission_rate ?? -1) ||
         b.price_pln - a.price_pln,
     );
 }

@@ -41,7 +41,7 @@ export type ProductsRepo = {
   upsertMany(rows: ProductUpsert[]): Promise<void>;
   listInStockExternalIds(network: string): Promise<string[]>;
   markOutOfStock(network: string, externalIds: string[]): Promise<void>;
-  /** In-stock products matching the query, ordered by commission_rate desc (nulls last). */
+  /** In-stock products matching the query, highest price first (never ordered by commission; fit is ranked in code). */
   findCandidates(query: ProductCandidateQuery): Promise<ProductRow[]>;
   getByIds(ids: readonly string[]): Promise<ProductRow[]>;
   getById(id: string): Promise<ProductRow | null>;
