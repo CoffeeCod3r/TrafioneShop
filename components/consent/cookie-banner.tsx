@@ -35,18 +35,17 @@ export function CookieBanner() {
       role="dialog"
       aria-modal="false"
       aria-labelledby="cookie-title"
-      className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 p-4 shadow-lg backdrop-blur"
+      className="fixed inset-x-0 bottom-0 z-40 border-t bg-background px-4 pt-4 pb-[calc(72px+env(safe-area-inset-bottom))] shadow-lg sm:pb-4"
     >
       <div className="mx-auto flex max-w-2xl flex-col gap-3">
         <p id="cookie-title" className="flex items-center gap-2 font-semibold">
           <Cookie className="size-5" aria-hidden />
           Pliki cookies
         </p>
-        <p className="text-sm text-muted-foreground">
-          Używamy niezbędnych mechanizmów, żeby strona działała i była chroniona przed botami. Za Twoją zgodą włączymy
-          też analitykę PostHog, która pomaga nam ulepszać serwis. Bez zgody PostHog w ogóle się nie ładuje. Szczegóły w{" "}
+        <p className="text-xs text-muted-foreground">
+          Niezbędne pliki cookies działają zawsze. Analityka PostHog tylko za Twoją zgodą.{" "}
           <Link href="/prywatnosc#cookies" className="underline underline-offset-4">
-            polityce prywatności
+            Szczegóły
           </Link>
           .
         </p>

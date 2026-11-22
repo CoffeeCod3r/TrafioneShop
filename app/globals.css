@@ -118,12 +118,10 @@
   0% {
     rotate: -14deg;
     translate: 0 -28px;
-    opacity: 0;
   }
   45% {
     rotate: 4deg;
     translate: 0 0;
-    opacity: 1;
   }
   70% {
     rotate: -4deg;

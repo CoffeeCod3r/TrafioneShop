@@ -5,7 +5,7 @@ import { GiftStack } from "@/components/illustrations/gift-stack";
 import { HeroTag } from "@/components/illustrations/hero-tag";
 
 const STEPS = [
-  { icon: ListChecks, title: "Odpowiadasz na 6 pytań", text: "Dla kogo, budżet, okazja i czym się interesuje." },
+  { icon: ListChecks, title: "Odpowiadasz na kilka pytań", text: "Dla kogo, budżet, okazja, czym się interesuje i jak ją opisać." },
   { icon: Camera, title: "Dodajesz zdjęcie, jeśli chcesz", text: "AI patrzy tylko na styl, ubrania i przedmioty." },
   { icon: Sparkles, title: "Dostajesz 5 prezentów", text: "Z polskich sklepów, z ceną i krótkim „dlaczego”." },
 ];
@@ -16,7 +16,7 @@ export default function HomePage() {
       <section className="flex flex-col gap-7">
         <HeroTag>
           <h1 className="text-[2rem] font-extrabold leading-[1.05] sm:text-5xl">
-            Wrzuć zdjęcie, odpowiedz na 6 pytań i dostań 5 trafionych prezentów
+            Odpowiedz na kilka pytań i dostań 5 trafionych prezentów
           </h1>
         </HeroTag>
         <p className="max-w-prose text-lg">

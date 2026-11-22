@@ -180,7 +180,7 @@ export function QuizWizard({ demo = false }: QuizWizardProps) {
   const progress = ((step + 1) / SCREEN_COUNT) * 100;
 
   return (
-    <div className="flex flex-1 flex-col pb-28 pt-6">
+    <div className="flex flex-1 flex-col pb-[calc(11rem+env(safe-area-inset-bottom))] pt-6 sm:pb-28">
       {submitting && <AnalyzingOverlay />}
       <div className="mb-6">
         <div className="mb-2 flex justify-between text-sm text-muted-foreground">
@@ -202,8 +202,8 @@ export function QuizWizard({ demo = false }: QuizWizardProps) {
       <div
         key={step}
         className={cn(
-          "animate-in fade-in duration-300",
-          direction === "forward" ? "slide-in-from-right-8" : "slide-in-from-left-8",
+          step > 0 && "animate-in fade-in duration-300",
+          step > 0 && (direction === "forward" ? "slide-in-from-right-8" : "slide-in-from-left-8"),
         )}
       >
       <h1 ref={headingRef} tabIndex={-1} className="mb-6 text-3xl font-bold leading-tight outline-none">
@@ -363,8 +363,8 @@ export function QuizWizard({ demo = false }: QuizWizardProps) {
         </p>
       )}
 
-      <nav className="fixed inset-x-0 bottom-0 border-t bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-2xl gap-3 px-4 py-3">
+      <nav className="fixed inset-x-0 bottom-0 border-t bg-background">
+        <div className="mx-auto flex max-w-2xl gap-3 px-4 pt-3 pb-[calc(72px+env(safe-area-inset-bottom))] sm:pb-3">
           {step > 0 && (
             <Button type="button" variant="outline" size="xl" className="flex-1" onClick={() => goTo(step - 1)}>
               <ArrowLeft aria-hidden />

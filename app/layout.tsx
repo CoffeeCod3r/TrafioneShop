@@ -24,12 +24,29 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
   title: "Prezentoskop – trafione prezenty w 60 sekund",
   description:
-    "Wrzuć zdjęcie, odpowiedz na 6 pytań i dostań 5 trafionych prezentów z polskich sklepów.",
+    "Odpowiedz na kilka pytań o osobie, opcjonalnie dodaj opis lub zdjęcie i dostań 5 trafionych prezentów z polskich sklepów.",
+  openGraph: {
+    type: "website",
+    siteName: "Prezentoskop",
+    locale: "pl_PL",
+    url: "/",
+    title: "Prezentoskop – trafione prezenty w 60 sekund",
+    description:
+      "Odpowiedz na kilka pytań o osobie, opcjonalnie dodaj opis lub zdjęcie i dostań 5 trafionych prezentów z polskich sklepów.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Prezentoskop – trafione prezenty w 60 sekund",
+    description: "Quiz, AI i prawdziwe produkty z polskich sklepów, z ceną sprawdzoną na stronie produktu.",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // Lets env(safe-area-inset-*) work on phones with notches and rounded corners.
+  viewportFit: "cover",
+  themeColor: "#fff6f9",
 };
 
 export default function RootLayout({
