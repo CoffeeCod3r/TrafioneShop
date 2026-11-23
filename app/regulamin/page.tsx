@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { ContactEmail, LegalPage, OwnerData, Review, Val } from "@/components/legal/legal";
 import { LEGAL } from "@/lib/legal-config";
+import { arePaymentsEnabled } from "@/lib/payments-gate";
 
 export const metadata: Metadata = {
   title: "Regulamin – Prezentoskop",
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 /** DRAFT – to be verified by the owner (and ideally a lawyer) before launch. */
 export default function TermsPage() {
   return (
-    <LegalPage title="Regulamin serwisu Prezentoskop" updated="14 listopada 2026 r.">
+    <LegalPage title="Regulamin serwisu Prezentoskop" updated="23 listopada 2026 r.">
       <section>
         <h2>§ 1. Usługodawca i kontakt</h2>
         <p>Serwis Prezentoskop, dostępny pod adresem <strong>https://prezentoskop.pl</strong>, prowadzi:</p>
@@ -91,6 +92,12 @@ export default function TermsPage() {
 
       <section>
         <h2>§ 5. Płatne „Więcej propozycji”</h2>
+        {!arePaymentsEnabled() && (
+          <p className="rounded-xl bg-secondary p-3 text-sm">
+            <strong>Ta opcja jest w przygotowaniu</strong> (na stronie wyników widać „już wkrótce”). Poniższe zasady
+            obowiązują od uruchomienia sprzedaży.
+          </p>
+        )}
         <ul>
           <li>
             To usługa cyfrowa. Obejmuje: przeszukanie przez AI zaufanych polskich sklepów w całym internecie,

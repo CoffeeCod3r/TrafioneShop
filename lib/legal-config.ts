@@ -4,36 +4,32 @@
  * "SZKIC DO WERYFIKACJI" banner stays. When everything is filled and `lawyerReviewed` is true, both disappear.
  */
 export const LEGAL: {
-  /** Full name or company name, e.g. "Michał Kowalski" (required: networks and the law want to see who runs the site). */
   ownerName: string | null;
-  /** Street, number, postal code and city, e.g. "ul. Przykładowa 1, 45-000 Opole". */
   address: string | null;
-  /** "NIP 1234567890, REGON 123456789"; use "" when the activity is not registered (the line is then left out). */
   taxId: string | null;
-  /** Minimum age to use the site (digital consent age in Poland is 16). */
   minAge: number | null;
-  /** Working days a bank may need to book a refund, e.g. 10. */
   refundDays: number | null;
-  /** Retention periods, as text: e.g. "12 miesięcy". */
   retentionResults: string | null;
   retentionContact: string | null;
   retentionClicks: string | null;
   retentionPayments: string | null;
-  /** Legal basis of transfers outside the EEA, e.g. "decyzji Komisji Europejskiej (EU-US Data Privacy Framework) oraz standardowych klauzul umownych". */
   transferBasis: string | null;
-  /** Set to true only after a lawyer has checked both documents (refund from the pack, right of withdrawal). */
   lawyerReviewed: boolean;
 } = {
-  ownerName: null,
-  address: null,
-  taxId: null,
-  minAge: null,
-  refundDays: null,
-  retentionResults: null,
-  retentionContact: null,
-  retentionClicks: null,
-  retentionPayments: null,
-  transferBasis: null,
+  ownerName: "Michał Stępczyński",
+  // Adres do korespondencji (wirtualne biuro)
+  address: "al. Solidarności 68/121, 00-240 Warszawa",
+  // Działalność nierejestrowana: pusty tekst, linia z NIP/REGON nie wyświetla się
+  taxId: "",
+  minAge: 16,
+  refundDays: 10,
+  retentionResults: "12 miesięcy",
+  retentionContact: "12 miesięcy",
+  retentionClicks: "12 miesięcy",
+  retentionPayments: "5 lat od końca roku podatkowego, w którym nastąpiła płatność",
+  transferBasis:
+    "decyzji Komisji Europejskiej (EU-US Data Privacy Framework) oraz standardowych klauzul umownych zatwierdzonych przez Komisję Europejską",
+  // Nie zmieniaj na true bez sprawdzenia dokumentów przez prawnika
   lawyerReviewed: false,
 };
 

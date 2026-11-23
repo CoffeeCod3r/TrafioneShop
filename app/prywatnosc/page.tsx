@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 /** DRAFT – to be verified by the owner (and ideally a lawyer) before launch. */
 export default function PrivacyPolicyPage() {
   return (
-    <LegalPage title="Polityka prywatności" updated="14 listopada 2026 r.">
+    <LegalPage title="Polityka prywatności" updated="23 listopada 2026 r.">
       <section>
         <h2>1. Kto jest administratorem danych</h2>
         <p>Administratorem danych osobowych użytkowników serwisu Prezentoskop jest:</p>

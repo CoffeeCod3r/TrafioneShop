@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <InfoPage title="O nas" lead="Cześć, jestem Michał z Opola i prowadzę Prezentoskop.">
+    <InfoPage title="O nas" lead="Cześć, jestem Michał i prowadzę Prezentoskop.">
       <section className="flex flex-col gap-3">
         <h2>Po co powstał Prezentoskop</h2>
         <p>
