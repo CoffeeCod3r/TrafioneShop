@@ -15,6 +15,8 @@ export const LEGAL: {
   retentionPayments: string | null;
   transferBasis: string | null;
   lawyerReviewed: boolean;
+  /** Hides the yellow "SZKIC" banner and the yellow "do weryfikacji" markers without claiming a lawyer checked the text. */
+  hideDraftMarkers: boolean;
 } = {
   ownerName: "Michał Stępczyński",
   // Adres do korespondencji (wirtualne biuro)
@@ -31,10 +33,13 @@ export const LEGAL: {
     "decyzji Komisji Europejskiej (EU-US Data Privacy Framework) oraz standardowych klauzul umownych zatwierdzonych przez Komisję Europejską",
   // Nie zmieniaj na true bez sprawdzenia dokumentów przez prawnika
   lawyerReviewed: false,
+  // Właściciel zdecydował o publikacji bez banera szkicu (23-24 listopada 2026). Ustaw false, by pokazać baner i żółte znaczniki.
+  hideDraftMarkers: true,
 };
 
 /** True when nothing is left to fill in, so the draft banner can go. */
 export function isLegalComplete(): boolean {
-  const { lawyerReviewed, ...fields } = LEGAL;
+  const { lawyerReviewed, hideDraftMarkers, ...fields } = LEGAL;
+  if (hideDraftMarkers) return true;
   return lawyerReviewed && Object.values(fields).every((value) => value !== null);
 }

@@ -15,7 +15,7 @@ export function Val({ v, ph }: { v: string | number | null; ph: string }) {
 
 /** A text that a lawyer still has to confirm: highlighted until `lawyerReviewed` is set. */
 export function Review({ children }: { children: ReactNode }) {
-  return LEGAL.lawyerReviewed ? null : <Fill>[{children}]</Fill>;
+  return LEGAL.lawyerReviewed || LEGAL.hideDraftMarkers ? null : <Fill>[{children}]</Fill>;
 }
 
 /** The public contact address as a mailto link. */
