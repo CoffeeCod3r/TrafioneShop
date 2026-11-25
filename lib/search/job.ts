@@ -4,7 +4,7 @@ import type { FreeSource, PurchaseRow } from "@/lib/db";
 import { getEnv, getServiceEnv } from "@/lib/env";
 import { describeError, logEvent } from "@/lib/log";
 import { isMockMode } from "@/lib/mode";
-import { PICKS_COUNT, selectCandidates } from "@/lib/picks/candidates";
+import { PICKS_COUNT, quizFit, selectCandidates } from "@/lib/picks/candidates";
 import { quizAnswersSchema } from "@/lib/quiz/schema";
 import {
   runSearchJob,
@@ -140,7 +140,7 @@ export async function completeFreeFromCatalog(resultId: string, source: FreeSour
 
   if (answers.success && kept.length < PICKS_COUNT) {
     const profile = { styleProfile: result.style_profile ?? "", tags: result.tags.filter(isAllowedTag), avoid: result.avoid.filter(isAllowedTag) };
-    const { candidates } = await selectCandidates({ budget: answers.data.budget, tags: profile.tags, avoid: profile.avoid });
+    const { candidates } = await selectCandidates({ budget: answers.data.budget, tags: profile.tags, avoid: profile.avoid, fit: quizFit(answers.data) });
     const fresh = candidates.filter((candidate) => !kept.includes(candidate.id));
     const picks = fallbackPicks(fresh, profile).slice(0, PICKS_COUNT - kept.length);
     productIds = [...kept, ...picks.map((pick) => pick.productId)];

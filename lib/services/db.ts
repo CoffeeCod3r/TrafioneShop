@@ -31,6 +31,8 @@ export type ProductCandidateQuery = {
   anyOfTags?: readonly string[];
   /** Products with any of these tags are excluded. */
   noneOfTags?: readonly string[];
+  /** Quiz recipient code: products for other recipients are left out (an empty list fits everyone). */
+  recipient?: string;
   /** Exact category match (used for out-of-stock replacements). */
   category?: string;
   /** Product IDs to leave out. */
