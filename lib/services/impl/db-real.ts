@@ -1,4 +1,6 @@
-import type { CatalogCheckRunRow, ProductRow } from "../../db.ts";
+import type { CatalogCheckRunRow, CatalogRunRow, PoolCoverageRow, ProductRow } from "../../db.ts";
+import { poolCutoffIso } from "../../catalog/pool.ts";
+import type { VerifyProduct } from "../../catalog/verify.ts";
 import type { Repos } from "../db.ts";
 import { getSupabase } from "./supabase.ts";
 
@@ -82,6 +84,77 @@ export function createRealRepos(): Repos {
         if (unavailable.error) fail("Counting products", unavailable.error);
         return { available: available.count ?? 0, unavailable: unavailable.count ?? 0 };
       },
+      async listForVerify({ onlyStale, staleBeforeIso, ids }) {
+        const columns = "id, name, url, affiliate_url, network, price_pln, status, fail_count, source";
+        const rows = await fetchAll<VerifyProduct>((from, to) => {
+          let query = db().from("products").select(columns).neq("network", "demo");
+          if (ids) query = query.in("id", ids);
+          if (onlyStale) query = query.or(`last_check_at.is.null,last_check_at.lt.${staleBeforeIso},fail_count.gt.0`);
+          return query.order("last_check_at", { ascending: true, nullsFirst: true }).order("id").range(from, to);
+        }, "Loading products to verify");
+        return rows;
+      },
+      async applyVerification(productId, patch, history) {
+        const { fail_count, last_checked_at, ...rest } = patch;
+        const { error } = await db()
+          .from("products")
+          .update({
+            ...rest,
+            fail_count,
+            failed_checks: fail_count,
+            ...(last_checked_at ? { last_checked_at, checked_at: last_checked_at } : {}),
+          })
+          .eq("id", productId);
+        if (error) fail("Saving product verification", error);
+        if (history) {
+          const { error: historyError } = await db().from("price_history").insert({ product_id: productId, ...history });
+          if (historyError) fail("Saving price history", historyError);
+        }
+      },
+      async recentDemand(since) {
+        return fetchAll<{ recipient: string | null; budget_pln: number | null; tags: string[] }>(
+          (from, to) => db().from("results").select("recipient, budget_pln, tags").gte("created_at", since).order("created_at").range(from, to),
+          "Loading recent demand",
+        );
+      },
+      async createNightlyRun(trigger) {
+        const { data, error } = await db().from("catalog_runs").insert({ trigger }).select("*").single();
+        if (error) fail("Creating catalog run", error);
+        return data as CatalogRunRow;
+      },
+      async updateNightlyRun(id, patch) {
+        const { error } = await db().from("catalog_runs").update(patch).eq("id", id);
+        if (error) fail("Updating catalog run", error);
+      },
+      async latestNightlyRun() {
+        const { data, error } = await db().from("catalog_runs").select("*").order("started_at", { ascending: false }).limit(1);
+        if (error) fail("Loading catalog run", error);
+        return (data[0] as CatalogRunRow | undefined) ?? null;
+      },
+      async poolCoverage() {
+        const rows = await fetchAll<PoolCoverageRow>(
+          (from, to) => db().from("pool_coverage").select("*").order("category").order("price_bucket").order("recipient").range(from, to),
+          "Loading pool coverage",
+        );
+        return rows;
+      },
+      async poolCounts() {
+        const count = async (status: ProductRow["status"], stale = false) => {
+          let query = db().from("products").select("id", { count: "exact", head: true }).eq("status", status);
+          if (stale) query = query.lt("last_checked_at", poolCutoffIso());
+          const { count: total, error } = await query;
+          if (error) fail("Counting pool products", error);
+          return total ?? 0;
+        };
+        const [active, broken, outOfStock, pending, stale] = await Promise.all([
+          count("active"),
+          count("broken"),
+          count("out_of_stock"),
+          count("pending"),
+          count("active", true),
+        ]);
+        return { active, broken, out_of_stock: outOfStock, pending, stale_active: stale };
+      },
     },
 
     guides: {
@@ -131,7 +204,10 @@ export function createRealRepos(): Repos {
         for (let i = 0; i < rows.length; i += UPSERT_CHUNK) {
           const { error } = await db()
             .from("products")
-            .upsert(rows.slice(i, i + UPSERT_CHUNK), { onConflict: "network,external_id" });
+            .upsert(
+              rows.slice(i, i + UPSERT_CHUNK).map((row) => ({ ...row, source: "feed" as const })),
+              { onConflict: "network,external_id" },
+            );
           if (error) fail("Product upsert", error);
         }
       },
@@ -165,6 +241,9 @@ export function createRealRepos(): Repos {
           .from("products")
           .select("*")
           .eq("in_stock", true)
+          // The pool: only products verified by the nightly job less than 7 days ago.
+          .eq("status", "active")
+          .gte("last_checked_at", poolCutoffIso())
           .gte("price_pln", minPrice)
           .lte("price_pln", maxPrice);
         if (anyOfTags && anyOfTags.length > 0) query = query.overlaps("tags", [...anyOfTags]);
@@ -175,6 +254,31 @@ export function createRealRepos(): Repos {
         const { data, error } = await query.order("price_pln", { ascending: false }).limit(limit);
         if (error) fail("Candidate query", error);
         return data;
+      },
+      async savePool(rows) {
+        if (rows.length === 0) return [];
+        const { data, error } = await db()
+          .from("products")
+          .upsert(
+            rows.map((row) => ({
+              ...row,
+              network: "direct",
+              description: null,
+              image_url: null,
+              commission_rate: 0,
+              in_stock: false,
+              status: "pending" as const,
+              source: "catalog_build" as const,
+            })),
+            { onConflict: "network,external_id", ignoreDuplicates: true },
+          )
+          .select("*");
+        if (error) fail("Saving pool products", error);
+        return data;
+      },
+      async setTags(id, tags) {
+        const { error } = await db().from("products").update({ tags }).eq("id", id);
+        if (error) fail("Saving tags", error);
       },
       async getByIds(ids) {
         if (ids.length === 0) return [];
@@ -192,7 +296,19 @@ export function createRealRepos(): Repos {
         const { data, error } = await db()
           .from("products")
           .upsert(
-            rows.map((row) => ({ ...row, network: "direct", commission_rate: 0, in_stock: true })),
+            rows.map((row) => ({
+              ...row,
+              network: "direct",
+              commission_rate: 0,
+              in_stock: true,
+              // The web search opened the page and verified it just now.
+              status: "active" as const,
+              last_checked_at: row.checked_at,
+              last_check_at: row.checked_at,
+              price_checked: row.price_pln,
+              fail_count: 0,
+              source: "catalog_build" as const,
+            })),
             { onConflict: "network,external_id" },
           )
           .select("*");

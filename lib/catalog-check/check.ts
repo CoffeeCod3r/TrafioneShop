@@ -40,7 +40,7 @@ export type CheckOutcome =
   | { kind: "unverified"; reason: "no_structured_data" | "other_status" | "currency" | "redirect_off_site" };
 
 /** Reads the body as text, stopping after maxBytes. */
-async function readCapped(response: Response, maxBytes: number): Promise<string> {
+export async function readCapped(response: Response, maxBytes: number): Promise<string> {
   if (!response.body) return "";
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];

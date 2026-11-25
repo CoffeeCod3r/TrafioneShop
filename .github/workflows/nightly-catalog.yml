@@ -1,0 +1,57 @@
+# Nightly upkeep of the product pool (npm run catalog:nightly): verifies stale products (no AI), finds thin cells of the
+# pool coverage grid and tops them up with a few targeted AI searches under a hard cost limit, then writes the
+# report to the catalog_runs table (shown in /admin, tile "Pula").
+#
+# Runs at 02:00 UTC (about 03:00-04:00 in Poland) and by hand: GitHub mobile app -> Actions -> "Nightly catalog" -> Run workflow
+# (tick "dry_run" to see what it would do without writing, without AI and without opening shop pages).
+#
+# Repository secrets (Settings -> Secrets and variables -> Actions): never in code or logs.
+#   SUPABASE_URL                 project URL, https://xxxx.supabase.co
+#   SUPABASE_SERVICE_ROLE_KEY    service_role key (this job only; it bypasses RLS)
+#   ANTHROPIC_API_KEY            needed for the AI top-up; without it the job still verifies and reports
+# Optional repository variables: CATALOG_AI_PROVIDER (anthropic | demo, default anthropic), NIGHTLY_AI_BUDGET_USD (default 0.30).
+# A GEMINI_API_KEY secret is NOT used yet: there is no Gemini provider in lib/catalog/provider.ts.
+#
+# The job turns red when the script fails; it never deletes data (a broken product just gets status 'broken').
+name: Nightly catalog
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: show what would be done (no writes, no AI, no shop pages)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-catalog
+  cancel-in-progress: false
+
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run the nightly job
+        run: npm run catalog:nightly
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CATALOG_AI_PROVIDER: ${{ vars.CATALOG_AI_PROVIDER || 'anthropic' }}
+          NIGHTLY_AI_BUDGET_USD: ${{ vars.NIGHTLY_AI_BUDGET_USD || '0.30' }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+          # The script writes to the real database; MOCK_MODE only affects the app, not this job (same as refresh-guides).
+          MOCK_MODE: "true"
+          REAL_DB: "true"

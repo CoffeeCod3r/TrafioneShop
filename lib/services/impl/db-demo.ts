@@ -8,6 +8,7 @@ import type {
   AiUsageRow,
   AllowedShopRow,
   CatalogCheckRunRow,
+  CatalogRunRow,
   ClickRow,
   GuideProductRow,
   PriceHistoryRow,
@@ -18,6 +19,7 @@ import type {
   ResultRow,
   SubscriberRow,
 } from "../../db.ts";
+import { computeCoverage, isPoolFresh, POOL_MIN_PER_CELL } from "../../catalog/pool.ts";
 import type { Repos } from "../db.ts";
 
 /**
@@ -38,6 +40,7 @@ type DemoData = {
   quiz_starts: QuizStartRow[];
   guide_products: GuideProductRow[];
   catalog_check_runs: CatalogCheckRunRow[];
+  catalog_runs: CatalogRunRow[];
   price_history: PriceHistoryRow[];
 };
 
@@ -60,6 +63,7 @@ function emptyData(): DemoData {
     quiz_starts: [],
     guide_products: [],
     catalog_check_runs: [],
+    catalog_runs: [],
     price_history: [],
   };
 }
@@ -115,6 +119,15 @@ const write = <T>(fn: (data: DemoData) => T) => withData(fn, { write: true });
 
 function byPriceDesc(a: ProductRow, b: ProductRow): number {
   return b.price_pln - a.price_pln;
+}
+
+/**
+ * Demo products have no shop page to verify, and a demo database file created before the pool existed has no status:
+ * both count as fresh. Everything else follows the real rule (active and verified in the last 7 days).
+ */
+function demoPoolFresh(product: ProductRow): boolean {
+  if (product.network === "demo" || product.status === undefined) return true;
+  return isPoolFresh(product);
 }
 
 export function createDemoRepos(): Repos {
@@ -182,6 +195,94 @@ export function createDemoRepos(): Repos {
           available: data.products.filter((product) => product.in_stock).length,
           unavailable: data.products.filter((product) => !product.in_stock).length,
         })),
+      listForVerify: ({ onlyStale, staleBeforeIso, ids }) =>
+        read((data) =>
+          data.products
+            .filter(
+              (p) =>
+                p.network !== "demo" &&
+                (!ids || ids.includes(p.id)) &&
+                (!onlyStale || !p.last_check_at || p.last_check_at < staleBeforeIso || (p.fail_count ?? 0) > 0),
+            )
+            .sort((a, b) => (a.last_check_at ?? "").localeCompare(b.last_check_at ?? "") || a.id.localeCompare(b.id))
+            .map((p) => ({
+              id: p.id,
+              name: p.name,
+              url: p.url,
+              affiliate_url: p.affiliate_url,
+              network: p.network,
+              price_pln: p.price_pln,
+              status: p.status ?? (p.in_stock ? "active" : "out_of_stock"),
+              fail_count: p.fail_count ?? 0,
+              source: p.source ?? "manual",
+            })),
+        ),
+      applyVerification: (productId, patch, history) =>
+        write((data) => {
+          const product = data.products.find((p) => p.id === productId);
+          if (!product) throw new Error("Saving product verification failed (not found)");
+          const { last_checked_at, ...rest } = patch;
+          Object.assign(product, rest, { failed_checks: patch.fail_count, updated_at: now() });
+          if (last_checked_at) Object.assign(product, { last_checked_at, checked_at: last_checked_at });
+          // The database trigger does this in the real implementation.
+          if (patch.status) product.in_stock = patch.status === "active";
+          if (history) data.price_history.push({ id: randomUUID(), product_id: productId, ...history, checked_at: now() });
+        }),
+      recentDemand: (since) =>
+        read((data) =>
+          data.results
+            .filter((result) => result.created_at >= since)
+            .map((result) => ({ recipient: result.recipient, budget_pln: result.budget_pln, tags: result.tags })),
+        ),
+      createNightlyRun: (trigger) =>
+        write((data) => {
+          const run: CatalogRunRow = {
+            id: randomUUID(),
+            started_at: now(),
+            finished_at: null,
+            trigger,
+            status: "running",
+            checked: 0,
+            active: 0,
+            broken: 0,
+            out_of_stock: 0,
+            price_changes: 0,
+            unverifiable: 0,
+            added: 0,
+            cells_below_threshold: 0,
+            cells_targeted: [],
+            ai_calls: 0,
+            ai_cost_usd: 0,
+            duration_ms: null,
+            notes: {},
+          };
+          data.catalog_runs ??= [];
+          data.catalog_runs.push(run);
+          return run;
+        }),
+      updateNightlyRun: (id, patch) =>
+        write((data) => {
+          const run = (data.catalog_runs ?? []).find((item) => item.id === id);
+          if (!run) throw new Error("Updating catalog run failed (not found)");
+          Object.assign(run, patch);
+        }),
+      latestNightlyRun: () =>
+        read((data) => [...(data.catalog_runs ?? [])].sort((a, b) => b.started_at.localeCompare(a.started_at))[0] ?? null),
+      poolCoverage: () =>
+        read((data) =>
+          computeCoverage(data.products).map((cell) => ({ ...cell, threshold: POOL_MIN_PER_CELL, below_threshold: cell.active_count < POOL_MIN_PER_CELL })),
+        ),
+      poolCounts: () =>
+        read((data) => {
+          const count = (status: string) => data.products.filter((product) => (product.status ?? (product.in_stock ? "active" : "out_of_stock")) === status).length;
+          return {
+            active: count("active"),
+            broken: count("broken"),
+            out_of_stock: count("out_of_stock"),
+            pending: count("pending"),
+            stale_active: data.products.filter((product) => product.status === "active" && !isPoolFresh(product)).length,
+          };
+        }),
     },
     guides: {
       listProducts: (slug) =>
@@ -228,7 +329,12 @@ export function createDemoRepos(): Repos {
                 failed_checks: 0,
                 last_check_at: null,
                 last_check_result: null,
+                status: "pending",
+                last_checked_at: null,
+                fail_count: 0,
+                price_checked: null,
                 ...row,
+                source: "feed",
                 updated_at: now(),
               });
           }
@@ -241,6 +347,7 @@ export function createDemoRepos(): Repos {
           for (const product of data.products) {
             if (product.network === network && ids.has(product.external_id)) {
               product.in_stock = false;
+              if (product.status === "active" || product.status === "pending") product.status = "out_of_stock";
               product.updated_at = now();
             }
           }
@@ -251,6 +358,7 @@ export function createDemoRepos(): Repos {
             .filter(
               (p) =>
                 p.in_stock &&
+                demoPoolFresh(p) &&
                 p.price_pln >= minPrice &&
                 p.price_pln <= maxPrice &&
                 (!anyOfTags?.length || p.tags.some((tag) => anyOfTags.includes(tag))) &&
@@ -268,25 +376,74 @@ export function createDemoRepos(): Repos {
           for (const row of rows) {
             const existing = data.products.find((p) => p.network === "direct" && p.external_id === row.external_id);
             if (existing) {
-              Object.assign(existing, row, { commission_rate: 0, in_stock: true, updated_at: now() });
+              Object.assign(existing, row, {
+                commission_rate: 0,
+                in_stock: true,
+                status: "active",
+                last_checked_at: row.checked_at,
+                last_check_at: row.checked_at,
+                price_checked: row.price_pln,
+                fail_count: 0,
+                source: "catalog_build",
+                updated_at: now(),
+              });
               saved.push(existing);
               continue;
             }
             const product: ProductRow = {
               id: randomUUID(),
               failed_checks: 0,
-              last_check_at: null,
               last_check_result: null,
               ...row,
               network: "direct",
               commission_rate: 0,
               in_stock: true,
+              status: "active",
+              last_checked_at: row.checked_at,
+              last_check_at: row.checked_at,
+              price_checked: row.price_pln,
+              fail_count: 0,
+              source: "catalog_build",
               updated_at: now(),
             };
             data.products.push(product);
             saved.push(product);
           }
           return saved;
+        }),
+      savePool: (rows) =>
+        write((data) => {
+          const saved: ProductRow[] = [];
+          for (const row of rows) {
+            if (data.products.some((p) => p.network === "direct" && p.external_id === row.external_id)) continue;
+            const product: ProductRow = {
+              id: randomUUID(),
+              description: null,
+              image_url: null,
+              commission_rate: 0,
+              failed_checks: 0,
+              last_check_at: null,
+              last_check_result: null,
+              checked_at: null,
+              ...row,
+              network: "direct",
+              in_stock: false,
+              status: "pending",
+              last_checked_at: null,
+              fail_count: 0,
+              price_checked: null,
+              source: "catalog_build",
+              updated_at: now(),
+            };
+            data.products.push(product);
+            saved.push(product);
+          }
+          return saved;
+        }),
+      setTags: (id, tags) =>
+        write((data) => {
+          const product = data.products.find((p) => p.id === id);
+          if (product) product.tags = tags;
         }),
       getByIds: (ids) => read((data) => data.products.filter((p) => ids.includes(p.id))),
       getById: (id) => read((data) => data.products.find((p) => p.id === id) ?? null),

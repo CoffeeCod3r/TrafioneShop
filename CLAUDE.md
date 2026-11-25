@@ -41,6 +41,16 @@ about the recipient and can optionally add a photo of them.
   writes to `ai_usage`): polite (own User-Agent, robots.txt, 1 request/s per domain, 20 min cap, cursor resume).
   Manual run: `npm run catalog:check` or the button in /admin ("Zdrowie katalogu"). Tests: `npm run test:catalog`,
   `npm run test:cards`. After changing shared files run `npm run edge:deploy`.
+- Product pool (`lib/catalog/*`, migrations `20261129*`): the catalog path of free results (`findCandidates`) takes only
+  `products.status='active'` verified (`last_checked_at`) less than 7 days ago; `in_stock` follows `status` (DB trigger).
+  View `pool_coverage` = active products per category × price range (do 50 / 50–100 / 100–200 / 200+) × recipient,
+  healthy at ≥ 8 per cell. `catalog:verify` (`--limit N`, `--only-stale`) checks links/prices/availability with plain HTTP,
+  ZERO AI, never opens affiliate links (target shop address only), 5 parallel, 1 request/s per domain, robots.txt.
+  `catalog:nightly` (GitHub Actions `nightly-catalog.yml`, 02:00 UTC): verify stale (max 400) → up to 10 thin cells →
+  `catalog:build` (provider `CATALOG_AI_PROVIDER`, web_search max 2, no web_fetch, proposals saved as `pending`) →
+  verify the new ones → `catalog:tag` → report in `catalog_runs` (tile "Pula" in /admin). Hard AI limit
+  `NIGHTLY_AI_BUDGET_USD` (default 0.30). `--dry-run` writes nothing and calls no AI. Tests: `npm run test:pool`,
+  `test:verify`, `test:nightly`. The service-role key is only for these scripts and the server, never in client code.
 
 ## Stack
 - Next.js (App Router) + TypeScript + Tailwind + shadcn/ui

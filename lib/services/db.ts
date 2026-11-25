@@ -8,6 +8,8 @@ import type {
   AiUsageRow,
   AllowedShopRow,
   CatalogCheckRunRow,
+  CatalogRunRow,
+  PoolCoverageRow,
   ClickRow,
   GuideProductRow,
   Insert,
@@ -18,6 +20,7 @@ import type {
   SubscriberRow,
   Update,
 } from "../db.ts";
+import type { VerifyPatch, VerifyProduct } from "../catalog/verify.ts";
 import type { ProductUpsert } from "../feeds/normalize.ts";
 import type { DirectProductRow } from "../search/core.ts";
 import { isRealService } from "../mode.ts";
@@ -53,7 +56,19 @@ export type ProductsRepo = {
    * address: the same address updates price, check time and stock instead of creating a duplicate.
    */
   saveDirect(rows: DirectProductInput[]): Promise<ProductRow[]>;
+  /**
+   * New products proposed by the nightly top-up: network "direct", commission_rate 0, status `pending` (not shown until
+   * verified), source `catalog_build`. An address already in the table is left untouched. Returns only the new rows.
+   */
+  savePool(rows: PoolProductInput[]): Promise<ProductRow[]>;
+  /** Tags set by `catalog:tag`. */
+  setTags(id: string, tags: string[]): Promise<void>;
 };
+
+export type PoolProductInput = Pick<
+  ProductRow,
+  "merchant" | "external_id" | "name" | "price_pln" | "category" | "tags" | "affiliate_url" | "url"
+> & { recipients: string[] };
 
 export type DirectProductInput = DirectProductRow;
 
@@ -171,6 +186,22 @@ export type CatalogRepo = {
   recentRuns(limit: number): Promise<CatalogCheckRunRow[]>;
   /** Admin: products in stock and not in stock. */
   countProducts(): Promise<{ available: number; unavailable: number }>;
+  /**
+   * Products the verifier may look at (everything except demo products), the longest-unattempted first (never
+   * attempted first). `onlyStale`: last attempt before `staleBeforeIso`, or a failure on record. `ids`: only these.
+   */
+  listForVerify(options: { onlyStale: boolean; staleBeforeIso: string; ids?: string[] }): Promise<VerifyProduct[]>;
+  /** What people asked for lately: recipient, budget and interest tags of the results created at or after `since`. */
+  recentDemand(since: string): Promise<{ recipient: string | null; budget_pln: number | null; tags: string[] }[]>;
+  createNightlyRun(trigger: CatalogRunRow["trigger"]): Promise<CatalogRunRow>;
+  updateNightlyRun(id: string, patch: Partial<CatalogRunRow>): Promise<void>;
+  latestNightlyRun(): Promise<CatalogRunRow | null>;
+  /** Writes one verification (lib/catalog/verify.ts); `history` is stored when the price moved by more than 20 %. */
+  applyVerification(productId: string, patch: VerifyPatch, history?: { old_price: number; new_price: number }): Promise<void>;
+  /** The product pool: active products verified in the last 7 days per category x price range x recipient (SQL view pool_coverage). */
+  poolCoverage(): Promise<PoolCoverageRow[]>;
+  /** Pool size by status (`stale_active`: active but verified more than 7 days ago, so not shown). */
+  poolCounts(): Promise<{ active: number; broken: number; out_of_stock: number; pending: number; stale_active: number }>;
 };
 
 export type Repos = {
