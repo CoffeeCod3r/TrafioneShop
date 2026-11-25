@@ -154,7 +154,7 @@ export function isDisplayable(product: Pick<ProductRow, "in_stock" | "price_pln"
  */
 async function findReplacement(
   original: ProductRow,
-  context: { budget: number | null; tags: string[]; avoid: string[]; excludeIds: string[] },
+  context: { budget: number | null; tags: string[]; avoid: string[]; excludeIds: string[]; recipient?: string },
 ): Promise<ProductRow | null> {
   const repos = getRepos();
   const maxPrice = context.budget ?? Math.max(original.price_pln * 1.5, original.price_pln + 50);
@@ -169,6 +169,7 @@ async function findReplacement(
         maxPrice,
         category: original.category,
         noneOfTags: context.avoid,
+        recipient: context.recipient,
         excludeIds: context.excludeIds,
         limit: 50,
       }),
@@ -182,6 +183,7 @@ async function findReplacement(
       maxPrice,
       anyOfTags: context.tags,
       noneOfTags: context.avoid,
+      recipient: context.recipient,
       excludeIds: context.excludeIds,
       limit: 50,
     }),
@@ -215,6 +217,7 @@ export async function getResultView(id: string): Promise<ResultView | null> {
       tags: result.tags,
       avoid: result.avoid,
       excludeIds: [...usedIds],
+      recipient: result.recipient ?? undefined,
     });
     if (replacement) {
       usedIds.add(replacement.id);

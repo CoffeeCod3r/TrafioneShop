@@ -15,20 +15,44 @@ export type Candidate = Pick<
   "id" | "name" | "description" | "price_pln" | "merchant" | "category" | "tags" | "image_url" | "affiliate_url" | "commission_rate" | "network"
 > & { sharedTags: AllowedTag[] };
 
-type CandidateRow = Omit<Candidate, "sharedTags">;
+type CandidateRow = Omit<Candidate, "sharedTags"> & Pick<ProductRow, "gift_types" | "lifestyles">;
 
-/** Sorts by number of shared tags, then price (desc). The commission never influences the order. */
-export function rankCandidates(rows: CandidateRow[], tags: readonly AllowedTag[], avoid: readonly AllowedTag[]): Candidate[] {
+/** Quiz answers beyond the interests that the catalog is matched on (codes from lib/quiz/schema.ts). */
+export type QuizFit = { recipient?: string; lifestyle?: string; giftType?: string };
+
+/** The quiz fit from saved or submitted answers. */
+export function quizFit(answers: { recipient: string; lifestyle: string; giftType: string }): QuizFit {
+  return { recipient: answers.recipient, lifestyle: answers.lifestyle, giftType: answers.giftType };
+}
+
+/** 1 point each when the product is tagged with the chosen lifestyle or gift type. */
+function fitScore(row: CandidateRow, fit: QuizFit): number {
+  let score = 0;
+  if (fit.lifestyle && row.lifestyles?.includes(fit.lifestyle)) score += 1;
+  if (fit.giftType && row.gift_types?.includes(fit.giftType)) score += 1;
+  return score;
+}
+
+/**
+ * Sorts by shared tags (weight 2) plus the lifestyle and gift-type fit (1 each), then price (desc).
+ * The recipient is already filtered in the query. The commission never influences the order.
+ */
+export function rankCandidates(
+  rows: CandidateRow[],
+  tags: readonly AllowedTag[],
+  avoid: readonly AllowedTag[],
+  fit: QuizFit = {},
+): Candidate[] {
   const wanted = new Set<string>(tags);
   const avoided = new Set<string>(avoid);
   return rows
     .filter((row) => !row.tags.some((tag) => avoided.has(tag)))
-    .map((row) => ({ ...row, sharedTags: row.tags.filter((tag) => wanted.has(tag)) as AllowedTag[] }))
-    .sort(
-      (a, b) =>
-        b.sharedTags.length - a.sharedTags.length ||
-        b.price_pln - a.price_pln,
-    );
+    .map((row) => {
+      const sharedTags = row.tags.filter((tag) => wanted.has(tag)) as AllowedTag[];
+      return { candidate: { ...row, sharedTags }, score: sharedTags.length * 2 + fitScore(row, fit) };
+    })
+    .sort((a, b) => b.score - a.score || b.candidate.price_pln - a.candidate.price_pln)
+    .map(({ candidate }) => candidate);
 }
 
 function mergeUnique(primary: Candidate[], extra: Candidate[], limit: number): Candidate[] {
@@ -59,8 +83,10 @@ export async function selectCandidates(options: {
   budget: number;
   tags: readonly AllowedTag[];
   avoid: readonly AllowedTag[];
+  /** Recipient, lifestyle and gift type from the quiz; products for another recipient are never returned. */
+  fit?: QuizFit;
 }): Promise<CandidateSelection> {
-  const { budget, tags, avoid } = options;
+  const { budget, tags, avoid, fit = {} } = options;
   const products = getRepos().products;
 
   async function fetchRows(minPrice: number, requireTags: boolean): Promise<CandidateRow[]> {
@@ -69,6 +95,7 @@ export async function selectCandidates(options: {
       maxPrice: budget,
       anyOfTags: requireTags ? tags : undefined,
       noneOfTags: avoid,
+      recipient: fit.recipient,
       limit: FETCH_LIMIT,
     });
     return rows.map((row) => ({
@@ -83,21 +110,23 @@ export async function selectCandidates(options: {
       affiliate_url: row.affiliate_url,
       commission_rate: row.commission_rate,
       network: row.network,
+      gift_types: row.gift_types,
+      lifestyles: row.lifestyles,
     }));
   }
 
   const minPrice = Math.round(budget * MIN_PRICE_SHARE * 100) / 100;
-  let candidates = rankCandidates(await fetchRows(minPrice, true), tags, avoid).slice(0, MAX_CANDIDATES);
+  let candidates = rankCandidates(await fetchRows(minPrice, true), tags, avoid, fit).slice(0, MAX_CANDIDATES);
   if (candidates.length >= MIN_CANDIDATES_BEFORE_RELAXING) return { candidates, relaxed: "none" };
 
   // 1. Drop the price floor first: a cheaper gift on topic beats an off-topic one.
-  candidates = mergeUnique(candidates, rankCandidates(await fetchRows(0, true), tags, avoid), MAX_CANDIDATES);
+  candidates = mergeUnique(candidates, rankCandidates(await fetchRows(0, true), tags, avoid, fit), MAX_CANDIDATES);
   if (candidates.length >= MIN_CANDIDATES_BEFORE_RELAXING) return { candidates, relaxed: "price" };
 
   // 2. Still too few: drop the tag condition (on-topic products stay first because of the ranking).
-  candidates = mergeUnique(candidates, rankCandidates(await fetchRows(minPrice, false), tags, avoid), MAX_CANDIDATES);
+  candidates = mergeUnique(candidates, rankCandidates(await fetchRows(minPrice, false), tags, avoid, fit), MAX_CANDIDATES);
   if (candidates.length >= PICKS_COUNT) return { candidates, relaxed: "tags" };
 
-  candidates = mergeUnique(candidates, rankCandidates(await fetchRows(0, false), tags, avoid), MAX_CANDIDATES);
+  candidates = mergeUnique(candidates, rankCandidates(await fetchRows(0, false), tags, avoid, fit), MAX_CANDIDATES);
   return { candidates, relaxed: "tags_and_price" };
 }

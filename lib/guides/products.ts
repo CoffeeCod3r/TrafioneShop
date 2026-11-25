@@ -2,7 +2,7 @@ import { cacheLife, cacheTag } from "next/cache";
 
 import { getGuide } from "@/lib/guides/data";
 import { describeError, logEvent } from "@/lib/log";
-import { selectCandidates } from "@/lib/picks/candidates";
+import { quizFit, selectCandidates } from "@/lib/picks/candidates";
 import { getRepos } from "@/lib/services/db";
 
 /** Cache tag of every guide page; the weekly refresh calls revalidateTag("guides") through /api/revalidate-guides. */
@@ -92,7 +92,7 @@ export async function getGuideProducts(slug: string): Promise<GuideProducts> {
       }));
       if (shown.length < MIN_GUIDE_PRODUCTS) {
         // Top up from the same budget/tag pool: plain database selection, no search and no AI.
-        const { candidates } = await selectCandidates({ budget: answers.budget, tags, avoid });
+        const { candidates } = await selectCandidates({ budget: answers.budget, tags, avoid, fit: quizFit(answers) });
         const have = new Set(shown.map((product) => product.id));
         for (const candidate of candidates) {
           if (shown.length >= MIN_GUIDE_PRODUCTS) break;
@@ -107,7 +107,7 @@ export async function getGuideProducts(slug: string): Promise<GuideProducts> {
       };
     }
 
-    const { candidates } = await selectCandidates({ budget: answers.budget, tags, avoid });
+    const { candidates } = await selectCandidates({ budget: answers.budget, tags, avoid, fit: quizFit(answers) });
     // Not refreshed yet: the catalog fallback is shown, and checked again soon.
     cacheLife("hours");
     return { products: candidates.slice(0, MAX_SHOWN).map(fromCandidate), refreshedAt: null, source: "catalog" };

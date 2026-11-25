@@ -60,6 +60,14 @@ export type ProductRow = {
   last_check_at: string | null;
   /** Result of the last weekly check (see supabase/migrations/20261126000000_catalog_check.sql). */
   last_check_result: string | null;
+  /**
+   * Quiz answers the product fits (codes from lib/quiz/schema.ts, see
+   * supabase/migrations/20261128000000_product_quiz_fit.sql). Empty or missing = fits any answer.
+   * recipients excludes other recipients ("none" = children's item, never shown); the other two only rank.
+   */
+  recipients?: string[];
+  gift_types?: string[];
+  lifestyles?: string[];
 };
 
 export type PriceHistoryRow = {

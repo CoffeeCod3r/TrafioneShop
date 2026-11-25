@@ -7,7 +7,7 @@ import type { FreeSource } from "@/lib/db";
 import { getEnv } from "@/lib/env";
 import { describeError, logEvent } from "@/lib/log";
 import { getSourceMode } from "@/lib/mode";
-import { selectCandidates } from "@/lib/picks/candidates";
+import { quizFit, selectCandidates } from "@/lib/picks/candidates";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { getClientIp, hashIp, readJsonBody, RequestBodyError } from "@/lib/request";
 import { copyRememberedResult, createResult, profileOf } from "@/lib/results";
@@ -192,7 +192,7 @@ export async function POST(request: Request) {
 
     // 6. Catalog path (SOURCE_MODE=catalog, or the web search is not available right now): prompts A and B.
     const { candidates, relaxed } = await runStep("candidates", () =>
-      selectCandidates({ budget: answers.budget, tags: profile.tags, avoid: profile.avoid }),
+      selectCandidates({ budget: answers.budget, tags: profile.tags, avoid: profile.avoid, fit: quizFit(answers) }),
     );
     // If the profile step already fell back (AI down or failing), do not wait on AI again.
     const picksStep =
