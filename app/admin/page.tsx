@@ -6,7 +6,8 @@ import Link from "next/link";
 import { CheckLinksButton } from "@/components/admin/check-links-button";
 import { AdminLoginForm, AdminLogoutButton } from "@/components/admin/login-form";
 import { ADMIN_COOKIE, isValidAdminSession } from "@/lib/admin/auth";
-import { ERROR_LABELS, getCatalogHealth, type CatalogHealth } from "@/lib/admin/health";
+import { ERROR_LABELS, getCatalogHealth, getPoolHealth, type CatalogHealth, type PoolHealth } from "@/lib/admin/health";
+import { describeCell } from "@/lib/catalog/labels";
 import { MIN_GUIDE_PRODUCTS } from "@/lib/guides/products";
 import { AI_PRICES, getAdminStats, PERIODS, type AdminStats, type Period } from "@/lib/admin/stats";
 import { cn } from "@/lib/utils";
@@ -36,8 +37,8 @@ async function AdminGate({ searchParams }: PageProps) {
 
   const query = await searchParams;
   const period: Period = PERIODS.some((p) => p.value === query.okres) ? (query.okres as Period) : "7d";
-  const [stats, health] = await Promise.all([getAdminStats(period), getCatalogHealth()]);
-  return <Dashboard stats={stats} health={health} period={period} />;
+  const [stats, health, pool] = await Promise.all([getAdminStats(period), getCatalogHealth(), getPoolHealth()]);
+  return <Dashboard stats={stats} health={health} pool={pool} period={period} />;
 }
 
 const dateTime = new Intl.DateTimeFormat("pl-PL", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Warsaw" });
@@ -46,6 +47,82 @@ const RUN_STATUS: Record<string, string> = { running: "trwa", completed: "zakoń
 function duration(seconds: number | null): string {
   if (seconds === null) return "–";
   return seconds < 90 ? `${seconds} s` : `${Math.round(seconds / 60)} min`;
+}
+
+const NIGHTLY_STATUS: Record<string, string> = {
+  running: "trwa",
+  completed: "zakończone",
+  stopped_budget: "przerwane: limit kosztów AI",
+  failed: "błąd",
+};
+const THIN_CELLS_SHOWN = 40;
+
+function PoolSection({ pool }: { pool: PoolHealth }) {
+  const run = pool.lastRun;
+  const { counts } = pool;
+  return (
+    <Section title="Pula">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <Tile
+          label="Aktywne"
+          value={num.format(counts.active)}
+          hint={`w tym nieodświeżone > 7 dni (klienci ich nie widzą): ${num.format(counts.stale_active)}`}
+        />
+        <Tile label="Broken" value={num.format(counts.broken)} hint="2 porażki z rzędu (404, 410, strona główna, brak odpowiedzi)" />
+        <Tile label="Out of stock" value={num.format(counts.out_of_stock)} hint={`oczekujące na weryfikację: ${num.format(counts.pending)}`} />
+        <Tile
+          label="Ostatni nocny przebieg"
+          value={run ? dateTime.format(new Date(run.started_at)) : "jeszcze nie było"}
+          hint={
+            run
+              ? `${NIGHTLY_STATUS[run.status] ?? run.status} · ${run.trigger === "schedule" ? "automat" : "ręcznie"} · czas ${duration(run.duration_ms === null ? null : Math.round(run.duration_ms / 1000))}`
+              : "automat: codziennie ok. 3:00 (GitHub Actions)"
+          }
+        />
+        <Tile label="Koszt AI ostatniej nocy" value={run ? `$${run.ai_cost_usd.toFixed(2)}` : "–"} hint={run ? `${num.format(run.ai_calls)} zapytań` : undefined} />
+        <Tile
+          label="Dodane ostatniej nocy"
+          value={run ? num.format(run.added) : "–"}
+          hint={
+            run
+              ? `sprawdzono ${num.format(run.checked)} · broken ${num.format(run.broken)} · out of stock ${num.format(run.out_of_stock)} · zmiany cen ${num.format(run.price_changes)}`
+              : undefined
+          }
+        />
+      </div>
+
+      <h3 className="mt-2 font-semibold">
+        Komórki poniżej progu ({num.format(pool.thinCells.length)} z {num.format(pool.cellsTotal)}, próg: {pool.threshold} produktów)
+      </h3>
+      {pool.thinCells.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Każda komórka (kategoria × cena × odbiorca) ma wystarczająco produktów.</p>
+      ) : (
+        <>
+          <ul className="flex flex-wrap gap-2">
+            {pool.thinCells.slice(0, THIN_CELLS_SHOWN).map((cell) => {
+              const label = describeCell(cell);
+              return (
+                <li
+                  key={`${cell.category}|${cell.price_bucket}|${cell.recipient}`}
+                  className="rounded-lg border border-red-300 bg-red-50 px-2 py-1 text-xs text-red-800"
+                >
+                  {label.category} · {label.price} · {label.recipient}: <strong>{cell.active_count}</strong>
+                </li>
+              );
+            })}
+          </ul>
+          {pool.thinCells.length > THIN_CELLS_SHOWN && (
+            <p className="text-xs text-muted-foreground">
+              …i jeszcze {num.format(pool.thinCells.length - THIN_CELLS_SHOWN)} (najpustsze są na górze).
+            </p>
+          )}
+        </>
+      )}
+      {run && Object.keys(run.notes as object).length > 0 && (
+        <p className="text-xs text-muted-foreground">Uwagi z ostatniego przebiegu: {JSON.stringify(run.notes)}</p>
+      )}
+    </Section>
+  );
 }
 
 function CatalogHealthSection({ health }: { health: CatalogHealth }) {
@@ -98,7 +175,7 @@ function CatalogHealthSection({ health }: { health: CatalogHealth }) {
   );
 }
 
-function Dashboard({ stats, health, period }: { stats: AdminStats; health: CatalogHealth; period: Period }) {
+function Dashboard({ stats, health, pool, period }: { stats: AdminStats; health: CatalogHealth; pool: PoolHealth; period: Period }) {
   return (
     <div className="flex flex-col gap-8 py-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
@@ -233,6 +310,8 @@ function Dashboard({ stats, health, period }: { stats: AdminStats; health: Catal
           „ref:kod”.
         </p>
       </Section>
+
+      <PoolSection pool={pool} />
 
       <CatalogHealthSection health={health} />
 

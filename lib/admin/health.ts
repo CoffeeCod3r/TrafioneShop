@@ -1,6 +1,7 @@
 import { GUIDES } from "@/lib/guides/data";
 import { getGuideProducts, MIN_GUIDE_PRODUCTS } from "@/lib/guides/products";
-import type { CatalogCheckRunRow } from "@/lib/db";
+import type { CatalogCheckRunRow, CatalogRunRow } from "@/lib/db";
+import type { CoverageCell } from "@/lib/catalog/pool";
 import { getRepos } from "@/lib/services/db";
 
 export type CatalogHealth = {
@@ -49,4 +50,32 @@ export async function getCatalogHealth(): Promise<CatalogHealth> {
     errors,
     guidesToComplete,
   };
+}
+
+export type PoolHealth = {
+  counts: { active: number; broken: number; out_of_stock: number; pending: number; stale_active: number };
+  /** Cells below the health threshold, emptiest first (all of them; the page shows the first few). */
+  thinCells: Pick<CoverageCell, "category" | "price_bucket" | "recipient" | "active_count">[];
+  cellsTotal: number;
+  threshold: number;
+  lastRun: CatalogRunRow | null;
+};
+
+/** Tile "Pula": product pool counts, thin cells of the coverage grid and the last nightly run. */
+export async function getPoolHealth(): Promise<PoolHealth> {
+  const repos = getRepos();
+  const [counts, coverage, lastRun] = await Promise.all([
+    repos.catalog.poolCounts(),
+    repos.catalog.poolCoverage(),
+    repos.catalog.latestNightlyRun(),
+  ]);
+  const thinCells = coverage
+    .filter((cell) => cell.below_threshold)
+    .sort(
+      (a, b) =>
+        a.active_count - b.active_count ||
+        `${a.category}${a.price_bucket}${a.recipient}`.localeCompare(`${b.category}${b.price_bucket}${b.recipient}`),
+    )
+    .map(({ category, price_bucket, recipient, active_count }) => ({ category, price_bucket, recipient, active_count }));
+  return { counts, thinCells, cellsTotal: coverage.length, threshold: coverage[0]?.threshold ?? 8, lastRun };
 }

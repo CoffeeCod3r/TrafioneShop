@@ -10,7 +10,8 @@ import type { AllowedShopRow } from "../db.ts";
 import type { Repos, PoolProductInput } from "../services/db.ts";
 import { externalIdForUrl, normalizeUrl, todayInWarsaw, toOutboundUrl } from "../search/core.ts";
 import { poolCategory, POOL_RECIPIENTS, type CoverageCell } from "./pool.ts";
-import { describeCell, type CatalogAiProvider, type Proposal } from "./provider.ts";
+import { describeCell } from "./labels.ts";
+import type { CatalogAiProvider, Proposal } from "./provider.ts";
 
 /** Worst case of one targeted search: 2 searches (0.02) + input and output tokens at the Haiku prices. */
 export const CELL_COST_ESTIMATE_USD = 0.03;

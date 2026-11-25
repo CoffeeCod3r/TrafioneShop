@@ -9,8 +9,8 @@ import { z } from "zod";
 
 import type { AllowedShopRow } from "../db.ts";
 import type { UsageEntry } from "../search/core.ts";
+import { describeCell } from "./labels.ts";
 import { POOL_RECIPIENTS, PRICE_BUCKETS, type CoverageCell } from "./pool.ts";
-import { RECIPIENT_OPTIONS } from "../quiz/schema.ts";
 
 export const BUILD_MAX_SEARCHES = 2;
 export const BUILD_PRODUCTS_PER_CELL = 8;
@@ -43,28 +43,6 @@ export type CatalogAiProvider = {
   model: string;
   findProducts(input: ProviderInput): Promise<ProviderOutput>;
 };
-
-const CATEGORY_LABELS: Record<string, string> = {
-  dom: "dom i wnętrze",
-  ogrod: "ogród",
-  kuchnia: "kuchnia",
-  jedzenie: "jedzenie i napoje",
-  ksiazki: "książki",
-  gry: "gry i puzzle",
-  elektronika: "elektronika i gadżety",
-  sport: "sport i turystyka",
-  moda: "moda i dodatki",
-  uroda: "uroda i pielęgnacja",
-  hobby: "hobby i rękodzieło",
-  podroze: "podróże",
-};
-
-/** The targeted search request for one cell (Polish: it is also the search query's language). */
-export function describeCell(cell: ProviderInput["cell"]): { category: string; price: string; recipient: string } {
-  const bucket = PRICE_BUCKETS.find((item) => item.id === cell.price_bucket)!;
-  const recipient = RECIPIENT_OPTIONS.find((option) => option.value === cell.recipient)?.label ?? cell.recipient;
-  return { category: CATEGORY_LABELS[cell.category] ?? cell.category, price: bucket.label, recipient };
-}
 
 function buildPrompts(input: ProviderInput): { system: string; user: string } {
   const { category, price, recipient } = describeCell(input.cell);
