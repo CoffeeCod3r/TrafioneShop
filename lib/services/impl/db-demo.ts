@@ -8,6 +8,7 @@ import type {
   AiUsageRow,
   AllowedShopRow,
   CatalogCheckRunRow,
+  CatalogRunRow,
   ClickRow,
   GuideProductRow,
   PriceHistoryRow,
@@ -39,6 +40,7 @@ type DemoData = {
   quiz_starts: QuizStartRow[];
   guide_products: GuideProductRow[];
   catalog_check_runs: CatalogCheckRunRow[];
+  catalog_runs: CatalogRunRow[];
   price_history: PriceHistoryRow[];
 };
 
@@ -61,6 +63,7 @@ function emptyData(): DemoData {
     quiz_starts: [],
     guide_products: [],
     catalog_check_runs: [],
+    catalog_runs: [],
     price_history: [],
   };
 }
@@ -225,6 +228,46 @@ export function createDemoRepos(): Repos {
           if (patch.status) product.in_stock = patch.status === "active";
           if (history) data.price_history.push({ id: randomUUID(), product_id: productId, ...history, checked_at: now() });
         }),
+      recentDemand: (since) =>
+        read((data) =>
+          data.results
+            .filter((result) => result.created_at >= since)
+            .map((result) => ({ recipient: result.recipient, budget_pln: result.budget_pln, tags: result.tags })),
+        ),
+      createNightlyRun: (trigger) =>
+        write((data) => {
+          const run: CatalogRunRow = {
+            id: randomUUID(),
+            started_at: now(),
+            finished_at: null,
+            trigger,
+            status: "running",
+            checked: 0,
+            active: 0,
+            broken: 0,
+            out_of_stock: 0,
+            price_changes: 0,
+            unverifiable: 0,
+            added: 0,
+            cells_below_threshold: 0,
+            cells_targeted: [],
+            ai_calls: 0,
+            ai_cost_usd: 0,
+            duration_ms: null,
+            notes: {},
+          };
+          data.catalog_runs ??= [];
+          data.catalog_runs.push(run);
+          return run;
+        }),
+      updateNightlyRun: (id, patch) =>
+        write((data) => {
+          const run = (data.catalog_runs ?? []).find((item) => item.id === id);
+          if (!run) throw new Error("Updating catalog run failed (not found)");
+          Object.assign(run, patch);
+        }),
+      latestNightlyRun: () =>
+        read((data) => [...(data.catalog_runs ?? [])].sort((a, b) => b.started_at.localeCompare(a.started_at))[0] ?? null),
       poolCoverage: () =>
         read((data) =>
           computeCoverage(data.products).map((cell) => ({ ...cell, threshold: POOL_MIN_PER_CELL, below_threshold: cell.active_count < POOL_MIN_PER_CELL })),
@@ -338,6 +381,7 @@ export function createDemoRepos(): Repos {
                 in_stock: true,
                 status: "active",
                 last_checked_at: row.checked_at,
+                last_check_at: row.checked_at,
                 price_checked: row.price_pln,
                 fail_count: 0,
                 source: "catalog_build",
@@ -349,7 +393,6 @@ export function createDemoRepos(): Repos {
             const product: ProductRow = {
               id: randomUUID(),
               failed_checks: 0,
-              last_check_at: null,
               last_check_result: null,
               ...row,
               network: "direct",
@@ -357,6 +400,7 @@ export function createDemoRepos(): Repos {
               in_stock: true,
               status: "active",
               last_checked_at: row.checked_at,
+              last_check_at: row.checked_at,
               price_checked: row.price_pln,
               fail_count: 0,
               source: "catalog_build",
@@ -366,6 +410,40 @@ export function createDemoRepos(): Repos {
             saved.push(product);
           }
           return saved;
+        }),
+      savePool: (rows) =>
+        write((data) => {
+          const saved: ProductRow[] = [];
+          for (const row of rows) {
+            if (data.products.some((p) => p.network === "direct" && p.external_id === row.external_id)) continue;
+            const product: ProductRow = {
+              id: randomUUID(),
+              description: null,
+              image_url: null,
+              commission_rate: 0,
+              failed_checks: 0,
+              last_check_at: null,
+              last_check_result: null,
+              checked_at: null,
+              ...row,
+              network: "direct",
+              in_stock: false,
+              status: "pending",
+              last_checked_at: null,
+              fail_count: 0,
+              price_checked: null,
+              source: "catalog_build",
+              updated_at: now(),
+            };
+            data.products.push(product);
+            saved.push(product);
+          }
+          return saved;
+        }),
+      setTags: (id, tags) =>
+        write((data) => {
+          const product = data.products.find((p) => p.id === id);
+          if (product) product.tags = tags;
         }),
       getByIds: (ids) => read((data) => data.products.filter((p) => ids.includes(p.id))),
       getById: (id) => read((data) => data.products.find((p) => p.id === id) ?? null),

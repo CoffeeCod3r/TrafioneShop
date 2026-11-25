@@ -95,7 +95,7 @@ export type CatalogRunRow = {
   id: string;
   started_at: string;
   finished_at: string | null;
-  trigger: "schedule" | "manual" | "dry_run";
+  trigger: "schedule" | "manual";
   status: "running" | "completed" | "stopped_budget" | "failed";
   checked: number;
   active: number;
