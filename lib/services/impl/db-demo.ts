@@ -192,6 +192,39 @@ export function createDemoRepos(): Repos {
           available: data.products.filter((product) => product.in_stock).length,
           unavailable: data.products.filter((product) => !product.in_stock).length,
         })),
+      listForVerify: ({ onlyStale, staleBeforeIso, ids }) =>
+        read((data) =>
+          data.products
+            .filter(
+              (p) =>
+                p.network !== "demo" &&
+                (!ids || ids.includes(p.id)) &&
+                (!onlyStale || !p.last_check_at || p.last_check_at < staleBeforeIso || (p.fail_count ?? 0) > 0),
+            )
+            .sort((a, b) => (a.last_check_at ?? "").localeCompare(b.last_check_at ?? "") || a.id.localeCompare(b.id))
+            .map((p) => ({
+              id: p.id,
+              name: p.name,
+              url: p.url,
+              affiliate_url: p.affiliate_url,
+              network: p.network,
+              price_pln: p.price_pln,
+              status: p.status ?? (p.in_stock ? "active" : "out_of_stock"),
+              fail_count: p.fail_count ?? 0,
+              source: p.source ?? "manual",
+            })),
+        ),
+      applyVerification: (productId, patch, history) =>
+        write((data) => {
+          const product = data.products.find((p) => p.id === productId);
+          if (!product) throw new Error("Saving product verification failed (not found)");
+          const { last_checked_at, ...rest } = patch;
+          Object.assign(product, rest, { failed_checks: patch.fail_count, updated_at: now() });
+          if (last_checked_at) Object.assign(product, { last_checked_at, checked_at: last_checked_at });
+          // The database trigger does this in the real implementation.
+          if (patch.status) product.in_stock = patch.status === "active";
+          if (history) data.price_history.push({ id: randomUUID(), product_id: productId, ...history, checked_at: now() });
+        }),
       poolCoverage: () =>
         read((data) =>
           computeCoverage(data.products).map((cell) => ({ ...cell, threshold: POOL_MIN_PER_CELL, below_threshold: cell.active_count < POOL_MIN_PER_CELL })),

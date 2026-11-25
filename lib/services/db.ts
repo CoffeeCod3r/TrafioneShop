@@ -19,6 +19,7 @@ import type {
   SubscriberRow,
   Update,
 } from "../db.ts";
+import type { VerifyPatch, VerifyProduct } from "../catalog/verify.ts";
 import type { ProductUpsert } from "../feeds/normalize.ts";
 import type { DirectProductRow } from "../search/core.ts";
 import { isRealService } from "../mode.ts";
@@ -172,6 +173,13 @@ export type CatalogRepo = {
   recentRuns(limit: number): Promise<CatalogCheckRunRow[]>;
   /** Admin: products in stock and not in stock. */
   countProducts(): Promise<{ available: number; unavailable: number }>;
+  /**
+   * Products the verifier may look at (everything except demo products), the longest-unattempted first (never
+   * attempted first). `onlyStale`: last attempt before `staleBeforeIso`, or a failure on record. `ids`: only these.
+   */
+  listForVerify(options: { onlyStale: boolean; staleBeforeIso: string; ids?: string[] }): Promise<VerifyProduct[]>;
+  /** Writes one verification (lib/catalog/verify.ts); `history` is stored when the price moved by more than 20 %. */
+  applyVerification(productId: string, patch: VerifyPatch, history?: { old_price: number; new_price: number }): Promise<void>;
   /** The product pool: active products verified in the last 7 days per category x price range x recipient (SQL view pool_coverage). */
   poolCoverage(): Promise<PoolCoverageRow[]>;
   /** Pool size by status (`stale_active`: active but verified more than 7 days ago, so not shown). */

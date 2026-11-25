@@ -11,6 +11,8 @@
     "import:feed": "node --experimental-strip-types --no-warnings --env-file-if-exists=.env.local scripts/import-feed.ts",
     "check:services": "node --experimental-strip-types --no-warnings --env-file-if-exists=.env.local scripts/check-services.ts",
     "test:catalog": "node --experimental-strip-types --no-warnings scripts/test-catalog.ts",
+    "catalog:verify": "node --experimental-strip-types --no-warnings --env-file-if-exists=.env.local scripts/catalog-verify.ts",
+    "test:verify": "node --experimental-strip-types --no-warnings scripts/test-verify.ts",
     "test:pool": "node --experimental-strip-types --no-warnings scripts/test-pool.ts",
     "test:cards": "node --experimental-strip-types --no-warnings scripts/test-cards.ts",
     "catalog:check": "node --experimental-strip-types --no-warnings --env-file-if-exists=.env.local scripts/check-catalog.ts",

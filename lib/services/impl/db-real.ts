@@ -1,5 +1,6 @@
 import type { CatalogCheckRunRow, PoolCoverageRow, ProductRow } from "../../db.ts";
 import { poolCutoffIso } from "../../catalog/pool.ts";
+import type { VerifyProduct } from "../../catalog/verify.ts";
 import type { Repos } from "../db.ts";
 import { getSupabase } from "./supabase.ts";
 
@@ -82,6 +83,33 @@ export function createRealRepos(): Repos {
         if (available.error) fail("Counting products", available.error);
         if (unavailable.error) fail("Counting products", unavailable.error);
         return { available: available.count ?? 0, unavailable: unavailable.count ?? 0 };
+      },
+      async listForVerify({ onlyStale, staleBeforeIso, ids }) {
+        const columns = "id, name, url, affiliate_url, network, price_pln, status, fail_count, source";
+        const rows = await fetchAll<VerifyProduct>((from, to) => {
+          let query = db().from("products").select(columns).neq("network", "demo");
+          if (ids) query = query.in("id", ids);
+          if (onlyStale) query = query.or(`last_check_at.is.null,last_check_at.lt.${staleBeforeIso},fail_count.gt.0`);
+          return query.order("last_check_at", { ascending: true, nullsFirst: true }).order("id").range(from, to);
+        }, "Loading products to verify");
+        return rows;
+      },
+      async applyVerification(productId, patch, history) {
+        const { fail_count, last_checked_at, ...rest } = patch;
+        const { error } = await db()
+          .from("products")
+          .update({
+            ...rest,
+            fail_count,
+            failed_checks: fail_count,
+            ...(last_checked_at ? { last_checked_at, checked_at: last_checked_at } : {}),
+          })
+          .eq("id", productId);
+        if (error) fail("Saving product verification", error);
+        if (history) {
+          const { error: historyError } = await db().from("price_history").insert({ product_id: productId, ...history });
+          if (historyError) fail("Saving price history", historyError);
+        }
       },
       async poolCoverage() {
         const rows = await fetchAll<PoolCoverageRow>(
