@@ -104,3 +104,6 @@ left join public.products p
 group by c.category, b.price_bucket, r.recipient;
 
 revoke all on table public.pool_coverage from anon, authenticated;
+
+grant execute on function public.pool_category(text) to service_role;
+grant select on public.pool_coverage to service_role;
