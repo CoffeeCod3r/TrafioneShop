@@ -29,7 +29,7 @@ export type SearchStatus = "searching" | "ready";
 /** Where the free picks came from. */
 export type FreeSource = "web" | "cache" | "catalog" | "catalog_budget" | "catalog_device" | "catalog_fallback";
 export type PurchaseStatus = "paid" | "refunded";
-export type AiUsageStep = "profile" | "picks" | "web_search" | "dedications" | "free_web_search";
+export type AiUsageStep = "profile" | "picks" | "web_search" | "dedications" | "free_web_search" | "catalog_build";
 
 // ---------------------------------------------------------------------------
 // Row types
@@ -68,6 +68,49 @@ export type ProductRow = {
   recipients?: string[];
   gift_types?: string[];
   lifestyles?: string[];
+  /**
+   * Product pool (supabase/migrations/20261129000000_product_pool.sql). Free results use only `active` products
+   * verified less than 7 days ago. in_stock follows status (trigger).
+   */
+  status: "active" | "out_of_stock" | "broken" | "pending";
+  last_checked_at: string | null;
+  fail_count: number;
+  /** Price seen on the shop's page at the last successful check. */
+  price_checked: number | null;
+  source: "catalog_build" | "feed" | "manual";
+};
+
+/** One cell of the view pool_coverage: active, fresh products per category x price range x recipient. */
+export type PoolCoverageRow = {
+  category: string;
+  price_bucket: "do-50" | "50-100" | "100-200" | "200+";
+  recipient: string;
+  active_count: number;
+  threshold: number;
+  below_threshold: boolean;
+};
+
+/** One run of the nightly pool job (supabase/migrations/20261129010000_catalog_runs.sql). */
+export type CatalogRunRow = {
+  id: string;
+  started_at: string;
+  finished_at: string | null;
+  trigger: "schedule" | "manual" | "dry_run";
+  status: "running" | "completed" | "stopped_budget" | "failed";
+  checked: number;
+  active: number;
+  broken: number;
+  out_of_stock: number;
+  price_changes: number;
+  unverifiable: number;
+  added: number;
+  cells_below_threshold: number;
+  cells_targeted: Json;
+  ai_calls: number;
+  ai_cost_usd: number;
+  duration_ms: number | null;
+  /** Free text: why the run stopped early, errors per shop, ... */
+  notes: Json;
 };
 
 export type PriceHistoryRow = {
@@ -226,8 +269,30 @@ type TableDef<Row, DefaultKeys extends keyof Row> = {
 export type Database = {
   public: {
     Tables: {
-      products: TableDef<ProductRow, "id" | "tags" | "in_stock" | "updated_at" | "failed_checks">;
+      products: TableDef<
+        ProductRow,
+        "id" | "tags" | "in_stock" | "updated_at" | "failed_checks" | "status" | "fail_count" | "source"
+      >;
       price_history: TableDef<PriceHistoryRow, "id" | "checked_at">;
+      catalog_runs: TableDef<
+        CatalogRunRow,
+        | "id"
+        | "started_at"
+        | "trigger"
+        | "status"
+        | "checked"
+        | "active"
+        | "broken"
+        | "out_of_stock"
+        | "price_changes"
+        | "unverifiable"
+        | "added"
+        | "cells_below_threshold"
+        | "cells_targeted"
+        | "ai_calls"
+        | "ai_cost_usd"
+        | "notes"
+      >;
       catalog_check_runs: TableDef<
         CatalogCheckRunRow,
         | "id"
@@ -261,7 +326,9 @@ export type Database = {
         "id" | "created_at" | "input_tokens" | "output_tokens" | "web_searches" | "web_fetches"
       >;
     };
-    Views: Record<never, never>;
+    Views: {
+      pool_coverage: { Row: PoolCoverageRow; Relationships: [] };
+    };
     Functions: {
       consume_rate_limit: {
         Args: { p_key: string; p_window_start: string; p_limit: number };

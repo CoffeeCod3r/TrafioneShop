@@ -18,6 +18,7 @@ import type {
   ResultRow,
   SubscriberRow,
 } from "../../db.ts";
+import { computeCoverage, isPoolFresh, POOL_MIN_PER_CELL } from "../../catalog/pool.ts";
 import type { Repos } from "../db.ts";
 
 /**
@@ -117,6 +118,15 @@ function byPriceDesc(a: ProductRow, b: ProductRow): number {
   return b.price_pln - a.price_pln;
 }
 
+/**
+ * Demo products have no shop page to verify, and a demo database file created before the pool existed has no status:
+ * both count as fresh. Everything else follows the real rule (active and verified in the last 7 days).
+ */
+function demoPoolFresh(product: ProductRow): boolean {
+  if (product.network === "demo" || product.status === undefined) return true;
+  return isPoolFresh(product);
+}
+
 export function createDemoRepos(): Repos {
   return {
     catalog: {
@@ -182,6 +192,21 @@ export function createDemoRepos(): Repos {
           available: data.products.filter((product) => product.in_stock).length,
           unavailable: data.products.filter((product) => !product.in_stock).length,
         })),
+      poolCoverage: () =>
+        read((data) =>
+          computeCoverage(data.products).map((cell) => ({ ...cell, threshold: POOL_MIN_PER_CELL, below_threshold: cell.active_count < POOL_MIN_PER_CELL })),
+        ),
+      poolCounts: () =>
+        read((data) => {
+          const count = (status: string) => data.products.filter((product) => (product.status ?? (product.in_stock ? "active" : "out_of_stock")) === status).length;
+          return {
+            active: count("active"),
+            broken: count("broken"),
+            out_of_stock: count("out_of_stock"),
+            pending: count("pending"),
+            stale_active: data.products.filter((product) => product.status === "active" && !isPoolFresh(product)).length,
+          };
+        }),
     },
     guides: {
       listProducts: (slug) =>
@@ -228,7 +253,12 @@ export function createDemoRepos(): Repos {
                 failed_checks: 0,
                 last_check_at: null,
                 last_check_result: null,
+                status: "pending",
+                last_checked_at: null,
+                fail_count: 0,
+                price_checked: null,
                 ...row,
+                source: "feed",
                 updated_at: now(),
               });
           }
@@ -241,6 +271,7 @@ export function createDemoRepos(): Repos {
           for (const product of data.products) {
             if (product.network === network && ids.has(product.external_id)) {
               product.in_stock = false;
+              if (product.status === "active" || product.status === "pending") product.status = "out_of_stock";
               product.updated_at = now();
             }
           }
@@ -251,6 +282,7 @@ export function createDemoRepos(): Repos {
             .filter(
               (p) =>
                 p.in_stock &&
+                demoPoolFresh(p) &&
                 p.price_pln >= minPrice &&
                 p.price_pln <= maxPrice &&
                 (!anyOfTags?.length || p.tags.some((tag) => anyOfTags.includes(tag))) &&
@@ -268,7 +300,16 @@ export function createDemoRepos(): Repos {
           for (const row of rows) {
             const existing = data.products.find((p) => p.network === "direct" && p.external_id === row.external_id);
             if (existing) {
-              Object.assign(existing, row, { commission_rate: 0, in_stock: true, updated_at: now() });
+              Object.assign(existing, row, {
+                commission_rate: 0,
+                in_stock: true,
+                status: "active",
+                last_checked_at: row.checked_at,
+                price_checked: row.price_pln,
+                fail_count: 0,
+                source: "catalog_build",
+                updated_at: now(),
+              });
               saved.push(existing);
               continue;
             }
@@ -281,6 +322,11 @@ export function createDemoRepos(): Repos {
               network: "direct",
               commission_rate: 0,
               in_stock: true,
+              status: "active",
+              last_checked_at: row.checked_at,
+              price_checked: row.price_pln,
+              fail_count: 0,
+              source: "catalog_build",
               updated_at: now(),
             };
             data.products.push(product);

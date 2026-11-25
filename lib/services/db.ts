@@ -8,6 +8,7 @@ import type {
   AiUsageRow,
   AllowedShopRow,
   CatalogCheckRunRow,
+  PoolCoverageRow,
   ClickRow,
   GuideProductRow,
   Insert,
@@ -171,6 +172,10 @@ export type CatalogRepo = {
   recentRuns(limit: number): Promise<CatalogCheckRunRow[]>;
   /** Admin: products in stock and not in stock. */
   countProducts(): Promise<{ available: number; unavailable: number }>;
+  /** The product pool: active products verified in the last 7 days per category x price range x recipient (SQL view pool_coverage). */
+  poolCoverage(): Promise<PoolCoverageRow[]>;
+  /** Pool size by status (`stale_active`: active but verified more than 7 days ago, so not shown). */
+  poolCounts(): Promise<{ active: number; broken: number; out_of_stock: number; pending: number; stale_active: number }>;
 };
 
 export type Repos = {
