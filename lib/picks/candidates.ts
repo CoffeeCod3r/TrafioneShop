@@ -9,6 +9,13 @@ export const PICKS_COUNT = 5;
 export const MIN_PRICE_SHARE = 0.4;
 /** How many rows to fetch per query before ranking in code. */
 const FETCH_LIMIT = 300;
+/**
+ * Pool strict mode (POOL_STRICT=true): free results use only products with status 'active' checked in the last
+ * 7 days. Off by default until the nightly check has gone through the whole pool, or the free catalog path would
+ * run empty.
+ */
+export const POOL_FRESH_DAYS = 7;
+const poolStrict = () => /^(1|true|yes|on)$/i.test(process.env.POOL_STRICT ?? "");
 
 export type Candidate = Pick<
   ProductRow,
@@ -96,6 +103,7 @@ export async function selectCandidates(options: {
       anyOfTags: requireTags ? tags : undefined,
       noneOfTags: avoid,
       recipient: fit.recipient,
+      freshWithinDays: poolStrict() ? POOL_FRESH_DAYS : undefined,
       limit: FETCH_LIMIT,
     });
     return rows.map((row) => ({

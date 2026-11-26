@@ -160,7 +160,7 @@ export function createRealRepos(): Repos {
           if (error) fail("Marking out of stock", error);
         }
       },
-      async findCandidates({ minPrice, maxPrice, anyOfTags, noneOfTags, recipient, category, excludeIds, limit }) {
+      async findCandidates({ minPrice, maxPrice, anyOfTags, noneOfTags, recipient, category, excludeIds, freshWithinDays, limit }) {
         let query = db()
           .from("products")
           .select("*")
@@ -171,6 +171,9 @@ export function createRealRepos(): Repos {
         if (noneOfTags && noneOfTags.length > 0) query = query.not("tags", "ov", pgArray(noneOfTags));
         if (recipient) query = query.or(`recipients.eq.{},recipients.cs.{${recipient}}`);
         if (category) query = query.eq("category", category);
+        if (freshWithinDays !== undefined) {
+          query = query.eq("status", "active").gte("last_check_at", new Date(Date.now() - freshWithinDays * 86_400_000).toISOString());
+        }
         if (excludeIds && excludeIds.length > 0) query = query.not("id", "in", `(${excludeIds.join(",")})`);
         const { data, error } = await query.order("price_pln", { ascending: false }).limit(limit);
         if (error) fail("Candidate query", error);
@@ -192,7 +195,7 @@ export function createRealRepos(): Repos {
         const { data, error } = await db()
           .from("products")
           .upsert(
-            rows.map((row) => ({ ...row, network: "direct", commission_rate: 0, in_stock: true })),
+            rows.map((row) => ({ ...row, network: "direct", commission_rate: 0, in_stock: true, status: "active", source: "web_search", last_check_at: row.checked_at, price_checked: row.price_pln })),
             { onConflict: "network,external_id" },
           )
           .select("*");

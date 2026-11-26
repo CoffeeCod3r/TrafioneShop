@@ -37,6 +37,8 @@ export type ProductCandidateQuery = {
   category?: string;
   /** Product IDs to leave out. */
   excludeIds?: readonly string[];
+  /** Pool strict mode: only status 'active' products checked within this many days. */
+  freshWithinDays?: number;
   limit: number;
 };
 

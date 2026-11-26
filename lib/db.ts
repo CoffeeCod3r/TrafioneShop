@@ -29,7 +29,9 @@ export type SearchStatus = "searching" | "ready";
 /** Where the free picks came from. */
 export type FreeSource = "web" | "cache" | "catalog" | "catalog_budget" | "catalog_device" | "catalog_fallback";
 export type PurchaseStatus = "paid" | "refunded";
-export type AiUsageStep = "profile" | "picks" | "web_search" | "dedications" | "free_web_search";
+export type AiUsageStep = "profile" | "picks" | "web_search" | "dedications" | "free_web_search" | "catalog_build" | "catalog_tag";
+export type ProductStatus = "active" | "pending" | "out_of_stock" | "broken";
+export type ProductSource = "catalog_build" | "feed" | "web_search" | "manual";
 
 // ---------------------------------------------------------------------------
 // Row types
@@ -58,8 +60,18 @@ export type ProductRow = {
   /** Consecutive failed checks (timeout, 5xx, block); 2 in a row take the product out of stock. */
   failed_checks: number;
   last_check_at: string | null;
-  /** Result of the last weekly check (see supabase/migrations/20261126000000_catalog_check.sql). */
+  /** Result of the last check (see supabase/migrations/20261126000000_catalog_check.sql). */
   last_check_result: string | null;
+  /**
+   * Pool status (supabase/migrations/20261129000000_product_pool.sql). In the database a trigger keeps
+   * in_stock = status in ('active', 'pending'); code that writes one of them should write both.
+   */
+  status: ProductStatus;
+  source: ProductSource;
+  /** Price read from the shop page in the last successful check. */
+  price_checked: number | null;
+  /** Address after redirects in the last check. */
+  final_url: string | null;
   /**
    * Quiz answers the product fits (codes from lib/quiz/schema.ts, see
    * supabase/migrations/20261128000000_product_quiz_fit.sql). Empty or missing = fits any answer.
@@ -226,7 +238,7 @@ type TableDef<Row, DefaultKeys extends keyof Row> = {
 export type Database = {
   public: {
     Tables: {
-      products: TableDef<ProductRow, "id" | "tags" | "in_stock" | "updated_at" | "failed_checks">;
+      products: TableDef<ProductRow, "id" | "tags" | "in_stock" | "updated_at" | "failed_checks" | "status" | "source" | "price_checked" | "final_url">;
       price_history: TableDef<PriceHistoryRow, "id" | "checked_at">;
       catalog_check_runs: TableDef<
         CatalogCheckRunRow,

@@ -228,6 +228,10 @@ export function createDemoRepos(): Repos {
                 failed_checks: 0,
                 last_check_at: null,
                 last_check_result: null,
+                status: "pending",
+                source: "feed",
+                price_checked: null,
+                final_url: null,
                 ...row,
                 updated_at: now(),
               });
@@ -245,7 +249,7 @@ export function createDemoRepos(): Repos {
             }
           }
         }),
-      findCandidates: ({ minPrice, maxPrice, anyOfTags, noneOfTags, recipient, category, excludeIds, limit }) =>
+      findCandidates: ({ minPrice, maxPrice, anyOfTags, noneOfTags, recipient, category, excludeIds, freshWithinDays, limit }) =>
         read((data) =>
           data.products
             .filter(
@@ -257,6 +261,8 @@ export function createDemoRepos(): Repos {
                 !(noneOfTags?.length && p.tags.some((tag) => noneOfTags.includes(tag))) &&
                 (!recipient || !p.recipients?.length || p.recipients.includes(recipient)) &&
                 (!category || p.category === category) &&
+                (freshWithinDays === undefined ||
+                  (p.status === "active" && !!p.last_check_at && Date.now() - Date.parse(p.last_check_at) <= freshWithinDays * 86_400_000)) &&
                 !excludeIds?.includes(p.id),
             )
             .sort(byPriceDesc)
@@ -268,15 +274,19 @@ export function createDemoRepos(): Repos {
           for (const row of rows) {
             const existing = data.products.find((p) => p.network === "direct" && p.external_id === row.external_id);
             if (existing) {
-              Object.assign(existing, row, { commission_rate: 0, in_stock: true, updated_at: now() });
+              Object.assign(existing, row, { commission_rate: 0, in_stock: true, status: "active", updated_at: now() });
               saved.push(existing);
               continue;
             }
             const product: ProductRow = {
               id: randomUUID(),
               failed_checks: 0,
-              last_check_at: null,
+              last_check_at: row.checked_at,
               last_check_result: null,
+              status: "active",
+              source: "web_search",
+              price_checked: row.price_pln,
+              final_url: null,
               ...row,
               network: "direct",
               commission_rate: 0,
