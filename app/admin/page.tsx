@@ -9,6 +9,7 @@ import { ADMIN_COOKIE, isValidAdminSession } from "@/lib/admin/auth";
 import { ERROR_LABELS, getCatalogHealth, type CatalogHealth } from "@/lib/admin/health";
 import { MIN_GUIDE_PRODUCTS } from "@/lib/guides/products";
 import { AI_PRICES, getAdminStats, PERIODS, type AdminStats, type Period } from "@/lib/admin/stats";
+import { isMockMode } from "@/lib/mode";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Admin – Prezentoskop", robots: { index: false, follow: false } };
@@ -48,6 +49,80 @@ function duration(seconds: number | null): string {
   return seconds < 90 ? `${seconds} s` : `${Math.round(seconds / 60)} min`;
 }
 
+const NIGHTLY_WORKFLOW_URL = "https://github.com/CoffeeCod3r/TrafioneShop/actions/workflows/nightly-catalog.yml";
+const BAND_LABEL: Record<string, string> = { "do 50": "do 50 zł", "50-100": "50–100", "100-200": "100–200", "200+": "200+" };
+
+function PoolSection({ pool }: { pool: CatalogHealth["pool"] }) {
+  const nightly = pool.lastNightly;
+  const nightlyDetails = (nightly?.details ?? {}) as { budgetExceeded?: boolean; tagged?: number };
+  return (
+    <Section title="Pula produktów">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Tile label="Aktywne" value={num.format(pool.counts.active ?? 0)} hint="sprawdzone, w sprzedaży" />
+        <Tile label="Czekają na sprawdzenie" value={num.format(pool.counts.pending ?? 0)} />
+        <Tile label="Brak w magazynie" value={num.format(pool.counts.out_of_stock ?? 0)} hint="sprawdzane dalej, mogą wrócić" />
+        <Tile label="Usunięte (broken)" value={num.format(pool.counts.broken ?? 0)} hint="2 błędy z rzędu, nie pokazujemy" />
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <Tile
+          label="Komórki pokrycia (min. 8)"
+          value={`${num.format(pool.healthyCells)} / ${num.format(pool.totalCells)}`}
+          hint="kategoria × cena × odbiorca, aktywne sprawdzone w 7 dni"
+        />
+        <Tile
+          label="Ostatnia noc"
+          value={nightly ? dateTime.format(new Date(nightly.started_at)) : "jeszcze nie było"}
+          hint={
+            nightly
+              ? `${RUN_STATUS[nightly.status] ?? nightly.status} · dodane ${num.format(nightly.added)} · otagowane ${num.format(nightlyDetails.tagged ?? 0)}`
+              : "GitHub Actions: codziennie ok. 3:00"
+          }
+        />
+        <Tile
+          label="Koszt AI ostatniej nocy"
+          value={nightly ? `$${Number(nightly.ai_cost_usd).toFixed(4)}` : "–"}
+          hint={nightlyDetails.budgetExceeded ? "limit NIGHTLY_AI_BUDGET_USD osiągnięty" : "limit NIGHTLY_AI_BUDGET_USD"}
+        />
+      </div>
+      {pool.grid.length > 0 && (
+        <div className="overflow-x-auto rounded-xl border">
+          <table className="w-full text-sm">
+            <thead className="bg-muted text-left">
+              <tr>
+                <th className="px-3 py-2 font-medium">Kategoria</th>
+                {pool.grid[0].bands.map((band) => (
+                  <th key={band.band} className="whitespace-nowrap px-3 py-2 font-medium">
+                    {BAND_LABEL[band.band] ?? band.band}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {pool.grid.map((row) => (
+                <tr key={row.category}>
+                  <td className="px-3 py-2">{row.category}</td>
+                  {row.bands.map((band) => (
+                    <td
+                      key={band.band}
+                      className={cn("px-3 py-2 tabular-nums", band.healthy < band.total ? "bg-red-50 text-red-800" : "bg-green-50 text-green-800")}
+                    >
+                      {band.healthy}/{band.total}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <p className="text-xs text-muted-foreground">
+        Liczba w komórce: ilu odbiorców (z 7) ma co najmniej 8 aktywnych produktów w tej kategorii i cenie. Czerwone
+        komórki uzupełnia nocny przebieg (do 10 na noc).
+      </p>
+    </Section>
+  );
+}
+
 function CatalogHealthSection({ health }: { health: CatalogHealth }) {
   const run = health.lastRun;
   return (
@@ -73,7 +148,18 @@ function CatalogHealthSection({ health }: { health: CatalogHealth }) {
         <Tile label="Błędy sieci (ostatnie sprawdzenie)" value={run ? num.format(run.errors) : "–"} hint="niedostępny dopiero po 2 błędach z rzędu" />
       </div>
 
-      <CheckLinksButton running={health.running} />
+      {isMockMode() ? (
+        <CheckLinksButton running={health.running} />
+      ) : (
+        <a
+          href={NIGHTLY_WORKFLOW_URL}
+          target="_blank"
+          rel="noopener"
+          className="inline-flex min-h-12 items-center justify-center rounded-xl border-2 px-5 font-semibold sm:w-auto"
+        >
+          Sprawdź linki teraz (GitHub Actions)
+        </a>
+      )}
 
       <h3 className="mt-2 font-semibold">Najczęstsze błędy według sklepu</h3>
       <Table
@@ -203,6 +289,12 @@ function Dashboard({ stats, health, period }: { stats: AdminStats; health: Catal
               pln.format(stats.ai.paidPln),
               `${stats.ai.avgPaidSearchPln === null ? "–" : plnPrecise.format(stats.ai.avgPaidSearchPln)} / płatne wyszukiwanie (${stats.ai.paidSearches})`,
             ],
+            [
+              "Pula (nocne uzupełnianie i tagi)",
+              usd.format(stats.ai.poolUsd),
+              pln.format(stats.ai.poolUsd * stats.ai.usdPlnRate),
+              "limit NIGHTLY_AI_BUDGET_USD na noc",
+            ],
           ]}
         />
         <p className="text-xs text-muted-foreground">
@@ -233,6 +325,8 @@ function Dashboard({ stats, health, period }: { stats: AdminStats; health: Catal
           „ref:kod”.
         </p>
       </Section>
+
+      <PoolSection pool={health.pool} />
 
       <CatalogHealthSection health={health} />
 

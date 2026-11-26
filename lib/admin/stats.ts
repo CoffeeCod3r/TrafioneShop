@@ -7,6 +7,8 @@ import { getRepos } from "@/lib/services/db";
 export { AI_PRICES, usageCostUsd };
 const FREE_STEPS = new Set(["profile", "picks", "free_web_search"]);
 const PAID_STEPS = new Set(["web_search", "dedications"]);
+/** Nightly pool top-up (scripts/catalog-nightly.ts). */
+const POOL_STEPS = new Set(["catalog_build", "catalog_tag"]);
 
 export type Period = "dzis" | "7d" | "calosc";
 export const PERIODS: { value: Period; label: string }[] = [
@@ -95,6 +97,8 @@ export type AdminStats = {
     usdPlnRate: number;
     freeUsd: number;
     paidUsd: number;
+    /** Nightly pool top-up and tags. */
+    poolUsd: number;
     freePln: number;
     paidPln: number;
     paidSearches: number;
@@ -163,6 +167,7 @@ export async function getAdminStats(period: Period): Promise<AdminStats> {
   const rate = getEnv().USD_PLN_RATE;
   let freeUsd = 0;
   let paidUsd = 0;
+  let poolUsd = 0;
   let freeWebUsd = 0;
   const paidSearchResults = new Set<string>();
   const freeWebResults = new Set<string>();
@@ -170,6 +175,7 @@ export async function getAdminStats(period: Period): Promise<AdminStats> {
     const cost = usageCostUsd(row);
     if (FREE_STEPS.has(row.step)) freeUsd += cost;
     if (PAID_STEPS.has(row.step)) paidUsd += cost;
+    if (POOL_STEPS.has(row.step)) poolUsd += cost;
     if (row.step === "web_search" && row.result_id) paidSearchResults.add(row.result_id);
     if (row.step === "free_web_search") {
       freeWebUsd += cost;
@@ -203,6 +209,7 @@ export async function getAdminStats(period: Period): Promise<AdminStats> {
       usdPlnRate: rate,
       freeUsd,
       paidUsd,
+      poolUsd,
       freePln: freeUsd * rate,
       paidPln: paidUsd * rate,
       paidSearches: paidSearchResults.size,
