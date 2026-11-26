@@ -37,10 +37,21 @@ about the recipient and can optionally add a photo of them.
   (and not `demo`); everything found on the web shows the category illustration (`lib/illustrations.ts`, the only
   category → picture mapping, files in `public/illustrations`). Shop photos are never fetched, stored or shown.
   Unavailable products (or ones now above the result's budget) are never shown: replaced, else left out.
-- Weekly catalog check (Supabase Cron → Edge Function `check-links`, code in `lib/catalog-check/*`, NO AI, never
-  writes to `ai_usage`): polite (own User-Agent, robots.txt, 1 request/s per domain, 20 min cap, cursor resume).
-  Manual run: `npm run catalog:check` or the button in /admin ("Zdrowie katalogu"). Tests: `npm run test:catalog`,
-  `npm run test:cards`. After changing shared files run `npm run edge:deploy`.
+- Product pool (`products.status`: active | pending | out_of_stock | broken; a DB trigger keeps `in_stock` =
+  status in (active, pending); `source`: catalog_build | feed | web_search | manual). View `pool_coverage`:
+  active products checked in 7 days per category x price band x recipient, healthy at 8.
+  `POOL_STRICT=true` makes free results use only active products checked within 7 days (off until the pool is checked).
+- Pool check (code in `lib/catalog-check/*`, NO AI, never writes to `ai_usage`): own honest User-Agent (never a
+  browser one), robots.txt, max 5 requests at once, max 1 request/s per domain, 8 s timeout, max 3 redirects. Checks
+  the product's own page, never an affiliate link. 404/410/redirect home/listing/other domain/timeout/5xx: +1 fail,
+  broken after 2; sold out: out_of_stock at once; blocked (401/403/429): unchanged. `npm run catalog:verify`
+  (`--limit N`, `--only-stale`, `--dry-run`).
+- Nightly (GitHub Actions `.github/workflows/nightly-catalog.yml`, `npm run catalog:nightly`): verify up to 400 stale
+  products, then AI top-up of up to 10 thin pool cells (web_search max_uses 2, NO web_fetch) and tags, hard limit
+  `NIGHTLY_AI_BUDGET_USD` (0.30). Rule for this top-up: a proposed product is saved only after OUR code opened its
+  page (domain in `allowed_shops`, robots.txt, price from JSON-LD/meta inside the cell's band) - this replaces the
+  web_fetch proof. Report in `catalog_check_runs` (kind nightly). Admin: tile "Pula". Tests: `npm run test:pool`,
+  `npm run test:catalog`, `npm run test:cards`. The Supabase cron of the Edge Function `check-links` is removed.
 
 ## Stack
 - Next.js (App Router) + TypeScript + Tailwind + shadcn/ui

@@ -194,6 +194,8 @@ export type VerifyCandidateDeps = {
   polite: Polite;
   shopDomains: string[];
   now: () => number;
+  /** Tests only: accept http:// (a local test server). */
+  allowInsecure?: boolean;
 };
 
 export type CandidateVerdict = { url: string; ok: boolean; reason: string };
@@ -219,7 +221,7 @@ export async function verifyCandidates(
       let host: string;
       try {
         const parsed = new URL(proposal.url);
-        if (parsed.protocol !== "https:") throw new Error("not https");
+        if (parsed.protocol !== "https:" && !(deps.allowInsecure && parsed.protocol === "http:")) throw new Error("not https");
         host = parsed.hostname.toLowerCase();
       } catch {
         verdicts.push({ url: proposal.url, ok: false, reason: "bad_url" });
