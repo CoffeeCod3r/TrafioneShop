@@ -8,9 +8,9 @@ import { extractPageInfo, type Availability, type PageInfo } from "./extract.ts"
 export const USER_AGENT = "Prezentoskop-LinkChecker/1.0 (+https://prezentoskop.pl/kontakt; kontakt@prezentoskop.pl)";
 /** The product token robots.txt files can address. */
 export const ROBOTS_TOKEN = "Prezentoskop-LinkChecker";
-export const REQUEST_TIMEOUT_MS = 5_000;
+export const REQUEST_TIMEOUT_MS = 8_000;
 export const MAX_BODY_BYTES = 1_000_000;
-const MAX_REDIRECTS = 5;
+const MAX_REDIRECTS = 3;
 
 export type FetchLike = (url: string, init: { headers: Record<string, string>; redirect: "manual"; signal: AbortSignal }) => Promise<Response>;
 
@@ -20,6 +20,8 @@ export type CheckDeps = {
   maxBytes?: number;
   /** Hostnames we may follow redirects to (the allowed shops); a redirect elsewhere is not followed. */
   isAllowedHost: (hostname: string) => boolean;
+  /** Waits for this request's turn (per-domain politeness); awaited BEFORE the timeout starts counting. */
+  beforeRequest?: (url: string) => Promise<void>;
 };
 
 export type FetchedPage = {
@@ -34,10 +36,13 @@ export type FetchedPage = {
 };
 
 export type CheckOutcome =
-  | { kind: "ok"; price: number | null; availability: Availability; source: PageInfo["source"] }
-  | { kind: "gone"; reason: "http_404" | "http_410" | "redirect_to_listing" | "out_of_stock" }
+  | { kind: "ok"; price: number | null; availability: Availability; source: PageInfo["source"]; finalUrl: string }
+  /** The product is gone: 404/410, a redirect to the home page / a listing, or a redirect to another domain. */
+  | { kind: "gone"; reason: "http_404" | "http_410" | "redirect_to_listing" | "redirect_off_site" }
+  /** The page says the product is sold out. */
+  | { kind: "sold_out" }
   | { kind: "error"; reason: "timeout" | "http_5xx" | "blocked" | "network" }
-  | { kind: "unverified"; reason: "no_structured_data" | "other_status" | "currency" | "redirect_off_site" };
+  | { kind: "unverified"; reason: "no_structured_data" | "other_status" | "currency" };
 
 /** Reads the body as text, stopping after maxBytes. */
 async function readCapped(response: Response, maxBytes: number): Promise<string> {
@@ -67,6 +72,7 @@ async function readCapped(response: Response, maxBytes: number): Promise<string>
 
 /** One request with a hard timeout that also covers reading the body. Throws an AbortError on timeout. */
 async function request(url: string, deps: CheckDeps, kind: "page" | "robots"): Promise<{ response: Response; html: string }> {
+  await deps.beforeRequest?.(url);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), deps.timeoutMs ?? REQUEST_TIMEOUT_MS);
   try {
@@ -85,7 +91,7 @@ async function request(url: string, deps: CheckDeps, kind: "page" | "robots"): P
   }
 }
 
-/** Fetches a product page, following up to 5 redirects inside the allowed hosts. */
+/** Fetches a product page, following up to 3 redirects inside the allowed hosts. */
 export async function fetchPage(url: string, deps: CheckDeps): Promise<FetchedPage> {
   let current = url;
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
@@ -130,7 +136,7 @@ export function isListingRedirect(originalUrl: string, finalUrl: string, info: P
 
 /** Turns what the page said into one of the outcomes the rules work with. */
 export function classify(originalUrl: string, page: FetchedPage): CheckOutcome {
-  if (page.offSite) return { kind: "unverified", reason: "redirect_off_site" };
+  if (page.offSite) return { kind: "gone", reason: "redirect_off_site" };
   const { status } = page;
   if (status === 404) return { kind: "gone", reason: "http_404" };
   if (status === 410) return { kind: "gone", reason: "http_410" };
@@ -140,10 +146,10 @@ export function classify(originalUrl: string, page: FetchedPage): CheckOutcome {
 
   const info = extractPageInfo(page.html);
   if (page.redirected && isListingRedirect(originalUrl, page.finalUrl, info)) return { kind: "gone", reason: "redirect_to_listing" };
-  if (info.availability === "out_of_stock") return { kind: "gone", reason: "out_of_stock" };
+  if (info.availability === "out_of_stock") return { kind: "sold_out" };
   if (info.currency && info.currency !== "PLN") return { kind: "unverified", reason: "currency" };
   if (info.price !== null || info.availability === "in_stock") {
-    return { kind: "ok", price: info.price, availability: info.availability, source: info.source };
+    return { kind: "ok", price: info.price, availability: info.availability, source: info.source, finalUrl: page.finalUrl };
   }
   return { kind: "unverified", reason: "no_structured_data" };
 }

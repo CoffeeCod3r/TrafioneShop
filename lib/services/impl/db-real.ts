@@ -1,5 +1,5 @@
 import type { CatalogCheckRunRow, ProductRow } from "../../db.ts";
-import type { Repos } from "../db.ts";
+import type { CheckableProduct, Repos } from "../db.ts";
 import { getSupabase } from "./supabase.ts";
 
 const UPSERT_CHUNK = 500;
@@ -33,20 +33,24 @@ export function createRealRepos(): Repos {
   return {
     catalog: {
       async listCheckable() {
-        const columns = "id, name, url, affiliate_url, price_pln, network, category, failed_checks, in_stock";
-        const { data: direct, error } = await db().from("products").select(columns).eq("in_stock", true).eq("network", "direct");
-        if (error) fail("Loading products to check", error);
-        const { data: links, error: linksError } = await db().from("guide_products").select("product_id");
-        if (linksError) fail("Loading guide products", linksError);
-        const known = new Set(direct.map((product) => product.id));
-        const extraIds = [...new Set(links.map((link) => link.product_id))].filter((id) => !known.has(id));
-        let extra: typeof direct = [];
-        if (extraIds.length > 0) {
-          const { data, error: extraError } = await db().from("products").select(columns).eq("in_stock", true).in("id", extraIds);
-          if (extraError) fail("Loading guide products", extraError);
-          extra = data;
+        // Every product that is not gone (broken) and not a demo row; out_of_stock ones are checked again, they may
+        // come back. Paged, because PostgREST returns at most 1000 rows per request.
+        const columns = "id, name, url, affiliate_url, price_pln, network, category, failed_checks, in_stock, status, last_check_at";
+        const page = 1000;
+        const all: CheckableProduct[] = [];
+        for (let from = 0; ; from += page) {
+          const { data, error } = await db()
+            .from("products")
+            .select(columns)
+            .neq("status", "broken")
+            .neq("network", "demo")
+            .order("id")
+            .range(from, from + page - 1);
+          if (error) fail("Loading products to check", error);
+          all.push(...(data as CheckableProduct[]));
+          if (data.length < page) break;
         }
-        return [...direct, ...extra].sort((a, b) => a.id.localeCompare(b.id));
+        return all;
       },
       async applyCheck(productId, patch, history) {
         const { error } = await db().from("products").update(patch).eq("id", productId);

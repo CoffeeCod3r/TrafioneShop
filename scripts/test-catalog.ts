@@ -24,7 +24,8 @@ process.env.MOCK_MODE = "true";
 
 const { getRepos } = await import("../lib/services/db.ts");
 const { createRepoStore } = await import("../lib/catalog-check/repo-store.ts");
-const { runCatalogCheck, decide, MIN_INTERVAL_MS, FAILED_CHECKS_LIMIT } = await import("../lib/catalog-check/runner.ts");
+const { runCatalogCheck, decide, selectProducts, MIN_INTERVAL_MS, FAILED_CHECKS_LIMIT } = await import("../lib/catalog-check/runner.ts");
+type CheckProduct = import("../lib/catalog-check/runner.ts").CheckProduct;
 const { extractPageInfo } = await import("../lib/catalog-check/extract.ts");
 const { parseRobots } = await import("../lib/catalog-check/robots.ts");
 const { USER_AGENT, ROBOTS_TOKEN } = await import("../lib/catalog-check/check.ts");
@@ -123,16 +124,38 @@ const star = parseRobots("User-agent: *\nDisallow: /koszyk\nAllow: /koszyk/pomoc
 check(!star.isAllowed("/koszyk/x") && star.isAllowed("/koszyk/pomoc") && !star.isAllowed("/p?sesja=1") && star.isAllowed("/p"), "Disallow/Allow, najdłuższa reguła wygrywa, wildcard *");
 
 console.log("\nReguły wyniku");
-const product = { id: "x", name: "P", url: "u", affiliate_url: "u", price_pln: 100, network: "direct", failed_checks: 0 };
+const product: CheckProduct = { id: "x", name: "P", url: "u", affiliate_url: "u", price_pln: 100, network: "direct", failed_checks: 0, status: "pending", last_check_at: null };
 const now = new Date().toISOString();
-check(decide(product, { kind: "ok", price: 150, availability: "in_stock", source: "jsonld" }, now).history?.new_price === 150, "zmiana ceny o ponad 20% trafia do historii");
-check(decide(product, { kind: "ok", price: 110, availability: "in_stock", source: "jsonld" }, now).history === undefined, "zmiana o 10% nie trafia do historii, cena jest aktualizowana");
-check(decide({ ...product, failed_checks: 1 }, { kind: "ok", price: 100, availability: "in_stock", source: "jsonld" }, now).patch.failed_checks === 0, "udane sprawdzenie zeruje licznik");
-check(decide(product, { kind: "gone", reason: "http_404" }, now).patch.in_stock === false, "404 -> od razu niedostępny");
-check(decide(product, { kind: "error", reason: "timeout" }, now).patch.in_stock === undefined, "pierwszy błąd -> jeszcze dostępny");
+const okPage = (price: number) => ({ kind: "ok" as const, price, availability: "in_stock" as const, source: "jsonld" as const, finalUrl: "https://sklep.pl/p" });
+const ok150 = decide(product, okPage(150), now);
+check(ok150.history?.new_price === 150 && ok150.patch.status === "active" && ok150.patch.price_checked === 150, "zmiana ceny o ponad 20%: historia, status active, zapisana sprawdzona cena");
+check(decide(product, okPage(110), now).history === undefined, "zmiana o 10% nie trafia do historii, cena jest aktualizowana");
+check(decide({ ...product, failed_checks: 1 }, okPage(100), now).patch.failed_checks === 0, "udane sprawdzenie zeruje licznik");
+check(ok150.patch.final_url === "https://sklep.pl/p", "zapisany finalny adres po przekierowaniach");
+const first404 = decide(product, { kind: "gone", reason: "http_404" }, now);
+check(first404.patch.in_stock === undefined && first404.patch.failed_checks === 1, "404 (1. raz): licznik = 1, produkt zostaje");
+check(decide({ ...product, failed_checks: 1 }, { kind: "gone", reason: "http_404" }, now).patch.status === "broken", "404 (2. raz z rzędu): status broken");
+check(decide({ ...product, failed_checks: 1 }, { kind: "gone", reason: "redirect_off_site" }, now).patch.status === "broken", "przekierowanie na inną domenę liczy się jak błąd");
+check(decide({ ...product, status: "active" }, { kind: "sold_out" }, now).patch.status === "out_of_stock", "„brak w magazynie”: od razu out_of_stock");
+check(decide({ ...product, status: "out_of_stock" }, okPage(100), now).patch.status === "active", "produkt, który wrócił do sprzedaży: znowu active");
+check(decide(product, { kind: "error", reason: "timeout" }, now).patch.in_stock === undefined, "pierwszy timeout: jeszcze dostępny");
 const blocked = decide({ ...product, failed_checks: FAILED_CHECKS_LIMIT - 1 }, { kind: "error", reason: "blocked" }, now);
-check(blocked.patch.in_stock === undefined && blocked.patch.failed_checks === FAILED_CHECKS_LIMIT - 1 && blocked.failure === "blocked", "blokada 403/429: produkt bez zmian, licznik błędów nie rośnie, sklep trafia do tabeli błędów");
-check(decide({ ...product, failed_checks: FAILED_CHECKS_LIMIT - 1 }, { kind: "error", reason: "http_5xx" }, now).patch.in_stock === false, "drugi błąd z rzędu -> niedostępny");
+check(blocked.patch.status === undefined && blocked.patch.failed_checks === FAILED_CHECKS_LIMIT - 1 && blocked.failure === "blocked", "blokada 403/429: produkt bez zmian, licznik błędów nie rośnie, sklep trafia do tabeli błędów");
+check(decide({ ...product, failed_checks: FAILED_CHECKS_LIMIT - 1 }, { kind: "error", reason: "http_5xx" }, now).patch.status === "broken", "drugi błąd 5xx z rzędu: broken");
+
+console.log("\nWybór produktów do przebiegu");
+const day = 86_400_000;
+const nowMs = Date.now();
+const pool: CheckProduct[] = [
+  { ...product, id: "a", last_check_at: new Date(nowMs - 1 * day).toISOString() },
+  { ...product, id: "b", last_check_at: new Date(nowMs - 10 * day).toISOString() },
+  { ...product, id: "c", last_check_at: null },
+  { ...product, id: "d", last_check_at: new Date(nowMs - 5 * day).toISOString() },
+];
+const stale = selectProducts(pool, { cursor: null, staleAfterDays: 3, now: nowMs });
+check(stale.map((item) => item.id).join(",") === "c,b,d", `--only-stale: tylko starsze niż 3 dni, najstarsze pierwsze (${stale.map((item) => item.id).join(",")})`);
+check(selectProducts(pool, { cursor: null, staleAfterDays: 3, limit: 2, now: nowMs }).length === 2, "--limit 2: najwyżej 2 produkty");
+check(selectProducts(pool, { cursor: "b", now: nowMs }).map((item) => item.id).join(",") === "c,d", "pełny przebieg: kolejność po id od kursora");
 
 // ---------------------------------------------------------------------------
 // The run, against the local server
@@ -177,17 +200,27 @@ const idOf = (key: string) => saved.find((row) => row.external_id === `test-${ke
 const productOf = async (key: string) => (await repos.products.getById(idOf(key)))!;
 
 const store = createRepoStore(repos, ["127.0.0.1"]);
-const deps = { fetch: (url: string, init: RequestInit) => fetch(url, init), timeoutMs: 400, isAllowedHost: () => true };
+// Client-side start time of every request: the spacing test measures what the checker does, not server jitter.
+const sent: number[] = [];
+const deps = {
+  fetch: (url: string, init: RequestInit) => {
+    sent.push(Date.now());
+    return fetch(url, init);
+  },
+  timeoutMs: 400,
+  isAllowedHost: () => true,
+};
 
 async function fullRun(extra: Partial<Parameters<typeof runCatalogCheck>[1]> = {}) {
   const run = await repos.catalog.createRun("manual");
-  const result = await runCatalogCheck(store, { runId: run.id, budgetMs: 60_000, deps, minIntervalMs: 120, allowInsecure: true, ...extra });
+  const result = await runCatalogCheck(store, { runId: run.id, budgetMs: 60_000, deps, minIntervalMs: 120, allowInsecure: true, log: (message) => { if (process.env.DEBUG) console.log("    ", message); }, ...extra });
   return { run: (await repos.catalog.getRun(run.id))!, result };
 }
 
 console.log("\nPierwsze sprawdzenie (przykładowe strony)");
-const seenBeforeFirst = seen.length;
+const sentBeforeFirst = sent.length;
 const first = await fullRun();
+const sentFirstRun = sent.slice(sentBeforeFirst);
 check(first.result.status === "completed" && first.run.status === "completed", "przebieg zakończony");
 check(first.run.processed === specs.length, `sprawdzono wszystkie produkty (${first.run.processed}/${specs.length})`);
 let p = await productOf("dziala");
@@ -198,13 +231,17 @@ const history = await repos.catalog.countProducts();
 check(history.available > 0, "licznik produktów działa");
 p = await productOf("mala-zmiana");
 check(p.price_pln === 110, "mała zmiana ceny: aktualizacja bez historii");
-check(!(await productOf("brak-w-magazynie")).in_stock, "„brak w magazynie” w JSON-LD -> niedostępny");
+p = await productOf("brak-w-magazynie");
+check(!p.in_stock && p.status === "out_of_stock", "„brak w magazynie” w JSON-LD -> out_of_stock od razu");
 p = await productOf("meta");
 check(p.price_pln === 1299 && p.in_stock, "cena z meta tagów: 1 299,00 -> 1299");
-check(!(await productOf("404")).in_stock && (await productOf("404")).last_check_result === "gone_http_404", "404 -> niedostępny od razu");
-check(!(await productOf("410")).in_stock, "410 -> niedostępny od razu");
-check(!(await productOf("przekierowanie-kategoria")).in_stock, "przekierowanie na kategorię -> niedostępny");
-check(!(await productOf("przekierowanie-glowna")).in_stock, "przekierowanie na stronę główną -> niedostępny");
+p = await productOf("404");
+check(p.in_stock && p.failed_checks === 1 && p.last_check_result === "gone_http_404", "404 (1. raz): licznik = 1, jeszcze dostępny");
+check((await productOf("410")).failed_checks === 1, "410 (1. raz): licznik = 1");
+check((await productOf("przekierowanie-kategoria")).last_check_result === "gone_redirect_to_listing", "przekierowanie na kategorię wykryte");
+check((await productOf("przekierowanie-glowna")).last_check_result === "gone_redirect_to_listing", "przekierowanie na stronę główną wykryte");
+p = await productOf("dziala");
+check(p.status === "active" && !!p.final_url && p.price_checked === 100, "działający produkt: status active, finalny adres i sprawdzona cena zapisane");
 p = await productOf("zawsze-timeout");
 check(p.in_stock && p.failed_checks === 1 && p.last_check_result === "error_timeout", "timeout (1. raz): dostępny, licznik = 1");
 p = await productOf("blad-5xx");
@@ -224,14 +261,17 @@ const historyRows = await (async () => {
 })();
 check(historyRows.length === 1 && historyRows[0].old_price === 100 && historyRows[0].new_price === 150, "price_history: jeden wpis 100 -> 150");
 
-console.log("\nDrugie sprawdzenie (timeout dwa razy z rzędu)");
-const seenFirstRun = seen.slice(seenBeforeFirst);
+console.log("\nDrugie sprawdzenie (błąd dwa razy z rzędu)");
 const second = await fullRun();
-p = await productOf("zawsze-timeout");
-check(!p.in_stock && p.failed_checks === 2, "timeout 2. raz z rzędu -> niedostępny");
-p = await productOf("blad-5xx");
-check(!p.in_stock, "5xx 2. raz z rzędu -> niedostępny");
-check(second.run.processed === specs.length - 5, `nie sprawdza już niedostępnych (${second.run.processed} produktów)`);
+check(second.run.processed === specs.length, `drugi przebieg sprawdza wszystko, także out_of_stock (${second.run.processed})`);
+for (const key of ["404", "410", "przekierowanie-kategoria", "przekierowanie-glowna", "zawsze-timeout", "blad-5xx"]) {
+  p = await productOf(key);
+  check(!p.in_stock && p.status === "broken" && p.failed_checks === 2, `${key}: 2. raz z rzędu -> broken`);
+}
+const third = await fullRun();
+check(third.run.processed === specs.length - 6, `trzeci przebieg pomija broken (${third.run.processed} produktów)`);
+const limited = await fullRun({ limit: 3 });
+check(limited.run.processed === 3 && limited.run.total === 3, "--limit 3: sprawdzone dokładnie 3 produkty");
 
 console.log("\nLicznik błędów zerowany po udanym sprawdzeniu");
 // "raz-timeout": 1st call hangs (counter 1 in the first run), later calls answer: the second run resets it.
@@ -242,8 +282,8 @@ const userAgents = new Set(seen.map((entry) => entry.ua));
 check(userAgents.size === 1 && [...userAgents][0] === USER_AGENT, "własny User-Agent z nazwą strony i adresem kontaktowym");
 check(USER_AGENT.includes("prezentoskop.pl") && USER_AGENT.includes("kontakt@prezentoskop.pl"), "User-Agent zawiera stronę i e-mail");
 check(MIN_INTERVAL_MS === 1000, "domyślny odstęp: 1 zapytanie na sekundę do jednej domeny");
-const gaps = seenFirstRun.slice(1).map((entry, index) => entry.at - seenFirstRun[index].at);
-check(Math.min(...gaps) >= 100, `odstęp między zapytaniami do jednej domeny w teście ≥ 120 ms (najmniejszy: ${Math.min(...gaps)} ms)`);
+const gaps = sentFirstRun.slice(1).map((at, index) => at - sentFirstRun[index]);
+check(Math.min(...gaps) >= 110, `przy 5 zapytaniach naraz odstęp do jednej domeny ≥ 120 ms (najmniejszy: ${Math.min(...gaps)} ms)`);
 
 console.log("\n20 minut i wznawianie od miejsca przerwania");
 const resumeRepos = repos;

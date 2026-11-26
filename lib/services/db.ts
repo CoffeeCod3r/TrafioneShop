@@ -150,13 +150,16 @@ export type GuidesRepo = {
 /** A product the weekly check looks at: in stock, and found by the web search (direct) or used in a guide. */
 export type CheckableProduct = Pick<
   ProductRow,
-  "id" | "name" | "url" | "affiliate_url" | "price_pln" | "network" | "category" | "failed_checks" | "in_stock"
+  "id" | "name" | "url" | "affiliate_url" | "price_pln" | "network" | "category" | "failed_checks" | "in_stock" | "status" | "last_check_at"
 >;
 
 export type ProductCheckPatch = {
   price_pln?: number;
+  price_checked?: number;
   checked_at?: string;
   in_stock?: boolean;
+  status?: ProductRow["status"];
+  final_url?: string;
   failed_checks: number;
   last_check_at: string;
   last_check_result: string;

@@ -122,10 +122,9 @@ export function createDemoRepos(): Repos {
     catalog: {
       listCheckable: () =>
         read((data) => {
-          const guideIds = new Set(data.guide_products.map((link) => link.product_id));
           return data.products
-            .filter((product) => product.in_stock && (product.network === "direct" || guideIds.has(product.id)))
-            .map(({ id, name, url, affiliate_url, price_pln, network, category, failed_checks, in_stock }) => ({
+            .filter((product) => product.status !== "broken" && product.network !== "demo")
+            .map(({ id, name, url, affiliate_url, price_pln, network, category, failed_checks, in_stock, status, last_check_at }) => ({
               id,
               name,
               url: url ?? null,
@@ -135,6 +134,8 @@ export function createDemoRepos(): Repos {
               category,
               failed_checks: failed_checks ?? 0,
               in_stock,
+              status: status ?? (in_stock ? "pending" : "out_of_stock"),
+              last_check_at: last_check_at ?? null,
             }))
             .sort((a, b) => a.id.localeCompare(b.id));
         }),
