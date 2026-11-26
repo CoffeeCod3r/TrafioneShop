@@ -1,0 +1,56 @@
+# Nightly maintenance of the product pool (scripts/catalog-nightly.ts): verify stale products (no AI), find thin
+# pool cells and top them up with a capped AI search (NIGHTLY_AI_BUDGET_USD, default 0.30 USD), tag products,
+# write the report to catalog_check_runs. Replaces the weekly Supabase cron of the Edge Function check-links.
+#
+# Repository secrets (Settings -> Secrets and variables -> Actions), never in code or logs:
+#   NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL), SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY
+# Optional repository variables: NIGHTLY_AI_BUDGET_USD, ANTHROPIC_MODEL.
+# Run by hand from the Actions tab or the GitHub mobile app (workflow_dispatch), with "dry run" to only preview.
+name: Nightly catalog
+
+on:
+  schedule:
+    - cron: "0 2 * * *" # 02:00 UTC = 03:00 in Poland in winter, 04:00 in summer
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Na próbę: bez AI i bez zapisu"
+        type: boolean
+        default: false
+      steps:
+        description: "Kroki (verify,build,tag)"
+        type: string
+        default: "verify,build,tag"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-catalog
+  cancel-in-progress: false
+
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Nightly catalog
+        run: npm run catalog:nightly
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL: ${{ vars.ANTHROPIC_MODEL }}
+          NIGHTLY_AI_BUDGET_USD: ${{ vars.NIGHTLY_AI_BUDGET_USD || '0.30' }}
+          CATALOG_AI_PROVIDER: anthropic
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || '' }}
+          STEPS: ${{ github.event_name == 'workflow_dispatch' && inputs.steps || 'verify,build,tag' }}
+          # The script writes to the real database; MOCK_MODE only affects the app, not this job.
+          MOCK_MODE: "true"
+          REAL_DB: "true"
