@@ -16,8 +16,8 @@
  * Politeness: own User-Agent, robots.txt, at most 1 request per second to one domain, at most 5 requests at once.
  * Affiliate links are never opened: the product's own page (url) is checked, so no affiliate clicks are generated.
  */
-import { checkUrl, fetchRobotsText, ROBOTS_TOKEN, type CheckDeps, type CheckOutcome } from "./check.ts";
-import { parseRobots, type RobotsRules } from "./robots.ts";
+import { checkUrl, type CheckDeps, type CheckOutcome } from "./check.ts";
+import { createPolite } from "./polite.ts";
 
 export const PRICE_CHANGE_THRESHOLD = 0.2;
 export const FAILED_CHECKS_LIMIT = 2;
@@ -192,33 +192,9 @@ export async function runCatalogCheck(store: CheckStore, options: RunnerOptions)
   const [products, domains] = await Promise.all([store.listProducts(), store.listShopDomains()]);
   const queue = selectProducts(products, { cursor: run.cursor, limit: options.limit, staleAfterDays: options.staleAfterDays, now: now() });
 
-  // At most one request per second to one domain, also with several workers: the requests of one domain wait in a
-  // queue, and each one starts at least `interval` after the previous one actually started.
-  const lanes = new Map<string, Promise<void>>();
-  const lastStart = new Map<string, number>();
-  const waitForTurn = (url: string): Promise<void> => {
-    const host = hostOf(url);
-    const turn = (lanes.get(host) ?? Promise.resolve()).then(async () => {
-      const wait = (lastStart.get(host) ?? Number.NEGATIVE_INFINITY) + interval - now();
-      if (wait > 0) await sleep(wait);
-      lastStart.set(host, now());
-    });
-    lanes.set(host, turn);
-    return turn;
-  };
+  const polite = createPolite({ intervalMs: interval, now, sleep });
 
   const state: RunState = { ...run, total: run.total || queue.length, failures: JSON.parse(JSON.stringify(run.failures ?? {})) };
-  const robots = new Map<string, Promise<RobotsRules>>();
-  const robotsFor = (url: string, deps: CheckDeps) => {
-    const host = hostOf(url);
-    let rules = robots.get(host);
-    if (!rules) {
-      rules = fetchRobotsText(new URL(url).origin, deps).then((text) => (text ? parseRobots(text, ROBOTS_TOKEN) : { isAllowed: () => true }));
-      robots.set(host, rules);
-    }
-    return rules;
-  };
-
   const save = (extra: Parameters<CheckStore["updateRun"]>[1] = {}) =>
     store.updateRun(state.id, {
       total: state.total,
@@ -252,13 +228,11 @@ export async function runCatalogCheck(store: CheckStore, options: RunnerOptions)
     const ownDomain = host.replace(/^www\./, "");
     const deps: CheckDeps = {
       ...options.deps,
-      beforeRequest: waitForTurn,
+      beforeRequest: polite.waitForTurn,
       isAllowedHost: (candidate) => matches(candidate, ownDomain) || domains.some((domain) => matches(candidate, domain)),
     };
 
-    const rules = await robotsFor(url, deps);
-    const target = new URL(url);
-    if (!rules.isAllowed(`${target.pathname}${target.search}`)) {
+    if (!(await polite.allows(url, deps))) {
       await store.applyCheck(product.id, { last_check_at: nowIso, failed_checks: product.failed_checks, last_check_result: "skipped_robots" });
       state.skipped_robots += 1;
       return;

@@ -1,5 +1,5 @@
 import type { CatalogCheckRunRow, ProductRow } from "../../db.ts";
-import type { CheckableProduct, Repos } from "../db.ts";
+import type { CheckableProduct, PoolCoverageRow, Repos } from "../db.ts";
 import { getSupabase } from "./supabase.ts";
 
 const UPSERT_CHUNK = 500;
@@ -29,6 +29,8 @@ async function fetchAll<T>(page: (from: number, to: number) => PromiseLike<{ dat
 /** Supabase implementation of the repositories (tables from supabase/migrations). */
 export function createRealRepos(): Repos {
   const db = () => getSupabase();
+  /** Views are not in the typed Database schema: read them through an untyped handle. */
+  const views = () => getSupabase() as unknown as { from(view: string): ReturnType<ReturnType<typeof getSupabase>["from"]> };
 
   return {
     catalog: {
@@ -60,8 +62,8 @@ export function createRealRepos(): Repos {
           if (historyError) fail("Saving price history", historyError);
         }
       },
-      async createRun(startedBy) {
-        const { data, error } = await db().from("catalog_check_runs").insert({ started_by: startedBy }).select("*").single();
+      async createRun(startedBy, kind = "check") {
+        const { data, error } = await db().from("catalog_check_runs").insert({ started_by: startedBy, kind }).select("*").single();
         if (error) fail("Creating check run", error);
         return data as CatalogCheckRunRow;
       },
@@ -85,6 +87,62 @@ export function createRealRepos(): Repos {
         if (available.error) fail("Counting products", available.error);
         if (unavailable.error) fail("Counting products", unavailable.error);
         return { available: available.count ?? 0, unavailable: unavailable.count ?? 0 };
+      },
+      async poolCoverage() {
+        const { data, error } = await views().from("pool_coverage").select("*").order("category").order("band_order").order("recipient");
+        if (error) fail("Loading pool coverage", error);
+        return ((data ?? []) as PoolCoverageRow[]).map((row) => ({ ...row, active: Number(row.active) }));
+      },
+      async poolStatusCounts() {
+        const { data, error } = await views().from("pool_status_counts").select("*");
+        if (error) fail("Loading pool counts", error);
+        return Object.fromEntries(((data ?? []) as { status: string; products: number }[]).map((row) => [row.status, Number(row.products)]));
+      },
+      async demandSince(isoDate) {
+        const { data, error } = await db().from("results").select("recipient, budget_pln").gte("created_at", isoDate).limit(5000);
+        if (error) fail("Loading demand", error);
+        return data;
+      },
+      async saveBuilt(rows) {
+        if (rows.length === 0) return 0;
+        const { data, error } = await db()
+          .from("products")
+          .upsert(
+            rows.map((row) => ({
+              ...row,
+              network: "direct",
+              description: null,
+              image_url: null,
+              affiliate_url: row.url,
+              commission_rate: 0,
+              in_stock: true,
+              status: "active" as const,
+              source: "catalog_build" as const,
+              failed_checks: 0,
+              last_check_at: row.checked_at,
+              last_check_result: "ok",
+              price_checked: row.price_pln,
+            })),
+            { onConflict: "network,external_id" },
+          )
+          .select("id");
+        if (error) fail("Saving built products", error);
+        return data.length;
+      },
+      async listUntagged(limit) {
+        const { data, error } = await db()
+          .from("products")
+          .select("id, name, category, price_pln, merchant")
+          .in("status", ["active", "pending"])
+          .neq("network", "demo")
+          .or("tags.eq.{},gift_types.eq.{}")
+          .limit(limit);
+        if (error) fail("Loading untagged products", error);
+        return data;
+      },
+      async updateTags(productId, patch) {
+        const { error } = await db().from("products").update(patch).eq("id", productId);
+        if (error) fail("Saving product tags", error);
       },
     },
 

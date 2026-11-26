@@ -108,6 +108,13 @@ export type CatalogCheckRunRow = {
   /** { "shop.pl": { "timeout": 2 } } */
   failures: Record<string, Record<string, number>>;
   guides_incomplete: string[];
+  /** check = one verification run; nightly = the whole night (verify + AI top-up + tags). */
+  kind: "check" | "nightly";
+  /** Products the AI top-up added to the pool. */
+  added: number;
+  ai_cost_usd: number;
+  /** Nightly report details: verifyRunId, cells, budgetExceeded, pool counts. */
+  details: Record<string, unknown>;
 };
 
 export type ResultRow = {
@@ -256,6 +263,10 @@ export type Database = {
         | "errors"
         | "failures"
         | "guides_incomplete"
+        | "kind"
+        | "added"
+        | "ai_cost_usd"
+        | "details"
       >;
       results: TableDef<
         ResultRow,

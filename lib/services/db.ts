@@ -4,6 +4,7 @@
  * The rest of the code uses only this interface via getRepos().
  * Shared with Node scripts: relative imports with `.ts` extensions only.
  */
+import type { PoolCoverageRow as PoolCoverageRowType } from "../catalog-build/coverage.ts";
 import type {
   AiUsageRow,
   AllowedShopRow,
@@ -165,17 +166,48 @@ export type ProductCheckPatch = {
   last_check_result: string;
 };
 
-/** Weekly check of links and prices (lib/catalog-check). Never touches ai_usage. */
+/** A product found and verified by the nightly AI top-up (lib/catalog-build), saved as network "direct". */
+export type BuiltProductInput = {
+  external_id: string;
+  merchant: string;
+  name: string;
+  price_pln: number;
+  category: string;
+  tags: string[];
+  recipients: string[];
+  gift_types: string[];
+  lifestyles: string[];
+  url: string;
+  final_url: string;
+  checked_at: string;
+};
+
+export type ProductTagPatch = { tags: string[]; recipients: string[]; gift_types: string[]; lifestyles: string[] };
+
+export type { PoolCoverageRow } from "../catalog-build/coverage.ts";
+
+/** Product pool: checks of links and prices (lib/catalog-check, no AI) and the nightly top-up (lib/catalog-build). */
 export type CatalogRepo = {
   listCheckable(): Promise<CheckableProduct[]>;
   /** Writes the outcome of one check; `history` (old and new price) is stored when the price moved by more than 20 %. */
   applyCheck(productId: string, patch: ProductCheckPatch, history?: { old_price: number; new_price: number }): Promise<void>;
-  createRun(startedBy: CatalogCheckRunRow["started_by"]): Promise<CatalogCheckRunRow>;
+  createRun(startedBy: CatalogCheckRunRow["started_by"], kind?: CatalogCheckRunRow["kind"]): Promise<CatalogCheckRunRow>;
   getRun(id: string): Promise<CatalogCheckRunRow | null>;
   updateRun(id: string, patch: Partial<CatalogCheckRunRow>): Promise<void>;
   recentRuns(limit: number): Promise<CatalogCheckRunRow[]>;
   /** Admin: products in stock and not in stock. */
   countProducts(): Promise<{ available: number; unavailable: number }>;
+  /** The pool_coverage view: active fresh products per category x price band x recipient. */
+  poolCoverage(): Promise<PoolCoverageRowType[]>;
+  /** Products per status (demo rows left out). */
+  poolStatusCounts(): Promise<Partial<Record<ProductRow["status"], number>>>;
+  /** Recipient and budget of the results since a date: which pool cells people actually need. */
+  demandSince(isoDate: string): Promise<{ recipient: string | null; budget_pln: number | null }[]>;
+  /** Saves verified top-up products (status active, source catalog_build); the same address updates the row. */
+  saveBuilt(rows: BuiltProductInput[]): Promise<number>;
+  /** Products in the pool without tags or gift types, for catalog:tag. */
+  listUntagged(limit: number): Promise<Pick<ProductRow, "id" | "name" | "category" | "price_pln" | "merchant">[]>;
+  updateTags(productId: string, patch: ProductTagPatch): Promise<void>;
 };
 
 export type Repos = {
