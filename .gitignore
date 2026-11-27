@@ -42,6 +42,7 @@ next-env.d.ts
 
 # keep the template
 !.env.example
+!.env.test-ai.example
 
 # demo database (MOCK_MODE)
 .data
