@@ -57,6 +57,17 @@ about the recipient and can optionally add a photo of them.
   web_fetch proof. Report in `catalog_check_runs` (kind nightly). Admin: tile "Pula". Tests: `npm run test:pool`,
   `npm run test:catalog`, `npm run test:cards`. The Supabase cron of the Edge Function `check-links` is removed.
 
+- Warm-up (`npm run catalog:warmup`, `--check`, `--dry-run`; combos in `lib/catalog/warmup-combos.ts`, logic in
+  `lib/catalog/warmup.ts`): common quiz combinations (recipient + budget + one interest) scored with the catalog
+  path's filters and ranking, NO AI; healthy = >=15 candidates and a top 5 from >=3 categories. Counted products:
+  status active, plus Webepartners feed products before their first check (Ceneo only after a check). Gaps: page
+  check first, then max 2 AI rounds per combo (template queries, web_search only, code-verified pages), limit
+  `WARMUP_AI_BUDGET_USD` (2.00). Ready top 5 in `warm_results` (24 h), refreshed nightly (step `warm`).
+- Warm path in `/api/analyze`: no photo, no description, no "what they already have", and recipient + budget + one
+  interest match a healthy `warm_results` row -> the ready top 5 at once, with NO AI call at all (no profile either);
+  `free_source='warm'`, label "Sprawdzone produkty z polskich sklepów" and the affiliate notice always shown.
+  Tests: `npm run test:warmup`.
+
 ## Stack
 - Next.js (App Router) + TypeScript + Tailwind + shadcn/ui
 - Supabase (Postgres)
