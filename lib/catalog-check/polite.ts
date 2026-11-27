@@ -12,7 +12,13 @@ export type Polite = {
   allows(url: string, deps: CheckDeps): Promise<boolean>;
 };
 
-export function createPolite(options: { intervalMs: number; now: () => number; sleep: (ms: number) => Promise<void> }): Polite {
+export function createPolite(options: {
+  intervalMs: number;
+  /** A domain's own minimum interval (e.g. Ceneo 15 s); falls back to intervalMs. */
+  intervalFor?: (host: string) => number | undefined;
+  now: () => number;
+  sleep: (ms: number) => Promise<void>;
+}): Polite {
   const { intervalMs, now, sleep } = options;
   // The requests of one domain wait in a queue; each starts at least intervalMs after the previous one actually started.
   const lanes = new Map<string, Promise<void>>();
@@ -24,7 +30,7 @@ export function createPolite(options: { intervalMs: number; now: () => number; s
     waitForTurn(url) {
       const host = hostOf(url);
       const turn = (lanes.get(host) ?? Promise.resolve()).then(async () => {
-        const wait = (lastStart.get(host) ?? Number.NEGATIVE_INFINITY) + intervalMs - now();
+        const wait = (lastStart.get(host) ?? Number.NEGATIVE_INFINITY) + (options.intervalFor?.(host) ?? intervalMs) - now();
         if (wait > 0) await sleep(wait);
         lastStart.set(host, now());
       });

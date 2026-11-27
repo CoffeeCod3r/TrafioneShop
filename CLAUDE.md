@@ -44,8 +44,12 @@ about the recipient and can optionally add a photo of them.
 - Pool check (code in `lib/catalog-check/*`, NO AI, never writes to `ai_usage`): own honest User-Agent (never a
   browser one), robots.txt, max 5 requests at once, max 1 request/s per domain, 8 s timeout, max 3 redirects. Checks
   the product's own page, never an affiliate link. 404/410/redirect home/listing/other domain/timeout/5xx: +1 fail,
-  broken after 2; sold out: out_of_stock at once; blocked (401/403/429): unchanged. `npm run catalog:verify`
-  (`--limit N`, `--only-stale`, `--dry-run`).
+  broken after 2; sold out: out_of_stock at once; blocked (401/403/429, CAPTCHA redirect): unchanged, and after 3
+  blocks in a row the domain is left alone for the rest of the run (one product at a time per domain). Never solve or
+  bypass a CAPTCHA. Per-domain rules in `lib/catalog-check/domains.ts`: Ceneo (products added by hand, no feed exists)
+  1 request per 15 s, max 60 per run, back off at the first block; a Ceneo check stays valid 21 days
+  (`FRESH_DAYS_BY_NETWORK`, also in the view `pool_coverage`). The AI top-up waits until no product is unchecked.
+  `npm run catalog:verify` (`--limit N`, `--only-stale`, `--dry-run`).
 - Nightly (GitHub Actions `.github/workflows/nightly-catalog.yml`, `npm run catalog:nightly`): verify up to 400 stale
   products, then AI top-up of up to 10 thin pool cells (web_search max_uses 2, NO web_fetch) and tags, hard limit
   `NIGHTLY_AI_BUDGET_USD` (0.30). Rule for this top-up: a proposed product is saved only after OUR code opened its

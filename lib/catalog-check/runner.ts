@@ -17,6 +17,7 @@
  * Affiliate links are never opened: the product's own page (url) is checked, so no affiliate clicks are generated.
  */
 import { BACKED_OFF, checkUrl, type CheckDeps, type CheckOutcome } from "./check.ts";
+import { DEFAULT_DOMAIN_RULE, DOMAIN_RULES, ruleFor, type DomainRule } from "./domains.ts";
 import { createPolite } from "./polite.ts";
 
 export const PRICE_CHANGE_THRESHOLD = 0.2;
@@ -25,7 +26,7 @@ export const MIN_INTERVAL_MS = 1_000;
 export const MAX_RUN_MS = 20 * 60_000;
 export const DEFAULT_CONCURRENCY = 5;
 /** After this many blocks in a row (401/403/429, CAPTCHA) a domain is left alone for the rest of the run. */
-export const BLOCKS_BEFORE_BACKING_OFF = 3;
+export const BLOCKS_BEFORE_BACKING_OFF = DEFAULT_DOMAIN_RULE.blocksBeforeBackOff;
 
 export type ProductStatus = "active" | "pending" | "out_of_stock" | "broken";
 
@@ -149,6 +150,8 @@ export type RunnerOptions = {
   staleAfterDays?: number;
   /** Tests only: allow http:// addresses (a local test server). Production checks https only. */
   allowInsecure?: boolean;
+  /** Per-domain politeness (lib/catalog-check/domains.ts); tests pass their own. */
+  domainRules?: Record<string, Partial<DomainRule>>;
   log?: (message: string) => void;
 };
 
@@ -161,7 +164,7 @@ const byId = (a: { id: string }, b: { id: string }) => (a.id < b.id ? -1 : a.id 
 /** The products of this run, in order: oldest check first (stale mode) or by id after the cursor (full mode). */
 export function selectProducts(
   products: CheckProduct[],
-  options: { cursor: string | null; limit?: number; staleAfterDays?: number; now: number },
+  options: { cursor: string | null; limit?: number; staleAfterDays?: number; now: number; domainRules?: Record<string, Partial<DomainRule>> },
 ): CheckProduct[] {
   let list: CheckProduct[];
   if (options.staleAfterDays !== undefined) {
@@ -171,6 +174,21 @@ export function selectProducts(
   } else {
     list = [...products].sort(byId).filter((product) => options.cursor === null || product.id > options.cursor);
   }
+  // A domain with its own cap (Ceneo: 60 per run) gives up its later products to the next run.
+  const taken = new Map<string, number>();
+  list = list.filter((product) => {
+    let host: string;
+    try {
+      host = hostOf(product.url ?? product.affiliate_url);
+    } catch {
+      return true;
+    }
+    const rule = ruleFor(host, options.domainRules ?? DOMAIN_RULES);
+    const count = taken.get(rule.key) ?? 0;
+    if (count >= rule.maxPerRun) return false;
+    taken.set(rule.key, count + 1);
+    return true;
+  });
   return options.limit !== undefined ? list.slice(0, options.limit) : list;
 }
 
@@ -192,9 +210,19 @@ export async function runCatalogCheck(store: CheckStore, options: RunnerOptions)
   const maxRunMs = options.maxRunMs ?? MAX_RUN_MS;
 
   const [products, domains] = await Promise.all([store.listProducts(), store.listShopDomains()]);
-  const queue = selectProducts(products, { cursor: run.cursor, limit: options.limit, staleAfterDays: options.staleAfterDays, now: now() });
+  const domainRules = options.domainRules ?? DOMAIN_RULES;
+  const queue = selectProducts(products, { cursor: run.cursor, limit: options.limit, staleAfterDays: options.staleAfterDays, now: now(), domainRules });
 
-  const polite = createPolite({ intervalMs: interval, now, sleep });
+  // Domains with their own rule (Ceneo) use its interval; every other domain uses the run's interval.
+  const polite = createPolite({
+    intervalMs: interval,
+    intervalFor: (host) => {
+      const rule = ruleFor(host, domainRules);
+      return rule.key in domainRules ? rule.intervalMs : undefined;
+    },
+    now,
+    sleep,
+  });
 
   const state: RunState = { ...run, total: run.total || queue.length, failures: JSON.parse(JSON.stringify(run.failures ?? {})) };
   const save = (extra: Parameters<CheckStore["updateRun"]>[1] = {}) =>
@@ -285,7 +313,7 @@ export async function runCatalogCheck(store: CheckStore, options: RunnerOptions)
     if (outcome.kind === "error" && outcome.reason === "blocked") {
       const inRow = (blocksInRow.get(host) ?? 0) + 1;
       blocksInRow.set(host, inRow);
-      if (inRow >= BLOCKS_BEFORE_BACKING_OFF && !backedOff.has(host)) {
+      if (inRow >= ruleFor(host, domainRules).blocksBeforeBackOff && !backedOff.has(host)) {
         backedOff.add(host);
         log(`backing off ${host} after ${inRow} blocks in a row`);
       }

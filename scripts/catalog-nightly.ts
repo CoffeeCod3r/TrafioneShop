@@ -21,6 +21,7 @@ process.env.REAL_DB ??= "true";
 const { getRepos } = await import("../lib/services/db.ts");
 const { formatVerifyReport, previewVerify, runVerify } = await import("../lib/catalog-check/verify-run.ts");
 const { createPolite } = await import("../lib/catalog-check/polite.ts");
+const { ruleFor } = await import("../lib/catalog-check/domains.ts");
 const build = await import("../lib/catalog-build/build.ts");
 type UsageEntry = import("../lib/search/core.ts").UsageEntry;
 
@@ -128,7 +129,12 @@ try {
     }
     const shopDomains = (await repos.allowedShops.listActive()).map((shop) => shop.domain);
     console.log(`\nb) Komórki poniżej progu: ${coverage.filter((row) => !row.healthy).length}/${coverage.length}; uzupełniam ${cells.length}.`);
-    const polite = createPolite({ intervalMs: 1_000, now: Date.now, sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)) });
+    const polite = createPolite({
+      intervalMs: 1_000,
+      intervalFor: (host) => ruleFor(host).intervalMs,
+      now: Date.now,
+      sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    });
     const cellReports: Record<string, unknown>[] = [];
     for (const cell of cells) {
       if (spent() + build.ESTIMATED_CELL_COST_USD > budgetUsd) {

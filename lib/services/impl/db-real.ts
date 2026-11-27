@@ -1,4 +1,5 @@
 import type { CatalogCheckRunRow, ProductRow } from "../../db.ts";
+import { FRESH_DAYS_BY_NETWORK } from "../../catalog-build/coverage.ts";
 import type { CheckableProduct, PoolCoverageRow, Repos } from "../db.ts";
 import { getSupabase } from "./supabase.ts";
 
@@ -234,7 +235,18 @@ export function createRealRepos(): Repos {
         if (recipient) query = query.or(`recipients.eq.{},recipients.cs.{${recipient}}`);
         if (category) query = query.eq("category", category);
         if (freshWithinDays !== undefined) {
-          query = query.eq("status", "active").gte("last_check_at", new Date(Date.now() - freshWithinDays * 86_400_000).toISOString());
+          // Ceneo checks stay valid for 21 days (FRESH_DAYS_BY_NETWORK), everything else for freshWithinDays.
+          const since = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
+          const slow = Object.entries(FRESH_DAYS_BY_NETWORK);
+          const slowNames = slow.map(([network]) => network).join(",");
+          query = query
+            .eq("status", "active")
+            .or(
+              [
+                ...slow.map(([network, days]) => `and(network.eq.${network},last_check_at.gte.${since(days)})`),
+                `and(network.not.in.(${slowNames}),last_check_at.gte.${since(freshWithinDays)})`,
+              ].join(","),
+            );
         }
         if (excludeIds && excludeIds.length > 0) query = query.not("id", "in", `(${excludeIds.join(",")})`);
         const { data, error } = await query.order("price_pln", { ascending: false }).limit(limit);

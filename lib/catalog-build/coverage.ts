@@ -12,7 +12,13 @@ export const POOL_BANDS = [
 ] as const;
 /** A cell is healthy with at least this many active products. */
 export const POOL_HEALTHY_MIN = 8;
-export const POOL_FRESH_MS = 7 * 86_400_000;
+export const POOL_FRESH_DAYS = 7;
+/**
+ * Networks whose checks stay valid longer because their pages may only be read slowly (Ceneo: 60 per night, a full
+ * round takes ~15 nights; lib/catalog-check/domains.ts). Same numbers in the SQL view pool_coverage.
+ */
+export const FRESH_DAYS_BY_NETWORK: Record<string, number> = { ceneo: 21 };
+export const freshDaysFor = (network: string) => FRESH_DAYS_BY_NETWORK[network] ?? POOL_FRESH_DAYS;
 
 export type PoolCoverageRow = { category: string; band: string; band_order: number; recipient: string; active: number; healthy: boolean };
 
@@ -28,7 +34,7 @@ type CoverageProduct = {
 export function computeCoverage(products: CoverageProduct[], nowMs: number): PoolCoverageRow[] {
   const categories = [...new Set(products.filter((p) => p.network !== "demo" && p.category).map((p) => p.category as string))].sort();
   const fresh = products.filter(
-    (p) => p.status === "active" && p.last_check_at !== null && nowMs - Date.parse(p.last_check_at) < POOL_FRESH_MS,
+    (p) => p.status === "active" && p.last_check_at !== null && nowMs - Date.parse(p.last_check_at) < freshDaysFor(p.network) * 86_400_000,
   );
   const rows: PoolCoverageRow[] = [];
   for (const category of categories) {

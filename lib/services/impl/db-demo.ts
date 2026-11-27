@@ -18,7 +18,7 @@ import type {
   ResultRow,
   SubscriberRow,
 } from "../../db.ts";
-import { computeCoverage } from "../../catalog-build/coverage.ts";
+import { computeCoverage, FRESH_DAYS_BY_NETWORK } from "../../catalog-build/coverage.ts";
 import type { Repos } from "../db.ts";
 
 /**
@@ -324,7 +324,9 @@ export function createDemoRepos(): Repos {
                 (!recipient || !p.recipients?.length || p.recipients.includes(recipient)) &&
                 (!category || p.category === category) &&
                 (freshWithinDays === undefined ||
-                  (p.status === "active" && !!p.last_check_at && Date.now() - Date.parse(p.last_check_at) <= freshWithinDays * 86_400_000)) &&
+                  (p.status === "active" &&
+                    !!p.last_check_at &&
+                    Date.now() - Date.parse(p.last_check_at) <= (FRESH_DAYS_BY_NETWORK[p.network] ?? freshWithinDays) * 86_400_000)) &&
                 !excludeIds?.includes(p.id),
             )
             .sort(byPriceDesc)

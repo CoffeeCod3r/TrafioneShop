@@ -25,10 +25,11 @@ process.env.MOCK_MODE = "true";
 
 const { extractPageInfo } = await import("../lib/catalog-check/extract.ts");
 const { checkUrl } = await import("../lib/catalog-check/check.ts");
-const { runCatalogCheck, BLOCKS_BEFORE_BACKING_OFF } = await import("../lib/catalog-check/runner.ts");
+const { runCatalogCheck, selectProducts, BLOCKS_BEFORE_BACKING_OFF } = await import("../lib/catalog-check/runner.ts");
+const { ruleFor } = await import("../lib/catalog-check/domains.ts");
 type CheckProduct = import("../lib/catalog-check/runner.ts").CheckProduct;
 const { createPolite } = await import("../lib/catalog-check/polite.ts");
-const { computeCoverage, bandOfBudget, POOL_HEALTHY_MIN } = await import("../lib/catalog-build/coverage.ts");
+const { computeCoverage, bandOfBudget, freshDaysFor, POOL_HEALTHY_MIN } = await import("../lib/catalog-build/coverage.ts");
 const { chooseCells, verifyCandidates } = await import("../lib/catalog-build/build.ts");
 const { getRepos } = await import("../lib/services/db.ts");
 
@@ -102,7 +103,7 @@ const old = new Date(now - 10 * 86_400_000).toISOString();
 const products = [
   ...Array.from({ length: 8 }, () => ({ network: "ceneo", category: "kawa-herbata", price_pln: 80, recipients: [] as string[], status: "active", last_check_at: fresh })),
   { network: "ceneo", category: "gry", price_pln: 40, recipients: ["dad"], status: "active", last_check_at: fresh },
-  { network: "ceneo", category: "gry", price_pln: 40, recipients: [], status: "active", last_check_at: old },
+  { network: "direct", category: "gry", price_pln: 40, recipients: [], status: "active", last_check_at: old },
   { network: "ceneo", category: "gry", price_pln: 40, recipients: [], status: "pending", last_check_at: null },
   { network: "demo", category: "demo-only", price_pln: 40, recipients: [], status: "broken", last_check_at: null },
 ];
@@ -188,6 +189,63 @@ check(runState.failures.localhost?.skipped_after_block === 8 - BLOCKS_BEFORE_BAC
 // ---------------------------------------------------------------------------
 // Nightly dry run
 // ---------------------------------------------------------------------------
+console.log("\nZasady dla Ceneo");
+const ceneoRule = ruleFor("www.ceneo.pl");
+check(ceneoRule.intervalMs === 15_000 && ceneoRule.maxPerRun === 60 && ceneoRule.blocksBeforeBackOff === 1, "ceneo.pl: 1 zapytanie na 15 s, maks. 60 na przebieg, stop przy pierwszej blokadzie");
+const otherRule = ruleFor("www.empik.com");
+check(otherRule.intervalMs === 1_000 && otherRule.blocksBeforeBackOff === 3 && !Number.isFinite(otherRule.maxPerRun), "inne sklepy: 1 na sekundę, 3 blokady, bez limitu");
+const ceneoPool: CheckProduct[] = [
+  ...Array.from({ length: 100 }, (_, index) => ({
+    id: `c${String(index).padStart(3, "0")}`,
+    name: "Ceneo",
+    url: `https://www.ceneo.pl/${index}`,
+    affiliate_url: `https://www.ceneo.pl/${index}#crid=1&pid=1`,
+    price_pln: 50,
+    network: "ceneo",
+    failed_checks: 0,
+    status: "pending" as const,
+    last_check_at: index < 10 ? new Date(now - 20 * 86_400_000).toISOString() : null,
+  })),
+  ...Array.from({ length: 3 }, (_, index) => ({
+    id: `s${index}`,
+    name: "Sklep",
+    url: `https://www.empik.com/p/${index}`,
+    affiliate_url: `https://www.empik.com/p/${index}`,
+    price_pln: 50,
+    network: "direct",
+    failed_checks: 0,
+    status: "active" as const,
+    last_check_at: new Date(now - 5 * 86_400_000).toISOString(),
+  })),
+];
+const ceneoSelected = selectProducts(ceneoPool, { cursor: null, staleAfterDays: 3, now });
+const ceneoCount = ceneoSelected.filter((product) => product.network === "ceneo").length;
+check(ceneoCount === 60 && ceneoSelected.length === 63, `w jednym przebiegu 60 produktów Ceneo i wszystkie z innych sklepów (${ceneoCount} + ${ceneoSelected.length - ceneoCount})`);
+check(ceneoSelected.slice(0, 60).every((product) => product.last_check_at === null || product.network !== "ceneo"), "najpierw produkty nigdy niesprawdzone");
+check(freshDaysFor("ceneo") === 21 && freshDaysFor("direct") === 7, "ważność sprawdzenia: Ceneo 21 dni, inne 7");
+const fifteenDays = new Date(now - 15 * 86_400_000).toISOString();
+const freshness = computeCoverage(
+  [
+    { network: "ceneo", category: "gry", price_pln: 40, recipients: [], status: "active", last_check_at: fifteenDays },
+    { network: "direct", category: "gry", price_pln: 40, recipients: [], status: "active", last_check_at: fifteenDays },
+  ],
+  now,
+);
+check(freshness.find((row) => row.category === "gry" && row.band === "do 50" && row.recipient === "mom")?.active === 1, "sprawdzony 15 dni temu: Ceneo się liczy, inny sklep już nie");
+captchaHits = 0;
+memory.clear();
+await runCatalogCheck(
+  {
+    listProducts: async () => blockedProducts,
+    listShopDomains: async () => [],
+    applyCheck: async (id, patch) => void memory.set(id, patch),
+    getRun: async () => ({ ...runState, cursor: null, failures: {} }),
+    updateRun: async () => undefined,
+  },
+  { runId: "run", budgetMs: 30_000, deps, minIntervalMs: 30, allowInsecure: true, domainRules: { localhost: { blocksBeforeBackOff: 1, intervalMs: 50 } } },
+);
+check(captchaHits === 1 && memory.size === 1, `stop przy pierwszej CAPTCHA (wysłano ${captchaHits})`);
+
 console.log("\ncatalog:nightly --dry-run");
 const repos = getRepos();
 await repos.products.saveDirect([
