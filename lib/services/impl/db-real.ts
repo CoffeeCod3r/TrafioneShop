@@ -100,9 +100,13 @@ export function createRealRepos(): Repos {
         return Object.fromEntries(((data ?? []) as { status: string; products: number }[]).map((row) => [row.status, Number(row.products)]));
       },
       async demandSince(isoDate) {
-        const { data, error } = await db().from("results").select("recipient, budget_pln").gte("created_at", isoDate).limit(5000);
+        const { data, error } = await db().from("results").select("recipient, budget_pln, answers").gte("created_at", isoDate).limit(5000);
         if (error) fail("Loading demand", error);
-        return data;
+        return data.map((row) => ({
+          recipient: row.recipient,
+          budget_pln: row.budget_pln,
+          interests: ((row.answers as { interests?: string[] } | null)?.interests ?? []).slice(0, 5),
+        }));
       },
       async saveBuilt(rows) {
         if (rows.length === 0) return 0;

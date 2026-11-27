@@ -202,7 +202,7 @@ export type CatalogRepo = {
   /** Products per status (demo rows left out). */
   poolStatusCounts(): Promise<Partial<Record<ProductRow["status"], number>>>;
   /** Recipient and budget of the results since a date: which pool cells people actually need. */
-  demandSince(isoDate: string): Promise<{ recipient: string | null; budget_pln: number | null }[]>;
+  demandSince(isoDate: string): Promise<{ recipient: string | null; budget_pln: number | null; interests?: string[] }[]>;
   /** Saves verified top-up products (status active, source catalog_build); the same address updates the row. */
   saveBuilt(rows: BuiltProductInput[]): Promise<number>;
   /** Products in the pool without tags or gift types, for catalog:tag. */

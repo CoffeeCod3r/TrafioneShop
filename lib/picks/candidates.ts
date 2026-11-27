@@ -22,7 +22,7 @@ export type Candidate = Pick<
   "id" | "name" | "description" | "price_pln" | "merchant" | "category" | "tags" | "image_url" | "affiliate_url" | "commission_rate" | "network"
 > & { sharedTags: AllowedTag[] };
 
-type CandidateRow = Omit<Candidate, "sharedTags"> & Pick<ProductRow, "gift_types" | "lifestyles">;
+export type CandidateRow = Omit<Candidate, "sharedTags"> & Pick<ProductRow, "gift_types" | "lifestyles">;
 
 /** Quiz answers beyond the interests that the catalog is matched on (codes from lib/quiz/schema.ts). */
 export type QuizFit = { recipient?: string; lifestyle?: string; giftType?: string };

@@ -15,6 +15,7 @@
     "test:cards": "node --experimental-strip-types --no-warnings scripts/test-cards.ts",
     "catalog:verify": "node --experimental-strip-types --no-warnings --env-file-if-exists=.env.local scripts/catalog-verify.ts",
     "catalog:check": "npm run catalog:verify --",
+    "catalog:warmup": "node --experimental-strip-types --no-warnings --env-file-if-exists=.env.local scripts/catalog-warmup.ts",
     "catalog:nightly": "node --experimental-strip-types --no-warnings --env-file-if-exists=.env.local scripts/catalog-nightly.ts",
     "catalog:build": "node --experimental-strip-types --no-warnings --env-file-if-exists=.env.local scripts/catalog-nightly.ts --steps build",
     "catalog:tag": "node --experimental-strip-types --no-warnings --env-file-if-exists=.env.local scripts/catalog-nightly.ts --steps tag",

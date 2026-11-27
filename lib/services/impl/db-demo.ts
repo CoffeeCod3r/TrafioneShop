@@ -206,7 +206,11 @@ export function createDemoRepos(): Repos {
           return counts;
         }),
       demandSince: (isoDate) =>
-        read((data) => data.results.filter((row) => row.created_at >= isoDate).map((row) => ({ recipient: row.recipient, budget_pln: row.budget_pln }))),
+        read((data) =>
+          data.results
+            .filter((row) => row.created_at >= isoDate)
+            .map((row) => ({ recipient: row.recipient, budget_pln: row.budget_pln, interests: (row.answers as { interests?: string[] } | null)?.interests ?? [] })),
+        ),
       saveBuilt: (rows) =>
         write((data) => {
           for (const row of rows) {
