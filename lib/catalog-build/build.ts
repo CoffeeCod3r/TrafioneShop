@@ -28,7 +28,7 @@ export const SEARCHES_PER_CELL = 2;
 export const PRODUCTS_PER_CELL = 6;
 /** Rough cost of one cell (2 searches + tokens), used to stop before the budget would be crossed. */
 export const ESTIMATED_CELL_COST_USD = 0.035;
-const BUILD_MAX_TOKENS = 2_500;
+const BUILD_MAX_TOKENS = 4_000;
 const TAG_MAX_TOKENS = 3_000;
 const TAG_BATCH = 20;
 const REQUEST_TIMEOUT_MS = 90_000;
@@ -188,46 +188,70 @@ export type CellSearch = { products: ProposedProduct[]; usage: UsageEntry };
 
 export async function findProductsForCell(client: Anthropic, model: string, cell: Cell, shopDomains: string[]): Promise<CellSearch> {
   const usage: UsageEntry = { step: "catalog_build", model, inputTokens: 0, outputTokens: 0, webSearches: 0, webFetches: 0 };
-  // Validation failure: retry once, then give up on this cell (nothing is saved).
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    const messages: Anthropic.MessageParam[] = [{ role: "user", content: buildPrompt(cell) }];
-    for (let request = 0; request < 3; request++) {
-      const searchesLeft = Math.max(1, SEARCHES_PER_CELL - (usage.webSearches ?? 0));
-      const message = await client.messages.create(
-        {
-          model,
-          max_tokens: BUILD_MAX_TOKENS,
-          tools: [
-            {
-              type: "web_search_20260318",
-              name: "web_search",
-              max_uses: searchesLeft,
-              allowed_domains: shopDomains,
-              allowed_callers: ["direct"],
-              user_location: { type: "approximate", country: "PL", timezone: "Europe/Warsaw" },
-            },
-            saveProductsTool(),
-          ],
-          messages,
-        },
-        { timeout: REQUEST_TIMEOUT_MS },
-      );
-      usage.model = message.model ?? model;
-      usage.inputTokens += message.usage.input_tokens;
-      usage.outputTokens += message.usage.output_tokens;
-      usage.webSearches = (usage.webSearches ?? 0) + (message.usage.server_tool_use?.web_search_requests ?? 0);
-      if (message.stop_reason === "pause_turn") {
-        messages.push({ role: "assistant", content: message.content as Anthropic.ContentBlockParam[] });
-        continue;
-      }
-      const save = message.content.find(
-        (block): block is Anthropic.ToolUseBlock => block.type === "tool_use" && block.name === SAVE_PRODUCTS_TOOL,
-      );
-      const parsed = proposedSchema.safeParse(save?.input);
-      if (parsed.success) return { products: parsed.data.products.slice(0, PRODUCTS_PER_CELL), usage };
-      break;
+  const searchTool = (maxUses: number): Anthropic.ToolUnion => ({
+    type: "web_search_20260318",
+    name: "web_search",
+    max_uses: Math.max(1, maxUses),
+    allowed_domains: shopDomains,
+    allowed_callers: ["direct"],
+    user_location: { type: "approximate", country: "PL", timezone: "Europe/Warsaw" },
+  });
+  const count = (message: Anthropic.Message) => {
+    usage.model = message.model ?? model;
+    usage.inputTokens += message.usage.input_tokens;
+    usage.outputTokens += message.usage.output_tokens;
+    usage.webSearches = (usage.webSearches ?? 0) + (message.usage.server_tool_use?.web_search_requests ?? 0);
+  };
+  const readSave = (message: Anthropic.Message) => {
+    const save = message.content.find(
+      (block): block is Anthropic.ToolUseBlock => block.type === "tool_use" && block.name === SAVE_PRODUCTS_TOOL,
+    );
+    const parsed = proposedSchema.safeParse(save?.input);
+    return parsed.success ? parsed.data.products.slice(0, PRODUCTS_PER_CELL) : null;
+  };
+
+  // 1. Search (max SEARCHES_PER_CELL), continuing after pause_turn.
+  const messages: Anthropic.MessageParam[] = [{ role: "user", content: buildPrompt(cell) }];
+  for (let request = 0; request < 3; request++) {
+    const message = await client.messages.create(
+      { model, max_tokens: BUILD_MAX_TOKENS, tools: [searchTool(SEARCHES_PER_CELL - (usage.webSearches ?? 0)), saveProductsTool()], messages },
+      { timeout: REQUEST_TIMEOUT_MS },
+    );
+    count(message);
+    if (message.stop_reason === "pause_turn") {
+      messages.push({ role: "assistant", content: message.content as Anthropic.ContentBlockParam[] });
+      continue;
     }
-    if ((usage.webSearches ?? 0) >= SEARCHES_PER_CELL) break; // no second attempt once the searches are used up
+    const products = readSave(message);
+    if (products) return { products, usage };
+    // The answer ended without a valid save (often cut by max_tokens after long search results):
+    // keep what was found and go to step 2 instead of searching (and paying) again.
+    const kept = message.content.filter((block) => block.type !== "tool_use") as Anthropic.ContentBlockParam[];
+    messages.push({ role: "assistant", content: kept.length > 0 ? kept : [{ type: "text", text: "(wyniki wyszukiwania powyżej)" }] });
+    break;
+  }
+  if (messages.length === 1) return { products: [], usage };
+
+  // 2. Forced save of what the searches showed: no new searches, the tool call is required. One retry on bad output.
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const last = messages[messages.length - 1];
+    const ask: Anthropic.MessageParam = {
+      role: "user",
+      content: `Bez kolejnych wyszukiwań: wywołaj teraz narzędzie ${SAVE_PRODUCTS_TOOL} z produktami (adresy stron produktów), które widziałeś w wynikach wyszukiwania. Jeśli żadnego nie ma, zapisz pustą listę.`,
+    };
+    const message = await client.messages.create(
+      {
+        model,
+        max_tokens: BUILD_MAX_TOKENS,
+        tools: [searchTool(1), saveProductsTool()],
+        tool_choice: { type: "tool", name: SAVE_PRODUCTS_TOOL },
+        messages: last.role === "assistant" ? [...messages, ask] : messages,
+      },
+      { timeout: REQUEST_TIMEOUT_MS },
+    );
+    count(message);
+    const products = readSave(message);
+    if (products) return { products, usage };
   }
   return { products: [], usage };
 }
