@@ -152,6 +152,8 @@ export type RunnerOptions = {
   allowInsecure?: boolean;
   /** Per-domain politeness (lib/catalog-check/domains.ts); tests pass their own. */
   domainRules?: Record<string, Partial<DomainRule>>;
+  /** Only these products (warm-up: the ones that would fill a combination). */
+  onlyIds?: readonly string[];
   log?: (message: string) => void;
 };
 
@@ -164,9 +166,20 @@ const byId = (a: { id: string }, b: { id: string }) => (a.id < b.id ? -1 : a.id 
 /** The products of this run, in order: oldest check first (stale mode) or by id after the cursor (full mode). */
 export function selectProducts(
   products: CheckProduct[],
-  options: { cursor: string | null; limit?: number; staleAfterDays?: number; now: number; domainRules?: Record<string, Partial<DomainRule>> },
+  options: {
+    cursor: string | null;
+    limit?: number;
+    staleAfterDays?: number;
+    now: number;
+    domainRules?: Record<string, Partial<DomainRule>>;
+    onlyIds?: readonly string[];
+  },
 ): CheckProduct[] {
   let list: CheckProduct[];
+  if (options.onlyIds) {
+    const wanted = new Set(options.onlyIds);
+    products = products.filter((product) => wanted.has(product.id));
+  }
   if (options.staleAfterDays !== undefined) {
     const cutoff = options.now - options.staleAfterDays * 86_400_000;
     const checkedAt = (product: CheckProduct) => (product.last_check_at ? Date.parse(product.last_check_at) : 0);
@@ -211,7 +224,7 @@ export async function runCatalogCheck(store: CheckStore, options: RunnerOptions)
 
   const [products, domains] = await Promise.all([store.listProducts(), store.listShopDomains()]);
   const domainRules = options.domainRules ?? DOMAIN_RULES;
-  const queue = selectProducts(products, { cursor: run.cursor, limit: options.limit, staleAfterDays: options.staleAfterDays, now: now(), domainRules });
+  const queue = selectProducts(products, { cursor: run.cursor, limit: options.limit, staleAfterDays: options.staleAfterDays, now: now(), domainRules, onlyIds: options.onlyIds });
 
   // Domains with their own rule (Ceneo) use its interval; every other domain uses the run's interval.
   const polite = createPolite({

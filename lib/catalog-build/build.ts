@@ -50,7 +50,42 @@ const RECIPIENT_LABELS: Record<string, string> = {
 /** Categories that are too vague to search for. */
 const SKIPPED_CATEGORIES = new Set(["inne"]);
 
-export type Cell = { category: string; band: string; recipient: string; active: number; demand: number };
+export type Cell = {
+  category: string;
+  band: string;
+  recipient: string;
+  active: number;
+  demand: number;
+  /** Warm-up (lib/catalog/warmup.ts): search for this interest; the AI picks each product's category from POOL_CATEGORIES. */
+  interest?: string;
+  /** Search hints built from a template (no AI), e.g. "prezent dla taty do 100 zł kawa". */
+  queries?: string[];
+  /** Price limits overriding the band's (warm-up: 40-100 % of the quiz budget). */
+  min?: number;
+  max?: number;
+};
+
+/** Categories of the pool (the same codes as the imported catalog) that the AI may give a warm-up product. */
+export const POOL_CATEGORIES = [
+  "dom",
+  "kuchnia",
+  "kawa-herbata",
+  "ksiazki",
+  "gry",
+  "technologia",
+  "sport",
+  "outdoor",
+  "uroda",
+  "hobby",
+  "kreatywne",
+  "muzyka-film",
+  "inne",
+] as const;
+
+const limitsOf = (cell: Cell) => {
+  const band = bandLimits(cell.band);
+  return { min: cell.min ?? band.min, max: cell.max ?? band.max };
+};
 
 export function chooseCells(
   coverage: PoolCoverageRow[],
@@ -84,6 +119,7 @@ const proposedSchema = z.object({
         shop: z.string().max(100).optional(),
         price_pln: z.number().positive().max(100_000).optional(),
         tags: z.array(z.string()).max(8).default([]),
+        category: z.string().max(40).optional(),
         recipients: z.array(z.string()).max(7).default([]),
         gift_types: z.array(z.string()).max(4).default([]),
         lifestyles: z.array(z.string()).max(6).default([]),
@@ -113,6 +149,7 @@ function saveProductsTool(): Anthropic.Tool {
               shop: { type: "string" },
               price_pln: { type: "number" },
               tags: { type: "array", items: { type: "string", enum: [...ALLOWED_TAGS] } },
+              category: { type: "string", enum: [...POOL_CATEGORIES] },
               recipients: { type: "array", items: { type: "string", enum: [...RECIPIENT_CODES] } },
               gift_types: { type: "array", items: { type: "string", enum: [...GIFT_TYPE_CODES] } },
               lifestyles: { type: "array", items: { type: "string", enum: [...LIFESTYLE_CODES] } },
@@ -127,7 +164,17 @@ function saveProductsTool(): Anthropic.Tool {
 }
 
 function buildPrompt(cell: Cell): string {
-  const { min, max } = bandLimits(cell.band);
+  const { min, max } = limitsOf(cell);
+  if (cell.interest) {
+    return [
+      `Szukam prezentów dla ${RECIPIENT_LABELS[cell.recipient] ?? cell.recipient}, którego interesuje: ${cell.interest}. Cena od ${min} do ${max} zł.`,
+      `Użyj wyszukiwarki (najwyżej ${SEARCHES_PER_CELL} wyszukiwania), np.: ${(cell.queries ?? []).map((query) => `„${query}”`).join(", ")}.`,
+      `Wybierz do ${PRODUCTS_PER_CELL} konkretnych produktów z polskich sklepów internetowych, możliwie różnego rodzaju (różne kategorie).`,
+      "Podawaj wyłącznie adresy stron pojedynczych produktów, które widzisz w wynikach wyszukiwania. Nie wymyślaj adresów.",
+      "Nie podawaj stron kategorii, list, wyszukiwarek ani stron głównych.",
+      `Na koniec wywołaj narzędzie ${SAVE_PRODUCTS_TOOL}. Tagi i kategorie wybieraj tylko z list w narzędziu.`,
+    ].join("\n");
+  }
   return [
     `Szukam prezentów dla ${RECIPIENT_LABELS[cell.recipient] ?? cell.recipient} w kategorii „${cell.category}”, w cenie od ${min} do ${max} zł.`,
     `Użyj wyszukiwarki (najwyżej ${SEARCHES_PER_CELL} wyszukiwania) i wybierz do ${PRODUCTS_PER_CELL} konkretnych produktów z polskich sklepów internetowych.`,
@@ -211,7 +258,7 @@ export async function verifyCandidates(
   proposals: ProposedProduct[],
   deps: VerifyCandidateDeps,
 ): Promise<{ products: BuiltProductInput[]; verdicts: CandidateVerdict[] }> {
-  const { min, max } = bandLimits(cell.band);
+  const { min, max } = limitsOf(cell);
   const products: BuiltProductInput[] = [];
   const verdicts: CandidateVerdict[] = [];
   const isShop = (host: string) => deps.shopDomains.some((domain) => matches(host, domain));
@@ -249,13 +296,14 @@ export async function verifyCandidates(
         verdicts.push({ url: proposal.url, ok: false, reason: `price_outside_band:${outcome.price}` });
         return;
       }
-      const tags = proposal.tags.filter(isAllowedTag);
+      // The interest the product was searched for is always one of its tags (the warm-up selects by it).
+      const tags = [...new Set([...(cell.interest && isAllowedTag(cell.interest) ? [cell.interest] : []), ...proposal.tags.filter(isAllowedTag)])];
       products.push({
         external_id: await externalIdForUrl(proposal.url),
         merchant: proposal.shop?.trim() || host.replace(/^www\./, ""),
         name: proposal.name.trim(),
         price_pln: outcome.price,
-        category: cell.category,
+        category: cell.interest && (POOL_CATEGORIES as readonly string[]).includes(proposal.category ?? "") ? proposal.category! : cell.category,
         tags,
         recipients: onlyCodes(proposal.recipients, RECIPIENT_CODES),
         gift_types: onlyCodes(proposal.gift_types, GIFT_TYPE_CODES),

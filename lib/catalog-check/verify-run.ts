@@ -15,6 +15,8 @@ export type VerifyOptions = {
   /** Whole run time limit (GitHub Actions job: 30 minutes). */
   maxRunMs?: number;
   startedBy?: CatalogCheckRunRow["started_by"];
+  /** Only these products. */
+  onlyIds?: readonly string[];
   log?: (message: string) => void;
 };
 
@@ -42,6 +44,7 @@ export async function runVerify(repos: Repos, options: VerifyOptions): Promise<V
     maxRunMs,
     limit: options.limit,
     staleAfterDays: options.staleAfterDays,
+    onlyIds: options.onlyIds,
     deps: { fetch: (url, init) => fetch(url, init), isAllowedHost: () => false },
     log: options.log,
   });

@@ -137,3 +137,87 @@ export async function warmupCombos(repos: Repos, starter: WarmupCombo[], max = 4
   const ranked = [...counts.values()].sort((a, b) => b.count - a.count).map((entry) => entry.combo);
   return { combos: ranked.slice(0, max), source: "results" };
 }
+
+// ---------------------------------------------------------------------------
+// Filling the gaps (npm run catalog:warmup)
+// ---------------------------------------------------------------------------
+
+/** Category given to a warm-up product when the AI names none (it usually does, from POOL_CATEGORIES). */
+const INTEREST_CATEGORY: Record<string, string> = {
+  kawa: "kawa-herbata",
+  herbata: "kawa-herbata",
+  gotowanie: "kuchnia",
+  pieczenie: "kuchnia",
+  słodycze: "kuchnia",
+  ogród: "dom",
+  rośliny: "dom",
+  relaks: "dom",
+  świece: "dom",
+  uroda: "uroda",
+  biżuteria: "uroda",
+  książki: "ksiazki",
+  majsterkowanie: "hobby",
+  wędkarstwo: "outdoor",
+  sport: "sport",
+  joga: "sport",
+  gadżety: "technologia",
+  technologia: "technologia",
+  gry: "gry",
+  planszówki: "gry",
+  puzzle: "gry",
+  koty: "inne",
+  psy: "inne",
+};
+
+const RECIPIENT_QUERY: Record<WarmupCombo["recipient"], string> = {
+  dad: "dla taty",
+  mom: "dla mamy",
+  girlfriend: "dla dziewczyny",
+  boyfriend: "dla chłopaka",
+  friend: "dla przyjaciółki",
+  boss: "dla szefa",
+  grandparent: "dla babci",
+};
+
+/** 3 search hints from a template, no AI. */
+export function queriesFor(combo: WarmupCombo): string[] {
+  return [
+    `prezent ${RECIPIENT_QUERY[combo.recipient]} do ${combo.budget} zł ${combo.interest}`,
+    `${combo.interest} prezent ${RECIPIENT_QUERY[combo.recipient]}`,
+    `${combo.interest} zestaw prezentowy do ${combo.budget} zł`,
+  ];
+}
+
+/** The top-up "cell" of a combination for lib/catalog-build (prices 40-100 % of the budget). */
+export function comboCell(combo: WarmupCombo, health: Pick<ComboHealth, "candidates">) {
+  return {
+    category: INTEREST_CATEGORY[combo.interest] ?? "inne",
+    band: combo.budget <= 50 ? "do 50" : combo.budget <= 100 ? "50-100" : combo.budget <= 200 ? "100-200" : "200+",
+    recipient: combo.recipient,
+    active: health.candidates,
+    demand: 0,
+    interest: combo.interest,
+    queries: queriesFor(combo),
+    min: Math.round(combo.budget * MIN_PRICE_SHARE * 100) / 100,
+    max: combo.budget,
+  };
+}
+
+/**
+ * Products that would count for a combination once checked (status pending, not trusted from a feed, e.g. Ceneo):
+ * checking them first may make the combination healthy without any AI.
+ */
+export async function productsToVerify(repos: Repos, combos: WarmupCombo[]): Promise<string[]> {
+  const ids = new Set<string>();
+  for (const combo of combos) {
+    const rows = await repos.products.findCandidates({
+      minPrice: Math.round(combo.budget * MIN_PRICE_SHARE * 100) / 100,
+      maxPrice: combo.budget,
+      anyOfTags: [combo.interest],
+      recipient: combo.recipient,
+      limit: 300,
+    });
+    for (const row of rows) if (row.status === "pending" && !isWarmEligible(row)) ids.add(row.id);
+  }
+  return [...ids];
+}

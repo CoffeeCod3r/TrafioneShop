@@ -109,7 +109,7 @@ export type CatalogCheckRunRow = {
   failures: Record<string, Record<string, number>>;
   guides_incomplete: string[];
   /** check = one verification run; nightly = the whole night (verify + AI top-up + tags). */
-  kind: "check" | "nightly";
+  kind: "check" | "nightly" | "warmup";
   /** Products the AI top-up added to the pool. */
   added: number;
   ai_cost_usd: number;
