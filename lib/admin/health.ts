@@ -1,3 +1,4 @@
+import { comboLabel, type WarmupCombo } from "@/lib/catalog/warmup-combos";
 import { GUIDES } from "@/lib/guides/data";
 import { getGuideProducts, MIN_GUIDE_PRODUCTS } from "@/lib/guides/products";
 import type { CatalogCheckRunRow } from "@/lib/db";
@@ -24,6 +25,15 @@ export type CatalogHealth = {
     totalCells: number;
     lastNightly: CatalogCheckRunRow | null;
   };
+  /** Warm-up of the common quiz combinations (tile "Rozgrzanie"). */
+  warmup: {
+    healthy: number;
+    total: number;
+    /** Ready results still valid (refreshed within 24 h). */
+    live: number;
+    unhealthy: { label: string; candidates: number; categories: number }[];
+    lastRun: CatalogCheckRunRow | null;
+  };
 };
 
 export const ERROR_LABELS: Record<string, string> = {
@@ -39,11 +49,12 @@ export const ERROR_LABELS: Record<string, string> = {
 
 export async function getCatalogHealth(): Promise<CatalogHealth> {
   const repos = getRepos();
-  const [counts, runs, poolCounts, coverage] = await Promise.all([
+  const [counts, runs, poolCounts, coverage, warmRows] = await Promise.all([
     repos.catalog.countProducts(),
     repos.catalog.recentRuns(30),
     repos.catalog.poolStatusCounts(),
     repos.catalog.poolCoverage(),
+    repos.catalog.listWarmResults(),
   ]);
   const lastRun = runs[0] ?? null;
   const finished = runs.find((run) => run.finished_at);
@@ -76,6 +87,19 @@ export async function getCatalogHealth(): Promise<CatalogHealth> {
       healthyCells: coverage.filter((row) => row.healthy).length,
       totalCells: coverage.length,
       lastNightly: runs.find((run) => run.kind === "nightly") ?? null,
+    },
+    warmup: {
+      healthy: warmRows.filter((row) => row.healthy).length,
+      total: warmRows.length,
+      live: warmRows.filter((row) => row.healthy && Date.parse(row.expires_at) > Date.now()).length,
+      unhealthy: warmRows
+        .filter((row) => !row.healthy)
+        .map((row) => ({
+          label: comboLabel({ recipient: row.recipient, budget: row.budget, interest: row.interest } as WarmupCombo),
+          candidates: row.candidates,
+          categories: row.categories,
+        })),
+      lastRun: runs.find((run) => run.kind === "warmup") ?? null,
     },
     lastRun,
     running: lastRun?.status === "running" && Date.now() - Date.parse(lastRun.started_at) < 25 * 60_000,

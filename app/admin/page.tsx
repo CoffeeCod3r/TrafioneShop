@@ -123,6 +123,41 @@ function PoolSection({ pool }: { pool: CatalogHealth["pool"] }) {
   );
 }
 
+function WarmupSection({ warmup }: { warmup: CatalogHealth["warmup"] }) {
+  const run = warmup.lastRun;
+  const details = (run?.details ?? {}) as { healthyBefore?: number; healthyAfter?: number; budgetExceeded?: boolean };
+  return (
+    <Section title="Rozgrzanie">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <Tile
+          label="Zdrowe kombinacje quizu"
+          value={warmup.total > 0 ? `${Math.round((warmup.healthy / warmup.total) * 100)}%` : "–"}
+          hint={`${num.format(warmup.healthy)} z ${num.format(warmup.total)} · gotowe wyniki ważne teraz: ${num.format(warmup.live)}`}
+        />
+        <Tile
+          label="Ostatnie rozgrzanie"
+          value={run ? dateTime.format(new Date(run.started_at)) : "jeszcze nie było"}
+          hint={run ? `zdrowe ${details.healthyBefore ?? "–"} -> ${details.healthyAfter ?? "–"} · dodane ${num.format(run.added)}` : "npm run catalog:warmup"}
+        />
+        <Tile
+          label="Koszt rozgrzania"
+          value={run ? `$${Number(run.ai_cost_usd).toFixed(4)}` : "–"}
+          hint={details.budgetExceeded ? "limit WARMUP_AI_BUDGET_USD osiągnięty" : "limit WARMUP_AI_BUDGET_USD (2,00)"}
+        />
+      </div>
+      <Table
+        head={["Niezdrowa kombinacja", "Kandydaci (min. 15)", "Kategorie w top 5 (min. 3)"]}
+        rows={warmup.unhealthy.map((row) => [row.label, num.format(row.candidates), num.format(row.categories)])}
+        empty={warmup.total > 0 ? "Wszystkie kombinacje są zdrowe." : "Rozgrzanie jeszcze nie było uruchomione."}
+      />
+      <p className="text-xs text-muted-foreground">
+        Quiz bez zdjęcia i opisu, którego odbiorca, budżet i jedno z zainteresowań pasują do zdrowej kombinacji, dostaje
+        gotowe 5 produktów od razu, bez AI. Listę kombinacji edytujesz w lib/catalog/warmup-combos.ts.
+      </p>
+    </Section>
+  );
+}
+
 function CatalogHealthSection({ health }: { health: CatalogHealth }) {
   const run = health.lastRun;
   return (
@@ -328,6 +363,8 @@ function Dashboard({ stats, health, period }: { stats: AdminStats; health: Catal
       </Section>
 
       <PoolSection pool={health.pool} />
+
+      <WarmupSection warmup={health.warmup} />
 
       <CatalogHealthSection health={health} />
 
