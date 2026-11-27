@@ -14,6 +14,7 @@ import { copyRememberedResult, createResult, profileOf } from "@/lib/results";
 import { dispatchSearch, freeSearchJob } from "@/lib/search/job";
 import { consumeFreeWebSlot, DEVICE_COOKIE, findRememberedResult, isDailyBudgetExceeded, quizHash } from "@/lib/search/gates";
 import { getAi } from "@/lib/services/ai";
+import { getRepos } from "@/lib/services/db";
 import { getCaptcha } from "@/lib/services/captcha";
 
 // Node.js runtime and dynamic rendering are the defaults (cacheComponents forbids `runtime`/`dynamic` exports).
@@ -141,6 +142,22 @@ export async function POST(request: Request) {
         body,
         device.isNew ? { headers: { "set-cookie": deviceCookie(device.id, env.NODE_ENV === "production") } } : undefined,
       );
+
+    // 4a. Warm path: a quiz without photo, description and "what they already have" whose recipient, budget and one
+    //     interest match a warmed-up combination (npm run catalog:warmup, refreshed nightly) gets its ready top 5 of
+    //     checked pool products at once, without any AI call (not even the style profile).
+    if (!photo && !answers.description?.trim() && !answers.ownedItems?.trim()) {
+      const warm = await runStep("memory", () => getRepos().catalog.findWarmResult(answers.recipient, answers.budget, answers.interests));
+      if (warm && warm.product_ids.length >= 5) {
+        const profile = { styleProfile: warm.summary ?? "", tags: answers.interests, avoid: [] };
+        const picks = warm.product_ids.map((productId) => ({ productId, reason: warm.reasons[productId] ?? "" }));
+        const { id, refCode } = await runStep("save", () =>
+          createResult({ answers, profile, picks, summary: warm.summary, source, freeSource: "warm" }),
+        );
+        logEvent("analyze.done", { withPhoto, freeSource: "warm" });
+        return respond({ resultId: id, refCode, profile, source: "warm" });
+      }
+    }
 
     let hash: string | null = null;
     if (webMode && !photo) {

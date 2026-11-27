@@ -28,7 +28,7 @@ type UsageEntry = import("../lib/search/core.ts").UsageEntry;
 const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run") || args.includes("--test") || process.env.DRY_RUN === "1";
 const stepsArg = args.find((arg) => arg.startsWith("--steps="))?.split("=")[1] ?? args[args.indexOf("--steps") + 1];
-const stepsRaw = (args.includes("--steps") || args.some((arg) => arg.startsWith("--steps=")) ? stepsArg : undefined) ?? process.env.STEPS ?? "verify,build,tag";
+const stepsRaw = (args.includes("--steps") || args.some((arg) => arg.startsWith("--steps=")) ? stepsArg : undefined) ?? process.env.STEPS ?? "verify,build,tag,warm";
 const steps = new Set(stepsRaw.split(",").map((step) => step.trim()));
 const budgetUsd = Number(process.env.NIGHTLY_AI_BUDGET_USD ?? "0.30");
 const provider = (process.env.CATALOG_AI_PROVIDER ?? "anthropic").toLowerCase();
@@ -174,6 +174,17 @@ try {
     } else {
       details.tagged = 0;
     }
+  }
+
+  // Ready results of the warmed-up quiz combinations, refreshed after the check so they never offer a broken or
+  // sold-out product (no AI).
+  if (steps.has("warm")) {
+    const { STARTER_COMBOS } = await import("../lib/catalog/warmup-combos.ts");
+    const warmup = await import("../lib/catalog/warmup.ts");
+    const { combos } = await warmup.warmupCombos(repos, STARTER_COMBOS);
+    const refreshed = await warmup.refreshWarmResults(repos, combos);
+    details.warm = { healthy: refreshed.healthy, total: refreshed.total };
+    console.log(`\nGotowe wyniki rozgrzanych kombinacji: ${refreshed.healthy}/${refreshed.total} zdrowych (odświeżone na 24 h).`);
   }
 
   // d) report

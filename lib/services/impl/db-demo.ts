@@ -17,6 +17,7 @@ import type {
   RateLimitRow,
   ResultRow,
   SubscriberRow,
+  WarmResultRow,
 } from "../../db.ts";
 import { computeCoverage, FRESH_DAYS_BY_NETWORK } from "../../catalog-build/coverage.ts";
 import type { Repos } from "../db.ts";
@@ -39,6 +40,7 @@ type DemoData = {
   quiz_starts: QuizStartRow[];
   guide_products: GuideProductRow[];
   catalog_check_runs: CatalogCheckRunRow[];
+  warm_results?: WarmResultRow[];
   price_history: PriceHistoryRow[];
 };
 
@@ -248,6 +250,27 @@ export function createDemoRepos(): Repos {
           const product = data.products.find((item) => item.id === productId);
           if (product) Object.assign(product, patch, { updated_at: now() });
         }),
+      saveWarmResults: (rows) =>
+        write((data) => {
+          data.warm_results ??= [];
+          for (const row of rows) {
+            const index = data.warm_results.findIndex((item) => item.combo_key === row.combo_key);
+            if (index >= 0) data.warm_results[index] = row;
+            else data.warm_results.push(row);
+          }
+        }),
+      findWarmResult: (recipient, budget, interests) =>
+        read((data) => {
+          const live = (data.warm_results ?? []).filter(
+            (row) => row.recipient === recipient && row.budget === budget && row.healthy && row.expires_at > now(),
+          );
+          for (const interest of interests) {
+            const row = live.find((item) => item.interest === interest);
+            if (row) return row;
+          }
+          return null;
+        }),
+      listWarmResults: () => read((data) => [...(data.warm_results ?? [])].sort((a, b) => a.combo_key.localeCompare(b.combo_key))),
     },
     guides: {
       listProducts: (slug) =>

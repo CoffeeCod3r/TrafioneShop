@@ -89,6 +89,8 @@ async function ResultContent({ params, searchParams }: PageProps) {
 
   const webSource = getSourceMode() === "web";
   const hasAffiliate = products.some((product) => product.affiliate);
+  // Ready result of a warmed-up combination: pool products, mostly partner links (Ceneo, Webepartners).
+  const warmSource = result.free_source === "warm";
 
   return (
     <div className="flex flex-col gap-8 py-6">
@@ -122,9 +124,9 @@ async function ResultContent({ params, searchParams }: PageProps) {
 
       <section aria-labelledby="partner-picks" className="flex flex-col gap-3">
         <h2 id="partner-picks" className="text-2xl font-bold">
-          {webSource ? "Wybrane przez AI z polskich sklepów" : "Z naszych sklepów partnerskich"}
+          {warmSource ? "Sprawdzone produkty z polskich sklepów" : webSource ? "Wybrane przez AI z polskich sklepów" : "Z naszych sklepów partnerskich"}
         </h2>
-        {(!webSource || hasAffiliate) && (
+        {(warmSource || !webSource || hasAffiliate) && (
           <p className="text-xs text-muted-foreground">
             Linki partnerskie: przy zakupie dostajemy prowizję, cena się dla Ciebie nie zmienia.
           </p>

@@ -18,6 +18,7 @@ import type {
   ResultRow,
   SubscriberRow,
   Update,
+  WarmResultRow,
 } from "../db.ts";
 import type { ProductUpsert } from "../feeds/normalize.ts";
 import type { DirectProductRow } from "../search/core.ts";
@@ -208,6 +209,14 @@ export type CatalogRepo = {
   /** Products in the pool without tags or gift types, for catalog:tag. */
   listUntagged(limit: number): Promise<Pick<ProductRow, "id" | "name" | "category" | "price_pln" | "merchant">[]>;
   updateTags(productId: string, patch: ProductTagPatch): Promise<void>;
+  /** Ready results of the warmed-up combinations: replaces the rows of the given combinations. */
+  saveWarmResults(rows: WarmResultRow[]): Promise<void>;
+  /**
+   * A healthy, not expired ready result for this recipient and budget whose interest is one of the quiz's interests
+   * (the first matching interest in the quiz's order wins).
+   */
+  findWarmResult(recipient: string, budget: number, interests: readonly string[]): Promise<WarmResultRow | null>;
+  listWarmResults(): Promise<WarmResultRow[]>;
 };
 
 export type Repos = {

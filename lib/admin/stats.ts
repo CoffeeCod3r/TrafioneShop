@@ -182,7 +182,7 @@ export async function getAdminStats(period: Period): Promise<AdminStats> {
       if (row.result_id) freeWebResults.add(row.result_id);
     }
   }
-  const freeSources = { web: 0, cache: 0, catalog: 0, catalog_budget: 0, catalog_device: 0, catalog_fallback: 0, unknown: 0 } as FreeSourceCounts;
+  const freeSources = { web: 0, cache: 0, catalog: 0, catalog_budget: 0, catalog_device: 0, catalog_fallback: 0, warm: 0, unknown: 0 } as FreeSourceCounts;
   for (const result of results) freeSources[result.free_source ?? "unknown"]++;
   const spentPln = await todaySpendPln();
   const limitPln = getEnv().DAILY_AI_BUDGET_PLN;

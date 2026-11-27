@@ -1,4 +1,4 @@
-import type { CatalogCheckRunRow, ProductRow } from "../../db.ts";
+import type { CatalogCheckRunRow, ProductRow, WarmResultRow } from "../../db.ts";
 import { FRESH_DAYS_BY_NETWORK } from "../../catalog-build/coverage.ts";
 import type { CheckableProduct, PoolCoverageRow, Repos } from "../db.ts";
 import { getSupabase } from "./supabase.ts";
@@ -148,6 +148,34 @@ export function createRealRepos(): Repos {
       async updateTags(productId, patch) {
         const { error } = await db().from("products").update(patch).eq("id", productId);
         if (error) fail("Saving product tags", error);
+      },
+      async saveWarmResults(rows) {
+        if (rows.length === 0) return;
+        const { error } = await db().from("warm_results").upsert(rows, { onConflict: "combo_key" });
+        if (error) fail("Saving warm results", error);
+      },
+      async findWarmResult(recipient, budget, interests) {
+        if (interests.length === 0) return null;
+        const { data, error } = await db()
+          .from("warm_results")
+          .select("*")
+          .eq("recipient", recipient)
+          .eq("budget", budget)
+          .eq("healthy", true)
+          .gt("expires_at", new Date().toISOString())
+          .in("interest", [...interests]);
+        if (error) fail("Loading warm result", error);
+        const rows = data as WarmResultRow[];
+        for (const interest of interests) {
+          const row = rows.find((item) => item.interest === interest);
+          if (row) return row;
+        }
+        return null;
+      },
+      async listWarmResults() {
+        const { data, error } = await db().from("warm_results").select("*").order("combo_key");
+        if (error) fail("Loading warm results", error);
+        return data as WarmResultRow[];
       },
     },
 

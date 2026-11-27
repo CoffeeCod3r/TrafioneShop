@@ -18,9 +18,9 @@ on:
         type: boolean
         default: false
       steps:
-        description: "Kroki (verify,build,tag)"
+        description: "Kroki (verify,build,tag,warm)"
         type: string
-        default: "verify,build,tag"
+        default: "verify,build,tag,warm"
 
 permissions:
   contents: read
@@ -50,7 +50,7 @@ jobs:
           NIGHTLY_AI_BUDGET_USD: ${{ vars.NIGHTLY_AI_BUDGET_USD || '0.30' }}
           CATALOG_AI_PROVIDER: anthropic
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || '' }}
-          STEPS: ${{ github.event_name == 'workflow_dispatch' && inputs.steps || 'verify,build,tag' }}
+          STEPS: ${{ github.event_name == 'workflow_dispatch' && inputs.steps || 'verify,build,tag,warm' }}
           # The script writes to the real database; MOCK_MODE only affects the app, not this job.
           MOCK_MODE: "true"
           REAL_DB: "true"

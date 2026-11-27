@@ -36,8 +36,8 @@ export type AnalyzeResponse = {
   resultId: string;
   refCode: string;
   profile: StyleProfile;
-  /** "ai" = from the model, "fallback" = built from quiz answers after AI failure, "demo" = MOCK_MODE */
-  source: "ai" | "fallback" | "demo";
+  /** "ai" = from the model, "fallback" = built from quiz answers after AI failure, "demo" = MOCK_MODE, "warm" = ready result of a warmed-up combination (no AI) */
+  source: "ai" | "fallback" | "demo" | "warm";
   /** true: the picks are still being searched in the background; the result page shows progress. */
   searching?: boolean;
   /** User-facing message, e.g. when a photo was not analyzed */

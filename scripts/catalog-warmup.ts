@@ -178,7 +178,9 @@ try {
   process.exit(1);
 }
 
-/** Stage 4 fills this in: ready top 5 per healthy combination. */
+/** Ready top 5 per combination (healthy ones), valid 24 h; the nightly job refreshes them. */
 async function saveWarmResults(rows: Health[]): Promise<number> {
-  return rows.filter((row) => row.healthy).length * 0;
+  const warmRows = rows.map((row) => warmup.toWarmRow(row));
+  await repos.catalog.saveWarmResults(warmRows);
+  return warmRows.filter((row) => row.healthy).length;
 }

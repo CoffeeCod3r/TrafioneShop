@@ -27,7 +27,8 @@ export type ClickSource = "free" | "web" | "share" | "free-web" | "paid-web" | "
 /** Free result state: "searching" while the web search runs in the background. */
 export type SearchStatus = "searching" | "ready";
 /** Where the free picks came from. */
-export type FreeSource = "web" | "cache" | "catalog" | "catalog_budget" | "catalog_device" | "catalog_fallback";
+/** warm = ready top 5 of a warmed-up quiz combination (warm_results), no AI. */
+export type FreeSource = "web" | "cache" | "catalog" | "catalog_budget" | "catalog_device" | "catalog_fallback" | "warm";
 export type PurchaseStatus = "paid" | "refunded";
 export type AiUsageStep = "profile" | "picks" | "web_search" | "dedications" | "free_web_search" | "catalog_build" | "catalog_tag";
 export type ProductStatus = "active" | "pending" | "out_of_stock" | "broken";
@@ -80,6 +81,23 @@ export type ProductRow = {
   recipients?: string[];
   gift_types?: string[];
   lifestyles?: string[];
+};
+
+/** Ready result of a warmed-up quiz combination (supabase/migrations/20261130020000_warm_results.sql). */
+export type WarmResultRow = {
+  combo_key: string;
+  recipient: string;
+  budget: number;
+  interest: string;
+  product_ids: string[];
+  /** product id -> template reason */
+  reasons: Record<string, string>;
+  summary: string | null;
+  candidates: number;
+  categories: number;
+  healthy: boolean;
+  refreshed_at: string;
+  expires_at: string;
 };
 
 export type PriceHistoryRow = {
@@ -247,6 +265,7 @@ export type Database = {
     Tables: {
       products: TableDef<ProductRow, "id" | "tags" | "in_stock" | "updated_at" | "failed_checks" | "status" | "source" | "price_checked" | "final_url">;
       price_history: TableDef<PriceHistoryRow, "id" | "checked_at">;
+      warm_results: TableDef<WarmResultRow, "product_ids" | "reasons" | "summary" | "candidates" | "categories" | "healthy" | "refreshed_at">;
       catalog_check_runs: TableDef<
         CatalogCheckRunRow,
         | "id"

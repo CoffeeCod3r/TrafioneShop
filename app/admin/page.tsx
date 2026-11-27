@@ -264,6 +264,7 @@ function Dashboard({ stats, health, period }: { stats: AdminStats; health: Catal
           rows={[
             ["Nowe wyszukiwanie w sieci", num.format(stats.freeSources.web)],
             ["Pamięć wyników (24 h)", num.format(stats.freeSources.cache)],
+            ["Gotowe wyniki rozgrzanych kombinacji (bez AI)", num.format(stats.freeSources.warm)],
             ["Katalog (SOURCE_MODE=catalog)", num.format(stats.freeSources.catalog)],
             ["Katalog: przekroczony dzienny limit AI", num.format(stats.freeSources.catalog_budget)],
             ["Katalog: limit 3 wyszukiwań na urządzenie", num.format(stats.freeSources.catalog_device)],

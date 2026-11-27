@@ -8,7 +8,7 @@
  * counts only after its page was checked.
  * Healthy = at least 15 candidates and a top 5 from at least 3 categories. Portable (relative imports, no Next.js).
  */
-import type { ProductRow } from "../db.ts";
+import type { ProductRow, WarmResultRow } from "../db.ts";
 import { MIN_PRICE_SHARE, rankCandidates, type Candidate, type CandidateRow } from "../picks/candidates.ts";
 import type { Repos } from "../services/db.ts";
 import type { AllowedTag } from "../tags.ts";
@@ -220,4 +220,36 @@ export async function productsToVerify(repos: Repos, combos: WarmupCombo[]): Pro
     for (const row of rows) if (row.status === "pending" && !isWarmEligible(row)) ids.add(row.id);
   }
   return [...ids];
+}
+
+// ---------------------------------------------------------------------------
+// Ready results (warm_results), refreshed by catalog:warmup and every night
+// ---------------------------------------------------------------------------
+
+export const WARM_RESULT_HOURS = 24;
+
+/** The warm_results row of a combination: its top 5 with template reasons when healthy, else no products. */
+export function toWarmRow(health: ComboHealth, nowMs = Date.now()): WarmResultRow {
+  return {
+    combo_key: health.key,
+    recipient: health.combo.recipient,
+    budget: health.combo.budget,
+    interest: health.combo.interest,
+    product_ids: health.healthy ? health.top.map((candidate) => candidate.id) : [],
+    reasons: health.healthy ? Object.fromEntries(health.top.map((candidate) => [candidate.id, warmReason(health.combo, candidate)])) : {},
+    summary: health.healthy ? warmSummary(health.combo) : null,
+    candidates: health.candidates,
+    categories: health.categories,
+    healthy: health.healthy,
+    refreshed_at: new Date(nowMs).toISOString(),
+    expires_at: new Date(nowMs + WARM_RESULT_HOURS * 3_600_000).toISOString(),
+  };
+}
+
+/** Scores every combination again and stores the ready results (no AI). Returns how many are healthy. */
+export async function refreshWarmResults(repos: Repos, combos: WarmupCombo[]): Promise<{ healthy: number; total: number; rows: WarmResultRow[] }> {
+  const rows: WarmResultRow[] = [];
+  for (const combo of combos) rows.push(toWarmRow(await scoreCombo(repos, combo)));
+  await repos.catalog.saveWarmResults(rows);
+  return { healthy: rows.filter((row) => row.healthy).length, total: rows.length, rows };
 }
