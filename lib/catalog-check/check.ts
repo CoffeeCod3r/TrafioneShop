@@ -10,6 +10,8 @@ export const USER_AGENT = "Prezentoskop-LinkChecker/1.0 (+https://prezentoskop.p
 export const ROBOTS_TOKEN = "Prezentoskop-LinkChecker";
 export const REQUEST_TIMEOUT_MS = 8_000;
 export const MAX_BODY_BYTES = 1_000_000;
+/** Error name thrown by CheckDeps.beforeRequest when the run stopped asking a domain; checkUrl rethrows it. */
+export const BACKED_OFF = "BackedOffError";
 const MAX_REDIRECTS = 3;
 
 export type FetchLike = (url: string, init: { headers: Record<string, string>; redirect: "manual"; signal: AbortSignal }) => Promise<Response>;
@@ -134,6 +136,12 @@ export function isListingRedirect(originalUrl: string, finalUrl: string, info: P
   return pathDepth(to.pathname) < pathDepth(from.pathname) && info.price === null;
 }
 
+/** A redirect target that is a CAPTCHA or bot challenge page (e.g. Ceneo's /Captcha/Add, Cloudflare's /cdn-cgi/). */
+export function isChallengeUrl(url: string): boolean {
+  const { pathname } = new URL(url);
+  return /captcha|challenge|\/cdn-cgi\/|\/robot-check|\/bot-?check/i.test(pathname);
+}
+
 /** Turns what the page said into one of the outcomes the rules work with. */
 export function classify(originalUrl: string, page: FetchedPage): CheckOutcome {
   if (page.offSite) return { kind: "gone", reason: "redirect_off_site" };
@@ -144,6 +152,8 @@ export function classify(originalUrl: string, page: FetchedPage): CheckOutcome {
   if (status >= 500) return { kind: "error", reason: "http_5xx" };
   if (status < 200 || status >= 300) return { kind: "unverified", reason: "other_status" };
 
+  // The shop sent us to a CAPTCHA / bot challenge: it refuses robots right now. Never solved or bypassed.
+  if (page.redirected && isChallengeUrl(page.finalUrl)) return { kind: "error", reason: "blocked" };
   const info = extractPageInfo(page.html);
   if (page.redirected && isListingRedirect(originalUrl, page.finalUrl, info)) return { kind: "gone", reason: "redirect_to_listing" };
   if (info.availability === "out_of_stock") return { kind: "sold_out" };
@@ -159,6 +169,8 @@ export async function checkUrl(url: string, deps: CheckDeps): Promise<CheckOutco
   try {
     return classify(url, await fetchPage(url, deps));
   } catch (error) {
+    // The run decided to leave this domain alone (it started blocking us): not an outcome of the page.
+    if (error instanceof Error && error.name === BACKED_OFF) throw error;
     const aborted = error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError");
     return { kind: "error", reason: aborted ? "timeout" : "network" };
   }

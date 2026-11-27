@@ -25,6 +25,8 @@ process.env.MOCK_MODE = "true";
 
 const { extractPageInfo } = await import("../lib/catalog-check/extract.ts");
 const { checkUrl } = await import("../lib/catalog-check/check.ts");
+const { runCatalogCheck, BLOCKS_BEFORE_BACKING_OFF } = await import("../lib/catalog-check/runner.ts");
+type CheckProduct = import("../lib/catalog-check/runner.ts").CheckProduct;
 const { createPolite } = await import("../lib/catalog-check/polite.ts");
 const { computeCoverage, bandOfBudget, POOL_HEALTHY_MIN } = await import("../lib/catalog-build/coverage.ts");
 const { chooseCells, verifyCandidates } = await import("../lib/catalog-build/build.ts");
@@ -50,6 +52,7 @@ check(extractPageInfo(fixture("home.html")).price === null, "strona główna: JS
 // ---------------------------------------------------------------------------
 // Local shop
 // ---------------------------------------------------------------------------
+let captchaHits = 0;
 const server = createServer((request, response) => {
   const url = request.url ?? "/";
   const html = (body: string, status = 200) => {
@@ -69,6 +72,12 @@ const server = createServer((request, response) => {
   }
   if (url === "/") return html(fixture("home.html"));
   if (url === "/koszyk/produkt") return html(fixture("empik.html"));
+  if (url.startsWith("/zablokowany-sklep/")) {
+    captchaHits++;
+    response.writeHead(302, { location: `/Captcha/Add?ReturnUrl=${encodeURIComponent(url)}` });
+    return response.end();
+  }
+  if (url.startsWith("/Captcha/Add")) return html("<html><body>Potwierdź, że nie jesteś robotem</body></html>");
   html(fixture("not-found.html"), 404);
 });
 await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -139,6 +148,42 @@ check(reasons["/brak"] === "gone:http_404", "nieistniejąca strona: odrzucona");
 check(reasons["/koszyk/produkt"] === "robots", "strona zablokowana w robots.txt: nieotwierana");
 check(reasons["https://obcy-sklep.example/p/1"] === "shop_not_allowed", "sklep spoza allowed_shops: odrzucony bez otwierania");
 check(verified.products[0]?.tags.join() === "kawa" && verified.products[0]?.recipients.join() === "mom", "tagi i odbiorcy spoza list są odrzucane");
+
+// ---------------------------------------------------------------------------
+// A shop that starts showing a CAPTCHA (like Ceneo after many requests)
+// ---------------------------------------------------------------------------
+console.log("\nSklep pokazuje CAPTCHA: blokada i wycofanie");
+const challenge = await checkUrl(`${base}/zablokowany-sklep/1`, deps);
+check(challenge.kind === "error" && challenge.reason === "blocked", `przekierowanie na /Captcha/Add -> blokada, nie „brak danych” (${JSON.stringify(challenge)})`);
+captchaHits = 0;
+const blockedShop = `http://localhost:${(server.address() as AddressInfo).port}`;
+const memory = new Map<string, { last_check_result?: string; last_check_at?: string }>();
+const blockedProducts: CheckProduct[] = Array.from({ length: 8 }, (_, index) => ({
+  id: `z${index}`,
+  name: `Produkt ${index}`,
+  url: `${blockedShop}/zablokowany-sklep/${index}`,
+  affiliate_url: `${blockedShop}/zablokowany-sklep/${index}`,
+  price_pln: 50,
+  network: "ceneo",
+  failed_checks: 0,
+  status: "pending",
+  last_check_at: null,
+}));
+const runState = { id: "run", started_at: new Date().toISOString(), total: 0, processed: 0, cursor: null, ok: 0, price_changes: 0, became_unavailable: 0, skipped_robots: 0, unverified: 0, errors: 0, failures: {} as Record<string, Record<string, number>> };
+await runCatalogCheck(
+  {
+    listProducts: async () => blockedProducts,
+    listShopDomains: async () => [],
+    applyCheck: async (id, patch) => void memory.set(id, patch),
+    getRun: async () => runState,
+    updateRun: async (_id, patch) => void Object.assign(runState, patch),
+  },
+  { runId: "run", budgetMs: 30_000, deps, minIntervalMs: 30, allowInsecure: true },
+);
+const touched = [...memory.values()];
+check(captchaHits === BLOCKS_BEFORE_BACKING_OFF, `po ${BLOCKS_BEFORE_BACKING_OFF} blokadach z rzędu kolejne zapytania nie są wysyłane (wysłano ${captchaHits} z 8)`);
+check(touched.length === BLOCKS_BEFORE_BACKING_OFF && touched.every((patch) => patch.last_check_result === "unverified_blocked"), "zablokowane produkty: bez zmian statusu, wynik „zablokowany”");
+check(runState.failures.localhost?.skipped_after_block === 8 - BLOCKS_BEFORE_BACKING_OFF, `pozostałe pominięte i sprawdzone w kolejnym przebiegu (${runState.failures.localhost?.skipped_after_block})`);
 
 // ---------------------------------------------------------------------------
 // Nightly dry run

@@ -16,7 +16,7 @@
  * Politeness: own User-Agent, robots.txt, at most 1 request per second to one domain, at most 5 requests at once.
  * Affiliate links are never opened: the product's own page (url) is checked, so no affiliate clicks are generated.
  */
-import { checkUrl, type CheckDeps, type CheckOutcome } from "./check.ts";
+import { BACKED_OFF, checkUrl, type CheckDeps, type CheckOutcome } from "./check.ts";
 import { createPolite } from "./polite.ts";
 
 export const PRICE_CHANGE_THRESHOLD = 0.2;
@@ -24,6 +24,8 @@ export const FAILED_CHECKS_LIMIT = 2;
 export const MIN_INTERVAL_MS = 1_000;
 export const MAX_RUN_MS = 20 * 60_000;
 export const DEFAULT_CONCURRENCY = 5;
+/** After this many blocks in a row (401/403/429, CAPTCHA) a domain is left alone for the rest of the run. */
+export const BLOCKS_BEFORE_BACKING_OFF = 3;
 
 export type ProductStatus = "active" | "pending" | "out_of_stock" | "broken";
 
@@ -210,6 +212,27 @@ export async function runCatalogCheck(store: CheckStore, options: RunnerOptions)
       ...extra,
     });
 
+  // Domains that started refusing us (blocks / CAPTCHA): we back off and do not ask again in this run.
+  const blocksInRow = new Map<string, number>();
+  const backedOff = new Set<string>();
+
+  // One product at a time per domain (its redirects included), so a shop that starts blocking us gets no queued
+  // requests after we back off. Different shops are still checked in parallel.
+  const hostLocks = new Map<string, Promise<void>>();
+  function hostKey(product: CheckProduct): string {
+    try {
+      return hostOf(product.url ?? product.affiliate_url);
+    } catch {
+      return "";
+    }
+  }
+  function withHostLock(product: CheckProduct): Promise<void> {
+    const key = hostKey(product);
+    const run = (hostLocks.get(key) ?? Promise.resolve()).then(() => checkOne(product));
+    hostLocks.set(key, run.catch(() => undefined));
+    return run;
+  }
+
   async function checkOne(product: CheckProduct): Promise<void> {
     const url = product.url ?? product.affiliate_url;
     const nowIso = new Date(now()).toISOString();
@@ -224,11 +247,25 @@ export async function runCatalogCheck(store: CheckStore, options: RunnerOptions)
       state.unverified += 1;
       return;
     }
+    // Not touched at all when we backed off from the domain: last_check_at stays, the product is checked in a later run.
+    const skipBackedOff = () => {
+      state.failures[host!] ??= {};
+      state.failures[host!].skipped_after_block = (state.failures[host!].skipped_after_block ?? 0) + 1;
+    };
+    if (backedOff.has(host)) return skipBackedOff();
     // The product's own domain may always be read; redirects may stay on it or go to an allowed shop.
     const ownDomain = host.replace(/^www\./, "");
     const deps: CheckDeps = {
       ...options.deps,
-      beforeRequest: polite.waitForTurn,
+      // After waiting for its turn, a request to a domain we backed off from is not sent at all.
+      beforeRequest: async (target) => {
+        await polite.waitForTurn(target);
+        if (backedOff.has(hostOf(target))) {
+          const error = new Error("Backed off");
+          error.name = BACKED_OFF;
+          throw error;
+        }
+      },
       isAllowedHost: (candidate) => matches(candidate, ownDomain) || domains.some((domain) => matches(candidate, domain)),
     };
 
@@ -238,7 +275,23 @@ export async function runCatalogCheck(store: CheckStore, options: RunnerOptions)
       return;
     }
 
-    const outcome = await checkUrl(url, deps);
+    let outcome: CheckOutcome;
+    try {
+      outcome = await checkUrl(url, deps);
+    } catch (error) {
+      if (error instanceof Error && error.name === BACKED_OFF) return skipBackedOff();
+      throw error;
+    }
+    if (outcome.kind === "error" && outcome.reason === "blocked") {
+      const inRow = (blocksInRow.get(host) ?? 0) + 1;
+      blocksInRow.set(host, inRow);
+      if (inRow >= BLOCKS_BEFORE_BACKING_OFF && !backedOff.has(host)) {
+        backedOff.add(host);
+        log(`backing off ${host} after ${inRow} blocks in a row`);
+      }
+    } else {
+      blocksInRow.set(host, 0);
+    }
     const decision = decide(product, outcome, new Date(now()).toISOString());
     await store.applyCheck(product.id, decision.patch, decision.history);
     const counters = decision.counters;
@@ -274,7 +327,7 @@ export async function runCatalogCheck(store: CheckStore, options: RunnerOptions)
       }
       const index = next++;
       if (index >= queue.length) return;
-      await checkOne(queue[index]);
+      await withHostLock(queue[index]);
       finished[index] = true;
       while (prefix < queue.length && finished[prefix]) prefix++;
       if (prefix > 0) state.cursor = queue[prefix - 1].id;

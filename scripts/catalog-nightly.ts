@@ -35,6 +35,16 @@ const model = process.env.ANTHROPIC_MODEL || "claude-haiku-5-5";
 const STALE_DAYS = 3;
 const VERIFY_LIMIT = Number(process.env.VERIFY_LIMIT ?? "400");
 const TAG_LIMIT = 40;
+/**
+ * The AI top-up waits until the pool has been checked: while products are still "pending" (never checked), the
+ * coverage counts them as missing and the AI would fill cells that the existing products cover once checked.
+ * BUILD_WHILE_PENDING=1 overrides this.
+ */
+const buildWhilePending = process.env.BUILD_WHILE_PENDING === "1";
+async function pendingProducts(): Promise<number> {
+  // Products never checked at all (a shop that blocks us leaves them pending but checked: those do not hold the AI back).
+  return (await repos.catalog.listCheckable()).filter((product) => product.last_check_at === null).length;
+}
 
 if (!Number.isFinite(budgetUsd) || budgetUsd < 0) {
   console.error("NIGHTLY_AI_BUDGET_USD musi być liczbą >= 0.");
@@ -64,8 +74,13 @@ if (dryRun) {
     const thin = coverage.filter((row) => !row.healthy).length;
     const cells = build.chooseCells(coverage, demand);
     console.log(`b) Pokrycie puli: ${coverage.length - thin}/${coverage.length} komórek zdrowych (min. ${build.POOL_HEALTHY_MIN}), ${thin} poniżej progu.`);
-    console.log(`c) Uzupełnianie: ${cells.length} komórek, limit ${usd(budgetUsd)}, szacunkowo ${usd(Math.min(cells.length * build.ESTIMATED_CELL_COST_USD, budgetUsd))}:`);
-    for (const cell of cells) console.log(`   - ${cell.category} | ${cell.band} zł | ${cell.recipient} | aktywnych ${cell.active} | zapytań w 7 dni ${cell.demand}`);
+    const pending = await pendingProducts();
+    if (pending > 0 && !buildWhilePending) {
+      console.log(`c) Uzupełnianie AI wstrzymane: ${pending} produktów czeka na pierwsze sprawdzenie (pokrycie byłoby zaniżone). Koszt AI: $0.`);
+    } else {
+      console.log(`c) Uzupełnianie: ${cells.length} komórek, limit ${usd(budgetUsd)}, szacunkowo ${usd(Math.min(cells.length * build.ESTIMATED_CELL_COST_USD, budgetUsd))}:`);
+      for (const cell of cells) console.log(`   - ${cell.category} | ${cell.band} zł | ${cell.recipient} | aktywnych ${cell.active} | zapytań w 7 dni ${cell.demand}`);
+    }
   }
   if (steps.has("tag")) {
     const untagged = await repos.catalog.listUntagged(TAG_LIMIT);
@@ -105,7 +120,12 @@ try {
   if (steps.has("build") && client) {
     const coverage = await repos.catalog.poolCoverage();
     const demand = await repos.catalog.demandSince(new Date(Date.now() - 7 * 86_400_000).toISOString());
-    const cells = build.chooseCells(coverage, demand);
+    const pending = await pendingProducts();
+    const cells = pending > 0 && !buildWhilePending ? [] : build.chooseCells(coverage, demand);
+    if (pending > 0 && !buildWhilePending) {
+      details.buildSkipped = { reason: "pool_not_checked", pending };
+      console.log(`\nb) Uzupełnianie AI wstrzymane: ${pending} produktów czeka na pierwsze sprawdzenie (ruszy, gdy pula będzie sprawdzona).`);
+    }
     const shopDomains = (await repos.allowedShops.listActive()).map((shop) => shop.domain);
     console.log(`\nb) Komórki poniżej progu: ${coverage.filter((row) => !row.healthy).length}/${coverage.length}; uzupełniam ${cells.length}.`);
     const polite = createPolite({ intervalMs: 1_000, now: Date.now, sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)) });
