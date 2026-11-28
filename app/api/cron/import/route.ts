@@ -1,22 +1,14 @@
-import { timingSafeEqual } from "node:crypto";
-
 import { getEnv } from "@/lib/env";
 import { runImport } from "@/lib/feeds/import";
 import { formatImportStats } from "@/lib/feeds/report";
 import { describeError, logEvent } from "@/lib/log";
 import { recoverStuckPayments } from "@/lib/paid/recover";
+import { hasCronSecret } from "@/lib/secret";
 import { getRepos } from "@/lib/services/db";
 
 // Node.js runtime and dynamic rendering are the defaults (cacheComponents forbids `runtime`/`dynamic` exports).
 // Feeds can be large; Vercel caps this per plan.
 export const maxDuration = 300;
-
-function isAuthorized(header: string | null, secret: string): boolean {
-  if (!header) return false;
-  const expected = Buffer.from(`Bearer ${secret}`);
-  const received = Buffer.from(header);
-  return received.length === expected.length && timingSafeEqual(received, expected);
-}
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -36,7 +28,7 @@ async function cleanup() {
 /** Daily product feed import. Vercel Cron sends `Authorization: Bearer $CRON_SECRET`. */
 export async function GET(request: Request) {
   const env = getEnv();
-  if (!isAuthorized(request.headers.get("authorization"), env.CRON_SECRET)) {
+  if (!hasCronSecret(request, env.CRON_SECRET)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
   await cleanup();

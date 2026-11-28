@@ -209,6 +209,7 @@ const deps = {
   },
   timeoutMs: 400,
   isAllowedHost: () => true,
+  allowLocalHosts: true,
 };
 
 async function fullRun(extra: Partial<Parameters<typeof runCatalogCheck>[1]> = {}) {

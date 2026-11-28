@@ -1,16 +1,8 @@
-import { timingSafeEqual } from "node:crypto";
-
 import { revalidateTag } from "next/cache";
 
 import { getEnv } from "@/lib/env";
+import { hasCronSecret } from "@/lib/secret";
 import { GUIDES_CACHE_TAG } from "@/lib/guides/products";
-
-function sameSecret(given: string | null, expected: string): boolean {
-  if (!given) return false;
-  const a = Buffer.from(given);
-  const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
-}
 
 /**
  * POST /api/revalidate-guides (header x-internal-secret = CRON_SECRET) – called after the weekly
@@ -18,8 +10,8 @@ function sameSecret(given: string | null, expected: string): boolean {
  * Without the call they refresh on their own within a week.
  */
 export async function POST(request: Request) {
-  if (!sameSecret(request.headers.get("x-internal-secret"), getEnv().CRON_SECRET)) {
-    return Response.json({ error: "Forbidden" }, { status: 403 });
+  if (!hasCronSecret(request, getEnv().CRON_SECRET)) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
   revalidateTag(GUIDES_CACHE_TAG, "max");
   return Response.json({ revalidated: true });

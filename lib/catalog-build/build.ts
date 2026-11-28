@@ -302,7 +302,7 @@ export async function verifyCandidates(
         verdicts.push({ url: proposal.url, ok: false, reason: "shop_not_allowed" });
         return;
       }
-      const checkDeps: CheckDeps = { fetch: deps.fetch, isAllowedHost: isShop, beforeRequest: deps.polite.waitForTurn };
+      const checkDeps: CheckDeps = { fetch: deps.fetch, isAllowedHost: isShop, beforeRequest: deps.polite.waitForTurn, allowLocalHosts: deps.allowInsecure };
       if (!(await deps.polite.allows(proposal.url, checkDeps))) {
         verdicts.push({ url: proposal.url, ok: false, reason: "robots" });
         return;

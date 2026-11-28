@@ -83,7 +83,7 @@ const server = createServer((request, response) => {
 });
 await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
 const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-const deps = { fetch: (url: string, init: RequestInit) => fetch(url, init), timeoutMs: 2_000, isAllowedHost: () => true };
+const deps = { fetch: (url: string, init: RequestInit) => fetch(url, init), timeoutMs: 2_000, isAllowedHost: () => true, allowLocalHosts: true };
 
 console.log("\nKlasyfikacja stron (jak w produkcji)");
 const notFound = await checkUrl(`${base}/nie-ma-takiego`, deps);

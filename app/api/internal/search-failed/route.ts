@@ -1,8 +1,7 @@
-import { timingSafeEqual } from "node:crypto";
-
 import { z } from "zod";
 
 import { getEnv } from "@/lib/env";
+import { hasCronSecret } from "@/lib/secret";
 import { describeError, logEvent } from "@/lib/log";
 import { handleSearchFailure } from "@/lib/search/job";
 
@@ -13,21 +12,14 @@ const bodySchema = z.object({
   reason: z.string().max(100).default("error"),
 });
 
-function sameSecret(given: string | null, expected: string): boolean {
-  if (!given) return false;
-  const a = Buffer.from(given);
-  const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
-}
-
 /**
  * POST /api/internal/search-failed – called by the Supabase Edge Function `run-search` when a search
  * did not deliver (header x-internal-secret = CRON_SECRET). Paid: refund or give the search back to
  * the pack. Free: finish the result from the catalog. Idempotent: a finished result is left alone.
  */
 export async function POST(request: Request) {
-  if (!sameSecret(request.headers.get("x-internal-secret"), getEnv().CRON_SECRET)) {
-    return Response.json({ error: "Forbidden" }, { status: 403 });
+  if (!hasCronSecret(request, getEnv().CRON_SECRET)) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "Bad request" }, { status: 400 });

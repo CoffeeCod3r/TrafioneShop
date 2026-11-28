@@ -308,6 +308,7 @@ export async function runCatalogCheck(store: CheckStore, options: RunnerOptions)
         }
       },
       isAllowedHost: (candidate) => matches(candidate, ownDomain) || domains.some((domain) => matches(candidate, domain)),
+      allowLocalHosts: options.allowInsecure ?? options.deps.allowLocalHosts,
     };
 
     if (!(await polite.allows(url, deps))) {

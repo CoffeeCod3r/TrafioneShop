@@ -4,6 +4,7 @@
  * Portable: `fetch` is injected, no Node-only or Next.js APIs.
  */
 import { extractPageInfo, type Availability, type PageInfo } from "./extract.ts";
+import { BlockedUrlError, isFetchableUrl } from "../net-guard.ts";
 
 export const USER_AGENT = "Prezentoskop-LinkChecker/1.0 (+https://prezentoskop.pl/kontakt; kontakt@prezentoskop.pl)";
 /** The product token robots.txt files can address. */
@@ -24,6 +25,8 @@ export type CheckDeps = {
   isAllowedHost: (hostname: string) => boolean;
   /** Waits for this request's turn (per-domain politeness); awaited BEFORE the timeout starts counting. */
   beforeRequest?: (url: string) => Promise<void>;
+  /** Tests only: allow http and private hosts (a local test server). Otherwise only public https URLs are fetched. */
+  allowLocalHosts?: boolean;
 };
 
 export type FetchedPage = {
@@ -74,6 +77,8 @@ async function readCapped(response: Response, maxBytes: number): Promise<string>
 
 /** One request with a hard timeout that also covers reading the body. Throws an AbortError on timeout. */
 async function request(url: string, deps: CheckDeps, kind: "page" | "robots"): Promise<{ response: Response; html: string }> {
+  // SSRF guard: every request, including each redirect hop and robots.txt, goes through here.
+  if (!isFetchableUrl(url, deps.allowLocalHosts)) throw new BlockedUrlError();
   await deps.beforeRequest?.(url);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), deps.timeoutMs ?? REQUEST_TIMEOUT_MS);
