@@ -25,6 +25,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { parseEnv } from "node:util";
 
 import Stripe from "stripe";
 
@@ -38,6 +39,12 @@ import { isAllowedTag } from "../lib/tags.ts";
 // ---------------------------------------------------------------------------
 // Setup
 // ---------------------------------------------------------------------------
+
+// .env.local is loaded by npm (--env-file); .env.test-ai overrides it, but only with NON-empty values, so the empty
+// lines left from the template do not wipe out values that come from .env.local.
+if (existsSync(".env.test-ai")) {
+  for (const [key, value] of Object.entries(parseEnv(readFileSync(".env.test-ai", "utf8")))) if (value !== "") process.env[key] = value;
+}
 
 const args = process.argv.slice(2);
 const only = args.find((arg) => arg.startsWith("--only="))?.split("=")[1] ?? process.env.TEST_ONLY ?? "all";
@@ -100,23 +107,49 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 let server: ChildProcess | null = null;
 
+/**
+ * Services the tested paths never use (e-mail: contact form and sign-ups; PostHog: analytics after consent) still
+ * must be configured when MOCK_MODE=false. When they are missing, the TEST server gets harmless placeholders
+ * (never the real app) and the report says so.
+ */
+function placeholdersForUnusedServices(): Record<string, string> {
+  const placeholders: Record<string, string> = {};
+  if (!/^re_/.test(process.env.RESEND_API_KEY ?? "")) placeholders.RESEND_API_KEY = "re_test_placeholder_not_used";
+  if (!process.env.EMAIL_FROM) placeholders.EMAIL_FROM = "Test <test@example.com>";
+  if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) placeholders.NEXT_PUBLIC_POSTHOG_KEY = "phc_test_placeholder_not_used";
+  return placeholders;
+}
+
 async function startServer(extraEnv: Record<string, string> = {}): Promise<void> {
   const nextBin = path.join("node_modules", "next", "dist", "bin", "next");
+  const placeholders = placeholdersForUnusedServices();
+  if (Object.keys(placeholders).length > 0 && !rows.some((row) => row.test === "konfiguracja")) {
+    record("przygotowanie", "konfiguracja", "OSTRZ", `zastępniki tylko dla serwera testowego (nieużywane w testach): ${Object.keys(placeholders).join(", ")}`);
+  }
+  const output: string[] = [];
+  const scrub = (text: string) => text.replace(/\b(sk|whsec|re|sb|phc|pk)_[A-Za-z0-9_]{6,}/g, "[klucz]");
   server = spawn(process.execPath, [nextBin, "dev", "-p", String(PORT)], {
-    env: { ...process.env, ...extraEnv },
-    stdio: ["ignore", "ignore", "ignore"],
+    env: { ...process.env, ...placeholders, ...extraEnv },
+    stdio: ["ignore", "pipe", "pipe"],
   });
+  const keep = (chunk: unknown) => {
+    output.push(scrub(String(chunk)));
+    if (output.length > 60) output.shift();
+  };
+  server.stdout?.on("data", keep);
+  server.stderr?.on("data", keep);
   const deadline = Date.now() + 180_000;
   while (Date.now() < deadline) {
     try {
-      const response = await fetch(`${BASE}/`, { signal: AbortSignal.timeout(20_000) });
+      const response = await fetch(`${BASE}/`, { signal: AbortSignal.timeout(30_000) });
       if (response.ok) return;
     } catch {
       // not up yet
     }
     await sleep(2_000);
   }
-  throw new Error("Lokalny serwer nie wystartował w 3 minuty");
+  const reason = output.join("").split("\n").filter((line) => /error|invalid|missing|brak/i.test(line)).slice(0, 4).join(" | ");
+  throw new Error(`Lokalny serwer nie wystartował w 3 minuty${reason ? `: ${reason.slice(0, 300)}` : ""}`);
 }
 
 async function stopServer(): Promise<void> {
@@ -308,7 +341,8 @@ async function checkLinks(items: { url: string; price: number }[], budget: numbe
   return { ok, problems, warnings };
 }
 
-const APPEARANCE = /(wygląd|twarz|uroda fizyczn|szczupł|grub|otył|wiek(?!u)|zmarszcz|atrakcyjn|ładn[aey] (osoba|kobieta|mężczyzna)|włosy|sylwetk)/i;
+// "Wygląda na to, że..." (= it seems) is not about looks.
+const APPEARANCE = /(wygląd(?! na to)|twarz|uroda fizyczn|szczupł|grub|otył|wiek(?!u)|zmarszcz|atrakcyjn|ładn[aey] (osoba|kobieta|mężczyzna)|włosy|sylwetk)/i;
 
 // ---------------------------------------------------------------------------
 // A) Free results

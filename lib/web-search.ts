@@ -11,11 +11,14 @@ async function refund(purchase: PurchaseRow, reason: string): Promise<void> {
   if (purchase.offer !== "single") {
     // A pack is not refunded per search: the failed search goes back into the pack and the
     // result can be searched again. (`purchase.result_id` is the result of this very search.)
+    // Only once per failed search: the failure can be reported twice (dispatch error and the Edge Function's
+    // callback, or callback retries), so the credit comes back only when THIS call released the result.
     try {
-      await repos.purchases.restoreSearch(purchase.id);
-      if (purchase.result_id) {
-        await repos.results.update(purchase.result_id, { paid_status: "none", web_picks: null, dedications: null });
+      if (purchase.result_id && !(await repos.results.releasePayment(purchase.result_id))) {
+        logEvent("paid.credit_restore_skipped", { reason });
+        return;
       }
+      await repos.purchases.restoreSearch(purchase.id);
       logEvent("paid.credit_restored", { reason });
     } catch (error) {
       logEvent("paid.credit_restore_failed", { reason, purchaseId: purchase.id, ...describeError(error) });

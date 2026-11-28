@@ -441,6 +441,13 @@ export function createDemoRepos(): Repos {
           result.paid_status = "pending";
           return true;
         }),
+      releasePayment: (id) =>
+        write((data) => {
+          const result = data.results.find((item) => item.id === id);
+          if (!result || (result.paid_status !== "pending" && result.paid_status !== "searching")) return false;
+          Object.assign(result, { paid_status: "none", web_picks: null, dedications: null });
+          return true;
+        }),
       findCachedByHash: (hash, since) =>
         read(
           (data) =>

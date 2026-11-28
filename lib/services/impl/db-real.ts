@@ -351,6 +351,16 @@ export function createRealRepos(): Repos {
         if (error) fail("Claiming payment", error);
         return data.length === 1;
       },
+      async releasePayment(id) {
+        const { data, error } = await db()
+          .from("results")
+          .update({ paid_status: "none", web_picks: null, dedications: null })
+          .eq("id", id)
+          .in("paid_status", ["pending", "searching"])
+          .select("id");
+        if (error) fail("Releasing payment", error);
+        return data.length === 1;
+      },
       listForStats(since) {
         return fetchAll(
           (from, to) =>

@@ -72,6 +72,11 @@ export type ResultsRepo = {
    * was already paid (or is being paid), so one result can never be paid twice.
    */
   claimPayment(id: string): Promise<boolean>;
+  /**
+   * Atomic "pending"/"searching" -> "none" (paid results cleared) for a failed pack search. False when the search is
+   * no longer in progress (already released, finished or refunded): a second failure report must not give a credit again.
+   */
+  releasePayment(id: string): Promise<boolean>;
   /** A ready web-search result with this quiz hash created at or after `since` (result memory). */
   findCachedByHash(hash: string, since: string): Promise<ResultRow | null>;
   /** Admin stats: results created at or after `since`. */
