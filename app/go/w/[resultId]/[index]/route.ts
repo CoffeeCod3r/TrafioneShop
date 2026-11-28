@@ -1,4 +1,5 @@
 import { describeError, logEvent } from "@/lib/log";
+import { affiliateNetworkDomains, safeOutboundUrl } from "@/lib/outbound";
 import { webPickSchema } from "@/lib/paid/schema";
 import { getRepos } from "@/lib/services/db";
 
@@ -26,7 +27,12 @@ export async function GET(
   const pick = webPickSchema.safeParse(picks[position]);
   if (!result || result.paid_status !== "ready" || !pick.success) return Response.redirect(home, 302);
 
-  const target = new URL(pick.data.outboundUrl, request.url);
+  const shops = await repos.allowedShops.listActive().catch(() => []);
+  const target = safeOutboundUrl(pick.data.outboundUrl, request.url, [...shops.map((shop) => shop.domain), ...affiliateNetworkDomains()]);
+  if (!target) {
+    logEvent("click.blocked_destination", { network: "paid-web" });
+    return Response.redirect(home, 302);
+  }
   try {
     await repos.clicks.create({ result_id: resultId, product_id: null, url: target.toString(), source: "paid-web" });
   } catch (error) {

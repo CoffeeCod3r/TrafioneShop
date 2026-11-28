@@ -45,7 +45,7 @@ export type ProductCardData = {
  */
 export function ProductCard({ card }: { card: ProductCardData }) {
   const illustration = getIllustration(card.category);
-  const rel = "sponsored nofollow noopener";
+  const rel = "sponsored nofollow noopener noreferrer";
 
   return (
     <li

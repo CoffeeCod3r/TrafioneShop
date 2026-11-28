@@ -1,4 +1,5 @@
 import { describeError, logEvent } from "@/lib/log";
+import { affiliateNetworkDomains, hostMatches, safeOutboundUrl } from "@/lib/outbound";
 import { toOutboundUrl } from "@/lib/search/core";
 import { getRepos } from "@/lib/services/db";
 
@@ -11,7 +12,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * products found by the web search (network "direct") and "catalog" for partner catalog products.
  * Web products in a shop that has an affiliate deeplink (allowed_shops.has_affiliate + deeplink_template)
  * lead through that deeplink; today none has one, so they lead straight to the shop.
- * Only redirects to URLs stored in our catalog, so it cannot be used as an open redirect.
+ * Only redirects to URLs stored in our catalog (never one from the request), and only to https hosts that are
+ * an allowed shop or an affiliate network, so it cannot be used as an open redirect.
  */
 function hostOf(url: string): string {
   try {
@@ -34,14 +36,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ prod
   const resultId = query.get("r");
   const direct = product.network === "direct";
   const source = query.get("src") === "share" ? "share" : direct ? "free-web" : "catalog";
+  const shops = await repos.allowedShops.listActive().catch(() => []);
   let destination = product.affiliate_url;
   if (direct && product.url) {
-    const shops = await repos.allowedShops.listActive().catch(() => []);
     const host = hostOf(product.url);
-    const shop = shops.find((item) => host === item.domain || host.endsWith(`.${item.domain}`));
+    const shop = shops.find((item) => hostMatches(host, item.domain));
     destination = shop ? toOutboundUrl(product.url, shop) : product.url;
   }
-  const target = new URL(destination, request.url);
+  const target = safeOutboundUrl(destination, request.url, [...shops.map((shop) => shop.domain), ...affiliateNetworkDomains()]);
+  if (!target) {
+    logEvent("click.blocked_destination", { network: product.network, host: hostOf(destination) || "invalid" });
+    return Response.redirect(home, 302);
+  }
 
   try {
     await repos.clicks.create({
