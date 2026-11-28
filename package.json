@@ -14,6 +14,7 @@
     "test:pool": "node --experimental-strip-types --no-warnings scripts/test-pool.ts",
     "test:warmup": "node --experimental-strip-types --no-warnings scripts/test-warmup.ts",
     "test:cards": "node --experimental-strip-types --no-warnings scripts/test-cards.ts",
+    "test:security": "node --experimental-strip-types --no-warnings scripts/test-security.ts",
     "catalog:verify": "node --experimental-strip-types --no-warnings --env-file-if-exists=.env.local scripts/catalog-verify.ts",
     "catalog:check": "npm run catalog:verify --",
     "catalog:warmup": "node --experimental-strip-types --no-warnings --env-file-if-exists=.env.local scripts/catalog-warmup.ts",

@@ -40,10 +40,11 @@ const csp = [
   "base-uri 'self'",
   "form-action 'self' https://checkout.stripe.com",
   "frame-ancestors 'none'",
-  ...(isDev ? [] : ["upgrade-insecure-requests"]),
 ].join("; ");
 
 const enforceCsp = ["true", "1"].includes((process.env.CSP_ENFORCE ?? "").trim().toLowerCase());
+// upgrade-insecure-requests is ignored (and logged as an error) in a report-only policy.
+const cspValue = enforceCsp && !isDev ? `${csp}; upgrade-insecure-requests` : csp;
 
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -54,7 +55,7 @@ const securityHeaders = [
     key: "Permissions-Policy",
     value: 'camera=(), microphone=(), geolocation=(), payment=(self "https://checkout.stripe.com")',
   },
-  { key: enforceCsp ? "Content-Security-Policy" : "Content-Security-Policy-Report-Only", value: csp },
+  { key: enforceCsp ? "Content-Security-Policy" : "Content-Security-Policy-Report-Only", value: cspValue },
 ];
 
 const noIndex = [{ key: "X-Robots-Tag", value: "noindex, nofollow" }];

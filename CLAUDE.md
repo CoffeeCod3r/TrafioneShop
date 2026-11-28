@@ -68,6 +68,17 @@ about the recipient and can optionally add a photo of them.
   `free_source='warm'`, label "Sprawdzone produkty z polskich sklepów" and the affiliate notice always shown.
   Tests: `npm run test:warmup`.
 
+## Security (see SECURITY_AUDIT.md)
+- The repository is PUBLIC: never put real values in `.env.example` or any tracked file.
+- `proxy.ts` guards `/admin` and `/api/admin/*` (session 401, same Origin for non-GET 403); every admin route also checks
+  on its own. Session cookie signed with `ADMIN_SESSION_SECRET` (fallback: key from `ADMIN_PASSWORD`), 12 h, login max
+  5 tries per IP per 15 min.
+- `/go` redirects only to stored URLs on https hosts in `allowed_shops` or affiliate networks (`lib/outbound.ts`,
+  `AFFILIATE_NETWORK_DOMAINS`). Server-side page fetches go through `lib/net-guard.ts` (no private hosts, https only).
+- Internal endpoints compare `CRON_SECRET` with `lib/secret.ts` (timing-safe), 401 when missing.
+- CSP is Report-Only (`next.config.ts`; `CSP_ENFORCE=true` enforces it, which needs nonces or 'unsafe-inline' first).
+- Tests: `npm run test:security` (CI); with `BASE_URL=…` also HTTP checks against a running app.
+
 ## Stack
 - Next.js (App Router) + TypeScript + Tailwind + shadcn/ui
 - Supabase (Postgres)

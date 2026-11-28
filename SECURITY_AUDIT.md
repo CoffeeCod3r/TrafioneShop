@@ -91,4 +91,61 @@ Nowe wartości ustaw w panelu hostingu (Netlify/Vercel env), w `.env.local`, w s
 
 ## Weryfikacja
 
-(uzupełniane na końcu)
+**Testy** – `npm run test:security` (jednostkowe, także w CI) i `BASE_URL=http://localhost:3000 npm run test:security`
+(HTTP na działającej aplikacji). Wynik lokalnie (`next dev`, MOCK_MODE=true): wszystkie przeszły, m.in.:
+
+- `/go/<id>?url=https://evil.com&next=…&returnTo=//evil.com` → 302 tylko na naszą stronę (parametr nigdy nie jest czytany;
+  zadanie zakładało 400 – `/go` nie ma takiego parametru, a dla nieznanego produktu wysyła na stronę główną).
+  Do tego 14 przypadków `safeOutboundUrl` (obca domena, `empik.com.evil.com`, `//evil.com`, `/\evil.com`, `javascript:`, http).
+- `/api/admin/check-links` bez Origin → 403, bez sesji → 401, z podrobioną sesją → 401; każdy `/api/admin/*` bez sesji → 401;
+  logowanie z obcego Origin → 403; 6. błędna próba logowania → 429; ważna sesja przechodzi; podpisana sesja z ważnością
+  30 dni → 401.
+- Webhook Stripe bez podpisu / ze złym podpisem → 400.
+- Cron, `/api/internal/search-failed`, `/api/revalidate-guides` bez sekretu lub ze złym → 401.
+- Zdjęcie 3 MB → 413.
+- SSRF: 14 adresów zablokowanych (localhost, 127.*, 10.*, 172.16–31.*, 192.168.*, 169.254.169.254, ::1, fd00::, ::ffff:127.0.0.1,
+  zapisy liczbowe IPv4, file:, ftp:, http:).
+- Istniejące testy: `test:catalog`, `test:pool`, `test:warmup` przechodzą. `typecheck` i `lint` bez błędów.
+
+**Bundle klienta** (`next build`, skan `.next/static`, 33 pliki): żadna wartość `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`,
+`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `CRON_SECRET`, `IP_HASH_SALT`, `EMAIL_TOKEN_SECRET`, `ADMIN_PASSWORD`,
+`TURNSTILE_SECRET_KEY`, `FEED_URLS` ani prefiks `sk_live_/sk_test_/whsec_/sb_secret_/sk-ant-/service_role` nie występuje.
+Z `NEXT_PUBLIC_*` w bundlu jest tylko publiczny klucz witryny Turnstile.
+
+**Nagłówki** (lokalny `next start` z tego builda; na podglądzie Netlify/Vercel do sprawdzenia `curl -I <url-podglądu>`):
+
+```
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+X-Frame-Options: DENY
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(self "https://checkout.stripe.com")
+Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://js.stripe.com https://eu-assets.i.posthog.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; font-src 'self' data:; connect-src 'self' https://eu.i.posthog.com https://eu-assets.i.posthog.com https://challenges.cloudflare.com https://api.stripe.com https://<projekt>.supabase.co; frame-src https://challenges.cloudflare.com https://js.stripe.com https://checkout.stripe.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com; frame-ancestors 'none'
+(brak X-Powered-By)
+/admin: X-Robots-Tag: noindex, nofollow; Cache-Control: private, no-store
+```
+
+**CSP w praktyce (build produkcyjny, /quiz):** jedyne zgłoszenia Report-Only to inline-skrypty, które Next.js App Router
+wstawia do każdej strony (dane RSC `self.__next_f.push`), oraz jedno `eval` w skrypcie klienta. Obrazki, PostHog, czcionki
+i połączenia – bez zgłoszeń. Turnstile i Stripe Checkout do sprawdzenia na podglądzie z prawdziwymi kluczami.
+**Dlatego CSP zostaje w trybie Report-Only.** Włączenie wymuszającego (`CSP_ENFORCE=true`) bez zmian zablokowałoby
+działanie strony. Opcje (decyzja właściciela):
+1. Nonce na każde żądanie w `proxy.ts` – najbezpieczniejsze, ale wyłącza statyczne/PPR strony (każda staje się dynamiczna,
+   wolniejsza i droższa w hostingu).
+2. `script-src 'self' 'unsafe-inline' …` – działa od razu, ale CSP przestaje chronić przed XSS w skryptach; nadal daje
+   `frame-ancestors`, `object-src`, `base-uri`, `form-action` i ograniczenie domen.
+3. Zostawić Report-Only (stan obecny) i wrócić do tematu po stabilizacji.
+
+Po wdrożeniu podglądu sprawdź ocenę na <https://securityheaders.com> i <https://observatory.mozilla.org> (cel: A).
+Przy CSP w trybie Report-Only Observatory obniży ocenę za brak wymuszającego CSP – to oczekiwane.
+
+## Decyzje dla właściciela
+
+1. **Rotacja kluczy** (lista wyżej) – najpilniejsze.
+2. Tryb CSP (opcje 1–3 powyżej).
+3. Ustawić `ADMIN_SESSION_SECRET` w env hostingu (po ustawieniu wszystkie sesje admina wygasną – trzeba się zalogować ponownie).
+4. `pg_net` w `public` – przenieść do `extensions` (wymaga sprawdzenia wywołań `net.http_post`).
+5. Hosting: zadanie mówi o Netlify, `CLAUDE.md` i `vercel.json` o Vercel. Netlify nie uruchamia crona z `vercel.json`;
+   jeśli strona jest na Netlify, sprawdź, kto woła `/api/cron/import` (czyszczenie `rate_limits`, odzyskiwanie płatności).
+6. Edge Functions (`run-search`, `check-links`) bez sekretu odpowiadają 403 (aplikacja Next – 401). Nie zmieniałem ich
+   (wdrożenie to `npm run edge:deploy`), porównanie jest już stałoczasowe.
