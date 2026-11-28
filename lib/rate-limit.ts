@@ -1,6 +1,6 @@
 import { getRepos } from "./services/db.ts";
 
-/** Daily limits per hashed IP (or per hashed email for subscribeEmail). */
+/** Limits per hashed IP (or per hashed email for subscribeEmail). Daily unless `windowMinutes` is set. */
 export const RATE_LIMITS = {
   analyzeWithPhoto: { key: "analyze:photo", limitPerDay: 3 },
   analyzeWithoutPhoto: { key: "analyze:text", limitPerDay: 20 },
@@ -15,8 +15,9 @@ export const RATE_LIMITS = {
   contact: { key: "contact", limitPerDay: 5 },
   /** Confirmation emails to one address, so nobody can flood someone else's inbox. */
   subscribeEmail: { key: "subscribe_email", limitPerDay: 2 },
-  adminLogin: { key: "admin_login", limitPerDay: 10 },
-} as const;
+  /** Admin password attempts: 5 per 15 minutes per IP. */
+  adminLogin: { key: "admin_login", limitPerDay: 5, windowMinutes: 15 },
+} as const satisfies Record<string, { key: string; limitPerDay: number; windowMinutes?: number }>;
 
 export type RateLimitName = keyof typeof RATE_LIMITS;
 
@@ -29,7 +30,14 @@ export function dayWindowStart(now = new Date()): string {
  * Atomically consumes one unit of the limit. Returns false when the limit is reached.
  * Throws on database errors so callers can fail closed.
  */
+/** Start of the current fixed window of `minutes` (aligned to the epoch). */
+export function minuteWindowStart(minutes: number, now = new Date()): string {
+  const size = minutes * 60_000;
+  return new Date(Math.floor(now.getTime() / size) * size).toISOString();
+}
+
 export async function consumeRateLimit(name: RateLimitName, subject: string): Promise<boolean> {
-  const { key, limitPerDay } = RATE_LIMITS[name];
-  return getRepos().rateLimits.consume(`${key}:${subject}`, dayWindowStart(), limitPerDay);
+  const limit: { key: string; limitPerDay: number; windowMinutes?: number } = RATE_LIMITS[name];
+  const windowStart = limit.windowMinutes ? minuteWindowStart(limit.windowMinutes) : dayWindowStart();
+  return getRepos().rateLimits.consume(`${limit.key}:${subject}`, windowStart, limit.limitPerDay);
 }

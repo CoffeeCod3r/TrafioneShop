@@ -64,6 +64,8 @@ const serviceSchema = z.object({
   IP_HASH_SALT: z.string().min(32),
   EMAIL_TOKEN_SECRET: z.string().min(32),
   ADMIN_PASSWORD: z.string().min(12),
+  /** Optional key for signing the admin session cookie (falls back to a key derived from ADMIN_PASSWORD). */
+  ADMIN_SESSION_SECRET: z.string().min(32).optional(),
   FEED_URLS: feedSources,
 });
 
