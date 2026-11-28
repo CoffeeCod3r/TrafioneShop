@@ -1,0 +1,600 @@
+{
+  "startedAt": "2026-11-28T14:35:08.833Z",
+  "passRate": 0.2698412698412698,
+  "rows": [
+    {
+      "persona": "przygotowanie",
+      "test": "konfiguracja",
+      "status": "OSTRZ",
+      "details": "zastępniki tylko dla serwera testowego (nieużywane w testach): RESEND_API_KEY, NEXT_PUBLIC_POSTHOG_KEY",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P1 tata-wędkarz do 100 zł",
+      "test": "1 profil",
+      "status": "BŁĄD",
+      "details": "komentarz o wyglądzie",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P1 tata-wędkarz do 100 zł",
+      "test": "2 wyszukiwanie",
+      "status": "BŁĄD",
+      "details": "źródło wyniku: catalog_fallback (oczekiwane web)",
+      "seconds": 5.897,
+      "costPln": 0.0017344,
+      "severity": 1
+    },
+    {
+      "persona": "P1 tata-wędkarz do 100 zł",
+      "test": "3 produkty i linki",
+      "status": "BŁĄD",
+      "details": "0/5 sprawdzone; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: 5 produkty",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 1
+    },
+    {
+      "persona": "P1 tata-wędkarz do 100 zł",
+      "test": "4 dopasowanie",
+      "status": "OK",
+      "details": "5/5 pasuje do zainteresowań",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P1 tata-wędkarz do 100 zł",
+      "test": "5 zapis w products",
+      "status": "BŁĄD",
+      "details": "0/5 jako network=direct",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P2 dziewczyna, fanka anime, do 200 zł",
+      "test": "1 profil",
+      "status": "BŁĄD",
+      "details": "komentarz o wyglądzie",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P2 dziewczyna, fanka anime, do 200 zł",
+      "test": "2 wyszukiwanie",
+      "status": "BŁĄD",
+      "details": "źródło wyniku: catalog_fallback (oczekiwane web)",
+      "seconds": 4.025,
+      "costPln": 0.0017760000000000002,
+      "severity": 1
+    },
+    {
+      "persona": "P2 dziewczyna, fanka anime, do 200 zł",
+      "test": "3 produkty i linki",
+      "status": "BŁĄD",
+      "details": "0/5 sprawdzone; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: 5 produkty",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 1
+    },
+    {
+      "persona": "P2 dziewczyna, fanka anime, do 200 zł",
+      "test": "4 dopasowanie",
+      "status": "OK",
+      "details": "5/5 pasuje do zainteresowań",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P2 dziewczyna, fanka anime, do 200 zł",
+      "test": "5 zapis w products",
+      "status": "BŁĄD",
+      "details": "0/5 jako network=direct",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P3 kolega gracz do 50 zł",
+      "test": "1 profil",
+      "status": "BŁĄD",
+      "details": "komentarz o wyglądzie",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P3 kolega gracz do 50 zł",
+      "test": "2 wyszukiwanie",
+      "status": "BŁĄD",
+      "details": "źródło wyniku: catalog_fallback (oczekiwane web)",
+      "seconds": 3.664,
+      "costPln": 0.0016716,
+      "severity": 1
+    },
+    {
+      "persona": "P3 kolega gracz do 50 zł",
+      "test": "3 produkty i linki",
+      "status": "BŁĄD",
+      "details": "3/5 sprawdzone; www.ceneo.pl: spoza allowed_shops; www.castorama.pl: error/http_5xx",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 1
+    },
+    {
+      "persona": "P3 kolega gracz do 50 zł",
+      "test": "4 dopasowanie",
+      "status": "OK",
+      "details": "5/5 pasuje do zainteresowań",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P3 kolega gracz do 50 zł",
+      "test": "5 zapis w products",
+      "status": "BŁĄD",
+      "details": "4/5 jako network=direct",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P4 mama-ogrodniczka do 100 zł",
+      "test": "1 profil",
+      "status": "BŁĄD",
+      "details": "komentarz o wyglądzie",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P4 mama-ogrodniczka do 100 zł",
+      "test": "2 wyszukiwanie",
+      "status": "BŁĄD",
+      "details": "źródło wyniku: catalog_fallback (oczekiwane web)",
+      "seconds": 3.4,
+      "costPln": 0.0017728000000000002,
+      "severity": 1
+    },
+    {
+      "persona": "P4 mama-ogrodniczka do 100 zł",
+      "test": "3 produkty i linki",
+      "status": "BŁĄD",
+      "details": "0/5 sprawdzone; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops; www.pakamera.pl: spoza allowed_shops; www.ceneo.pl: 4 produkty",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 1
+    },
+    {
+      "persona": "P4 mama-ogrodniczka do 100 zł",
+      "test": "4 dopasowanie",
+      "status": "OK",
+      "details": "5/5 pasuje do zainteresowań",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P4 mama-ogrodniczka do 100 zł",
+      "test": "5 zapis w products",
+      "status": "BŁĄD",
+      "details": "0/5 jako network=direct",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P5 babcia do 100 zł",
+      "test": "1 profil",
+      "status": "BŁĄD",
+      "details": "komentarz o wyglądzie",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P5 babcia do 100 zł",
+      "test": "2 wyszukiwanie",
+      "status": "BŁĄD",
+      "details": "źródło wyniku: catalog_fallback (oczekiwane web)",
+      "seconds": 3.379,
+      "costPln": 0.0016952,
+      "severity": 1
+    },
+    {
+      "persona": "P5 babcia do 100 zł",
+      "test": "3 produkty i linki",
+      "status": "BŁĄD",
+      "details": "0/5 sprawdzone; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops; www.pakamera.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops; www.pakamera.pl: spoza allowed_shops; www.ceneo.pl: 3 produkty",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 1
+    },
+    {
+      "persona": "P5 babcia do 100 zł",
+      "test": "4 dopasowanie",
+      "status": "OK",
+      "details": "5/5 pasuje do zainteresowań",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P5 babcia do 100 zł",
+      "test": "5 zapis w products",
+      "status": "BŁĄD",
+      "details": "0/5 jako network=direct",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P6 szef do 200 zł",
+      "test": "1 profil",
+      "status": "BŁĄD",
+      "details": "komentarz o wyglądzie",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P6 szef do 200 zł",
+      "test": "2 wyszukiwanie",
+      "status": "BŁĄD",
+      "details": "źródło wyniku: catalog_fallback (oczekiwane web)",
+      "seconds": 4.232,
+      "costPln": 0.0018188000000000002,
+      "severity": 1
+    },
+    {
+      "persona": "P6 szef do 200 zł",
+      "test": "3 produkty i linki",
+      "status": "BŁĄD",
+      "details": "0/5 sprawdzone; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: 5 produkty",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 1
+    },
+    {
+      "persona": "P6 szef do 200 zł",
+      "test": "4 dopasowanie",
+      "status": "OK",
+      "details": "4/5 pasuje do zainteresowań",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P6 szef do 200 zł",
+      "test": "5 zapis w products",
+      "status": "BŁĄD",
+      "details": "0/5 jako network=direct",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P7 osoba, która ma wszystko, do 200 zł",
+      "test": "1 profil",
+      "status": "BŁĄD",
+      "details": "komentarz o wyglądzie",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P7 osoba, która ma wszystko, do 200 zł",
+      "test": "2 wyszukiwanie",
+      "status": "BŁĄD",
+      "details": "źródło wyniku: catalog_fallback (oczekiwane web)",
+      "seconds": 2.449,
+      "costPln": 0.0017672,
+      "severity": 1
+    },
+    {
+      "persona": "P7 osoba, która ma wszystko, do 200 zł",
+      "test": "3 produkty i linki",
+      "status": "BŁĄD",
+      "details": "0/5 sprawdzone; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops; www.ceneo.pl: 5 produkty",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 1
+    },
+    {
+      "persona": "P7 osoba, która ma wszystko, do 200 zł",
+      "test": "4 dopasowanie",
+      "status": "OK",
+      "details": "4/5 pasuje do zainteresowań",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P7 osoba, która ma wszystko, do 200 zł",
+      "test": "5 zapis w products",
+      "status": "BŁĄD",
+      "details": "0/5 jako network=direct",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P8 prezent last minute do 100 zł",
+      "test": "1 profil",
+      "status": "BŁĄD",
+      "details": "komentarz o wyglądzie",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P8 prezent last minute do 100 zł",
+      "test": "2 wyszukiwanie",
+      "status": "BŁĄD",
+      "details": "źródło wyniku: catalog_fallback (oczekiwane web)",
+      "seconds": 2.462,
+      "costPln": 0.0016956,
+      "severity": 1
+    },
+    {
+      "persona": "P8 prezent last minute do 100 zł",
+      "test": "3 produkty i linki",
+      "status": "BŁĄD",
+      "details": "2/5 sprawdzone; www.ceneo.pl: spoza allowed_shops; www.castorama.pl: error/http_5xx; www.castorama.pl: error/http_5xx",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 1
+    },
+    {
+      "persona": "P8 prezent last minute do 100 zł",
+      "test": "4 dopasowanie",
+      "status": "OK",
+      "details": "5/5 pasuje do zainteresowań",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P8 prezent last minute do 100 zł",
+      "test": "5 zapis w products",
+      "status": "BŁĄD",
+      "details": "4/5 jako network=direct",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P9 budżet 500 zł",
+      "test": "1 profil",
+      "status": "BŁĄD",
+      "details": "komentarz o wyglądzie",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P9 budżet 500 zł",
+      "test": "2 wyszukiwanie",
+      "status": "BŁĄD",
+      "details": "źródło wyniku: catalog_fallback (oczekiwane web)",
+      "seconds": 3.298,
+      "costPln": 0.0017044,
+      "severity": 1
+    },
+    {
+      "persona": "P9 budżet 500 zł",
+      "test": "3 produkty i linki",
+      "status": "BŁĄD",
+      "details": "0/5 sprawdzone; www.pakamera.pl: spoza allowed_shops; www.pakamera.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops; www.pakamera.pl: spoza allowed_shops; www.pakamera.pl: spoza allowed_shops; www.pakamera.pl: 4 produkty",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 1
+    },
+    {
+      "persona": "P9 budżet 500 zł",
+      "test": "4 dopasowanie",
+      "status": "OK",
+      "details": "5/5 pasuje do zainteresowań",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P9 budżet 500 zł",
+      "test": "5 zapis w products",
+      "status": "BŁĄD",
+      "details": "0/5 jako network=direct",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P10 sprzeczne odpowiedzi",
+      "test": "1 profil",
+      "status": "BŁĄD",
+      "details": "komentarz o wyglądzie",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P10 sprzeczne odpowiedzi",
+      "test": "2 wyszukiwanie",
+      "status": "BŁĄD",
+      "details": "źródło wyniku: catalog_fallback (oczekiwane web)",
+      "seconds": 2.877,
+      "costPln": 0.0017852000000000002,
+      "severity": 1
+    },
+    {
+      "persona": "P10 sprzeczne odpowiedzi",
+      "test": "3 produkty i linki",
+      "status": "BŁĄD",
+      "details": "0/5 sprawdzone; www.gadzetyrajdowe.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops; cupandyou.pl: spoza allowed_shops; cupandyou.pl: spoza allowed_shops; www.ceneo.pl: spoza allowed_shops",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 1
+    },
+    {
+      "persona": "P10 sprzeczne odpowiedzi",
+      "test": "4 dopasowanie",
+      "status": "OSTRZ",
+      "details": "sprzeczne odpowiedzi: 2/5 pasuje do zainteresowań (do oceny ręcznej)",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P10 sprzeczne odpowiedzi",
+      "test": "5 zapis w products",
+      "status": "BŁĄD",
+      "details": "0/5 jako network=direct",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P1 tata-wędkarz do 100 zł",
+      "test": "6 pamięć wyników",
+      "status": "BŁĄD",
+      "details": "źródło null, wpisów ai_usage 1, wyszukiwań 0, 3.0 s",
+      "seconds": 2.968,
+      "costPln": 0.0017544000000000001,
+      "severity": 1
+    },
+    {
+      "persona": "C zdjęcia",
+      "test": "zdjęcia",
+      "status": "OSTRZ",
+      "details": "pominięte: brak plików JPEG w scripts/fixtures/photos (neutralne, bez ludzi)",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P1 płatne (pojedyncze)",
+      "test": "B webhook",
+      "status": "OK",
+      "details": "HTTP 200",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 0
+    },
+    {
+      "persona": "P1 płatne (pojedyncze)",
+      "test": "B wynik płatny",
+      "status": "BŁĄD",
+      "details": "status refunded",
+      "seconds": 6.175,
+      "costPln": 0,
+      "severity": 0
+    },
+    {
+      "persona": "P2 płatne (pojedyncze)",
+      "test": "B webhook",
+      "status": "OK",
+      "details": "HTTP 200",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 0
+    },
+    {
+      "persona": "P2 płatne (pojedyncze)",
+      "test": "B wynik płatny",
+      "status": "BŁĄD",
+      "details": "status refunded",
+      "seconds": 5.431,
+      "costPln": 0,
+      "severity": 0
+    },
+    {
+      "persona": "P5 płatne (pakiet 10)",
+      "test": "B webhook pakietu",
+      "status": "OK",
+      "details": "HTTP 200",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 0
+    },
+    {
+      "persona": "P5 płatne (pakiet 10)",
+      "test": "B wynik płatny",
+      "status": "BŁĄD",
+      "details": "status none",
+      "seconds": 423.766,
+      "costPln": 0,
+      "severity": 0
+    },
+    {
+      "persona": "P5 płatne (pakiet 10)",
+      "test": "B pakiet: zużycie 1. wyszukiwania",
+      "status": "BŁĄD",
+      "details": "pozostało 10/10",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 2
+    },
+    {
+      "persona": "P5 płatne (pakiet 10)",
+      "test": "B pakiet: 11. próba odrzucona",
+      "status": "OK",
+      "details": "HTTP 409",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 1
+    },
+    {
+      "persona": "P5 płatne (pakiet 10)",
+      "test": "B pakiet: 2 równoczesne użycia, 1 kredyt",
+      "status": "OK",
+      "details": "odpowiedzi 200 i 409, pozostało 0",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 0
+    },
+    {
+      "persona": "P5 płatne (pakiet 10)",
+      "test": "B niepowodzenie: kredyt pakietu wraca",
+      "status": "BŁĄD",
+      "details": "callback HTTP 200, pozostało 2",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 0
+    },
+    {
+      "persona": "P4 płatne (wymuszone niepowodzenie)",
+      "test": "B niepowodzenie: zwrot pieniędzy",
+      "status": "OK",
+      "details": "callback HTTP 200, zwrotów w Stripe 1, zakup: refunded",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 0
+    },
+    {
+      "persona": "P4 płatne (wymuszone niepowodzenie)",
+      "test": "B po zwrocie wynik się nie zmienia",
+      "status": "OK",
+      "details": "końcowy status wyniku: refunded",
+      "seconds": 0,
+      "costPln": 0,
+      "severity": 0
+    },
+    {
+      "persona": "P3 kolega gracz do 50 zł",
+      "test": "7 dzienny limit",
+      "status": "OK",
+      "details": "źródło catalog_budget, produktów 5, wyszukiwań 0",
+      "seconds": 7.546,
+      "costPln": 0.00434,
+      "severity": 1
+    }
+  ]
+}

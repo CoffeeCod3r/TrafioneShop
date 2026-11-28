@@ -342,7 +342,7 @@ async function checkLinks(items: { url: string; price: number }[], budget: numbe
 }
 
 // "Wygląda na to, że..." (= it seems) is not about looks.
-const APPEARANCE = /(wygląd(?! na to)|twarz|uroda fizyczn|szczupł|grub|otył|wiek(?!u)|zmarszcz|atrakcyjn|ładn[aey] (osoba|kobieta|mężczyzna)|włosy|sylwetk)/i;
+const APPEARANCE = /(wygląd(?!a na to)|twarz|uroda fizyczn|szczupł|grub|otył|wiek(?!u)|zmarszcz|atrakcyjn|ładn[aey] (osoba|kobieta|mężczyzna)|włosy|sylwetk)/i;
 
 // ---------------------------------------------------------------------------
 // A) Free results
