@@ -125,6 +125,15 @@ Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' https
 /admin: X-Robots-Tag: noindex, nofollow; Cache-Control: private, no-store
 ```
 
+**Podgląd Netlify** (`https://deploy-preview-2--prezentownikai.netlify.app`, PR #2): `curl -I` pokazuje te same nagłówki
+(Netlify dodaje do HSTS `preload` i `X-Robots-Tag: noindex` dla podglądów), `X-Powered-By` brak, `/admin` ma
+`X-Robots-Tag: noindex, nofollow` i `Cache-Control: private, no-store`. `BASE_URL=<podgląd> npm run test:security`: wszystkie
+22 testy HTTP przechodzą (proxy.ts działa na Netlify). Netlify przenosi query string do przekierowania na stronę główną
+(`/?url=…`) – cel nadal jest naszą stroną, to nie jest open redirect.
+
+**CI:** job `Security checks / audit` w PR nie wystartował: GitHub zablokował Actions na koncie z powodu problemu
+z rozliczeniami („account is locked due to a billing issue”). To nie błąd kodu – trzeba to naprawić w GitHub → Settings → Billing.
+
 **CSP w praktyce (build produkcyjny, /quiz):** jedyne zgłoszenia Report-Only to inline-skrypty, które Next.js App Router
 wstawia do każdej strony (dane RSC `self.__next_f.push`), oraz jedno `eval` w skrypcie klienta. Obrazki, PostHog, czcionki
 i połączenia – bez zgłoszeń. Turnstile i Stripe Checkout do sprawdzenia na podglądzie z prawdziwymi kluczami.

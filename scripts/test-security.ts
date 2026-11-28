@@ -73,7 +73,8 @@ if (base) {
   const location = go.headers.get("location") ?? "";
   check(go.status === 302 && new URL(location, base).origin === origin, `/go z obcym url w parametrze → tylko na naszą stronę (${go.status} ${location})`);
   const goBad = await request(`/go/not-a-uuid?url=https://evil.com`);
-  check(!(goBad.headers.get("location") ?? "").includes("evil.com"), "/go z błędnym id nie przekierowuje na parametr");
+  // Netlify keeps the query string on the redirect ("/?url=…"); what matters is that the target is our own origin.
+  check(new URL(goBad.headers.get("location") ?? "/", base).origin === origin, "/go z błędnym id → tylko na naszą stronę");
   const claim = await request(`/api/pack/claim?session_id=x&result=https://evil.com`);
   check(new URL(claim.headers.get("location") ?? "/", base).origin === origin, "/api/pack/claim z obcym result → tylko nasza strona");
 

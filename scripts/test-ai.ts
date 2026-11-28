@@ -25,6 +25,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { parseEnv } from "node:util";
 
 import Stripe from "stripe";
 
@@ -38,6 +39,12 @@ import { isAllowedTag } from "../lib/tags.ts";
 // ---------------------------------------------------------------------------
 // Setup
 // ---------------------------------------------------------------------------
+
+// .env.local is loaded by npm (--env-file); .env.test-ai overrides it, but only with NON-empty values, so the empty
+// lines left from the template do not wipe out values that come from .env.local.
+if (existsSync(".env.test-ai")) {
+  for (const [key, value] of Object.entries(parseEnv(readFileSync(".env.test-ai", "utf8")))) if (value !== "") process.env[key] = value;
+}
 
 const args = process.argv.slice(2);
 const only = args.find((arg) => arg.startsWith("--only="))?.split("=")[1] ?? process.env.TEST_ONLY ?? "all";
